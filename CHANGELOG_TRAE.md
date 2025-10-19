@@ -24,3 +24,4 @@
 2025-10-19T11:02:00Z | client/src/pages/settings/Users.js | Добавлен мультиселект ролей и сохранение ролей при обновлении
 2025-10-19T11:03:00Z | client/src/pages/BootstrapWizard.js, client/src/App.js | Добавлен мастер Bootstrap администратора (/bootstrap), вызов /auth/bootstrap-admin и сид базовых ролей
 2025-10-19T11:04:00Z | client/src/pages/RbacTest.js, client/src/App.js | Добавлена страница RBAC Test (/rbac-test), отображение доступных маршрутов и действий
+2025-10-19T11:25:00Z | README.md, .gitignore | Добавлены инструкции DEV-режима, страницы Bootstrap/RBAC; игнор client/.env
