@@ -39,6 +39,7 @@
 - Очередь статусов: `statusActionQueue` — запуск auto‑actions (`closeWithoutPayment`, `notify`, `print`, `payrollAccrual`). Мем‑очередь в DEV, BullMQ в PROD. Метрики, ретраи, идемпотентность.
 - Payments guard: защита закрытия с учётом оплат; соответствующие контракты и е2е покрытие.
 - Templates: `DocTemplate`/`NotifyTemplate` — CRUD, RBAC, проверки связей на удаление (guard против использования в статусах). DEV‑ветка — in‑memory `TemplatesStore`.
+- OrderTypes: модель `OrderType` (типы заказов) — стартовый статус, разрешённые статусы, схема полей, шаблоны документов; статус — In progress.
 - Миграции и утилиты: `migrateOrderStatuses.js` (CSV/JSON отчёты), `health/dataSanity.js`, `scripts/perfDiagnostics.js`, `services/configValidator.js`.
 - CLIENT: страницы (Login, Settings, Users, Roles, Payments, OrderStatuses, Queues, BootstrapWizard, RBAC Test), `AuthContext`, `ProtectedRoute`, API‑сервисы.
 
@@ -86,7 +87,7 @@
   - TTL‑кэш (statuses/doc‑templates) — OK
   - Orders/Payments — In progress
   - Client pages (Settings/Users/Roles/Payments/Statuses/Queues) — In progress
-  - OrderTypes — TODO
+  - OrderTypes — In progress
   - Payments real model — TODO
   - Notifications center — TODO
   - SaaS multi‑tenant — TODO
