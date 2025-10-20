@@ -6,7 +6,8 @@
 - Ключевые файлы (≤10): server.js; services/orderStatusService.js; services/statusActionsHandler.js; services/templatesStore.js; services/queueMetrics.js; scripts/migrateOrderStatuses.js; scripts/generateSwagger.js; tests/rbac.e2e.test.js; tests/queue.statusActions.metrics.e2e.test.js; CHANGELOG_TRAE.md
 - Preflight: .gitignore обновлён; .env удалён из индекса; очищены client/coverage, coverage, artifacts, node_modules, .DS_Store
 - Tests: failed
-- Commit: pending
+- Commit: f3e6b11
+- Push: origin/main @ f3e6b11 (https://github.com/character-tun/character-crm/tree/main)
 
 ## 1. Архитектура и стек
 - Архитектура: `server` (Node.js/Express/MongoDB/Queues) + `client` (React). Один репозиторий, общие тесты и утилиты.
