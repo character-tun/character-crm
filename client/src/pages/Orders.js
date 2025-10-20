@@ -3,6 +3,8 @@ import { Box, Typography, Paper, Button, Dialog, DialogTitle, DialogContent, Dia
 import CloseIcon from '@mui/icons-material/Close';
 import { DataGrid } from '@mui/x-data-grid';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import OrderTimeline from '../components/OrderTimeline';
+import http from '../services/http';
 
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
@@ -120,6 +122,10 @@ export default function Orders() {
   const [history, setHistory] = useState([]);
   const [pendingHistory, setPendingHistory] = useState([]);
   const [comment, setComment] = useState('');
+  const [statusLogs, setStatusLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState('');
+  const [lastStatus, setLastStatus] = useState('');
 
   // Настройки: статусы, типы, методы оплаты, статьи платежей, доп. поля
   const orderStatuses = useMemo(() => {
@@ -197,6 +203,8 @@ export default function Orders() {
       { text: `Добавлен платёж на ${formatCurrency(row.paid || 0)}`, ts: new Date() },
       { text: `Изменён статус на "${row.status}"`, ts: new Date() },
     ]);
+    setLastStatus(row.status || '');
+    loadStatusLogs(row.id);
     setEditOpen(true);
   };
 
@@ -239,183 +247,198 @@ export default function Orders() {
   const logHistory = (text) => setHistory((prev) => ([{ text, ts: new Date() }, ...prev]));
   const queueHistory = (text) => setPendingHistory((prev) => ([{ text, ts: new Date() }, ...prev]));
 
-  const calcAmount = (items) => (items || []).reduce((sum, it) => (
-    sum + Number(it.qty || 0) * Number(it.price || 0) - Number(it.discount || 0)
-  ), 0);
+  // Helpers for items/payments/tasks and totals
+  const computeOrderTotals = (order) => {
+    const items = order.items || [];
+    const payments = order.payments || [];
+    const itemsTotal = items.reduce((sum, it) => {
+      const qty = Number(it.qty || 0);
+      const price = Number(it.price || 0);
+      const discount = Number(it.discount || 0);
+      return sum + qty * price - discount;
+    }, 0);
+    const paidTotal = payments.reduce((sum, p) => {
+      const amt = Number(p.amount || 0);
+      const art = String(p.article || '').toLowerCase();
+      if (art === 'возврат предоплаты') return sum - amt;
+      return sum + amt;
+    }, 0);
+    const expensesTotal = payments.reduce((sum, p) => {
+      const art = String(p.article || '').toLowerCase();
+      if (art === 'служебный расход') return sum + Number(p.amount || 0);
+      return sum;
+    }, 0);
+    const profit = itemsTotal - expensesTotal;
+    return { amount: itemsTotal, paid: paidTotal, profit };
+  };
 
-  // Печать текущего заказа по шаблону (расположено до return)
+  const addItem = () => {
+    setCurrentOrder((prev) => {
+      const items = [...(prev.items || []), { name: '', performer: '', qty: 1, warrantyDays: 0, price: 0, discount: 0 }];
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory('Добавлен элемент работ');
+      return { ...prev, items, ...totals };
+    });
+  };
+
+  const selectServiceForItem = (idx, name) => {
+    const svc = SERVICES.find((s) => s.name === name);
+    setCurrentOrder((prev) => {
+      const items = [...(prev.items || [])];
+      items[idx] = { ...(items[idx] || {}), name, price: svc?.price ?? items[idx]?.price ?? 0 };
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory(`Услуга выбрана: ${name || '-'}`);
+      return { ...prev, items, ...totals };
+    });
+  };
+
+  const selectPerformerForItem = (idx, performer) => {
+    setCurrentOrder((prev) => {
+      const items = [...(prev.items || [])];
+      items[idx] = { ...(items[idx] || {}), performer };
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory(`Назначен исполнитель: ${performer || '-'}`);
+      return { ...prev, items, ...totals };
+    });
+  };
+
+  const updateItem = (idx, field, value) => {
+    setCurrentOrder((prev) => {
+      const items = [...(prev.items || [])];
+      const item = { ...(items[idx] || {}) };
+      item[field] = value;
+      items[idx] = item;
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory('Изменены параметры работы');
+      return { ...prev, items, ...totals };
+    });
+  };
+
+  const addPayment = (article) => {
+    setCurrentOrder((prev) => {
+      const newPayment = { article: article || '', method: '', receipt: 'Нет', employee: '', date: new Date().toLocaleDateString('ru-RU'), amount: 0 };
+      const payments = [...(prev.payments || []), newPayment];
+      const totals = computeOrderTotals({ ...prev, payments });
+      queueHistory(`Добавлен платёж: ${article || '-'}`);
+      return { ...prev, payments, ...totals };
+    });
+  };
+
+  const updatePayment = (idx, field, value) => {
+    setCurrentOrder((prev) => {
+      const payments = [...(prev.payments || [])];
+      const p = { ...(payments[idx] || {}) };
+      p[field] = value;
+      payments[idx] = p;
+      const totals = computeOrderTotals({ ...prev, payments });
+      queueHistory('Изменены параметры платежа');
+      return { ...prev, payments, ...totals };
+    });
+  };
+
+  const addTask = () => {
+    setCurrentOrder((prev) => {
+      const tasks = [...(prev.tasks || []), { title: '', assignee: '', done: false }];
+      queueHistory('Добавлена задача');
+      return { ...prev, tasks };
+    });
+  };
+
+  const updateTask = (idx, field, value) => {
+    setCurrentOrder((prev) => {
+      const tasks = [...(prev.tasks || [])];
+      const t = { ...(tasks[idx] || {}) };
+      t[field] = value;
+      tasks[idx] = t;
+      queueHistory('Изменены параметры задачи');
+      return { ...prev, tasks };
+    });
+  };
+
   const printCurrentOrder = () => {
     if (!currentOrder) return;
-    const items = currentOrder.items || [];
-    const payments = currentOrder.payments || [];
+    const itemsRows = (currentOrder.items || []).map((it) => {
+      const total = Number(it.qty || 0) * Number(it.price || 0) - Number(it.discount || 0);
+      return `<tr>
+        <td>${it.name || '-'}</td>
+        <td>${it.performer || '-'}</td>
+        <td class="right">${Number(it.qty || 0)}</td>
+        <td class="right">${Number(it.warrantyDays || 0)}</td>
+        <td class="right">${Number(it.price || 0).toLocaleString('ru-RU')}</td>
+        <td class="right">${Number(it.discount || 0).toLocaleString('ru-RU')}</td>
+        <td class="right">${total.toLocaleString('ru-RU')}</td>
+      </tr>`;
+    }).join('');
+    const itemsHtml = `<table><thead><tr>
+      <th>Название</th><th>Исполнитель</th><th>Кол-во</th><th>Гарантия</th><th>Цена</th><th>Скидка</th><th>Итого</th>
+    </tr></thead><tbody>${itemsRows}</tbody></table>`;
 
-    const itemsRows = items
-      .map((it) => {
-        const total = Math.max(Number(it.qty || 0) * Number(it.price || 0) - Number(it.discount || 0), 0);
-        return `
-          <tr>
-            <td>${it.name || '-'}</td>
-            <td>${it.performer || '-'}</td>
-            <td class="right">${Number(it.qty || 0)}</td>
-            <td class="right">${Number(it.warrantyDays || 0)}</td>
-            <td class="right">${formatCurrency(it.price || 0)}</td>
-            <td class="right">${formatCurrency(it.discount || 0)}</td>
-            <td class="right">${formatCurrency(total)}</td>
-          </tr>`;
-      })
-      .join('');
+    const paymentsRows = (currentOrder.payments || []).map((p) => {
+      return `<tr>
+        <td>${p.article || '-'}</td>
+        <td>${p.method || '-'}</td>
+        <td>${p.receipt || '-'}</td>
+        <td>${p.employee || '-'}</td>
+        <td>${p.date || '-'}</td>
+        <td class="right">${Number(p.amount || 0).toLocaleString('ru-RU')}</td>
+      </tr>`;
+    }).join('');
+    const paymentsHtml = `<table><thead><tr>
+      <th>Статья</th><th>Метод</th><th>Чек</th><th>Сотрудник</th><th>Дата</th><th>Сумма</th>
+    </tr></thead><tbody>${paymentsRows}</tbody></table>`;
 
-    const itemsHtml = items.length
-      ? `<table>
-           <thead>
-             <tr>
-               <th>Название</th>
-               <th>Исполнитель</th>
-               <th class="right">Кол-во</th>
-               <th class="right">Гарантия, дн.</th>
-               <th class="right">Цена, ₽</th>
-               <th class="right">Скидка, ₽</th>
-               <th class="right">Итого, ₽</th>
-             </tr>
-           </thead>
-           <tbody>${itemsRows}</tbody>
-         </table>`
-      : '<div class="muted">Нет работ</div>';
-
-    const paymentsRows = payments
-      .map((p) => {
-        return `
-          <tr>
-            <td>${p.article || '-'}</td>
-            <td>${p.method || '-'}</td>
-            <td>${p.receipt || '-'}</td>
-            <td>${p.employee || '-'}</td>
-            <td>${p.date ? new Date(p.date).toLocaleString('ru-RU') : '-'}</td>
-            <td class="right">${formatCurrency(p.amount || 0)}</td>
-          </tr>`;
-      })
-      .join('');
-
-    const paymentsHtml = payments.length
-      ? `<table>
-           <thead>
-             <tr>
-               <th>Статья</th>
-               <th>Метод</th>
-               <th>Чек</th>
-               <th>Сотрудник</th>
-               <th>Дата</th>
-               <th class="right">Сумма, ₽</th>
-             </tr>
-           </thead>
-           <tbody>${paymentsRows}</tbody>
-         </table>`
-      : '<div class="muted">Нет платежей</div>';
-
-    const paidTotal = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
-
+    const tpl = getDocumentTemplate('order', defaultOrderTemplate);
     const ctx = {
       id: currentOrder.id,
       client: currentOrder.client || '-',
       status: currentOrder.status || '-',
       types: (currentOrder.types || []).join(', '),
-      startDate: currentOrder.startDate ? new Date(currentOrder.startDate).toLocaleString('ru-RU') : '-',
-      endDate: currentOrder.endDateForecast ? new Date(currentOrder.endDateForecast).toLocaleString('ru-RU') : '-',
+      startDate: new Date(currentOrder.startDate).toLocaleString('ru-RU'),
+      endDate: new Date(currentOrder.endDateForecast).toLocaleString('ru-RU'),
       itemsHtml,
       paymentsHtml,
-      amount: formatCurrency(currentOrder.amount || 0),
-      paid: formatCurrency(paidTotal),
-      profit: formatCurrency(currentOrder.profit || 0),
+      amount: Number(currentOrder.amount || 0).toLocaleString('ru-RU'),
+      paid: Number(currentOrder.paid || 0).toLocaleString('ru-RU'),
+      profit: Number(currentOrder.profit || 0).toLocaleString('ru-RU'),
     };
-
-    const tpl = getDocumentTemplate('order', defaultOrderTemplate);
     const html = renderTemplate(tpl, ctx);
-
-    const w = window.open('', 'PRINT', 'height=700,width=900');
+    const w = window.open('', 'PRINT', 'width=900,height=650');
     if (w) {
       w.document.write(html);
       w.document.close();
       w.focus();
       w.print();
+      w.close();
+    }
+  };
+  const loadStatusLogs = async (orderId) => {
+    setLogsLoading(true);
+    setLogsError('');
+    try {
+      const data = await http.get(`/orders/${orderId}/status-logs`).then(r => r.data);
+      setStatusLogs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setLogsError(e?.response?.data?.error || e.message || 'Ошибка загрузки истории');
+    } finally {
+      setLogsLoading(false);
     }
   };
 
-  const updateItem = (idx, key, value) => {
-    setCurrentOrder((prev) => {
-      const items = [...(prev.items || [])];
-      items[idx] = { ...items[idx], [key]: value };
-      const amount = calcAmount(items);
-      return { ...prev, items, amount };
-    });
-    if (key === 'name') queueHistory(`Изменена услуга: "${value}"`);
-    if (key === 'performer') queueHistory(`Назначен исполнитель: ${value || '-'}`);
-    if (key === 'price') queueHistory(`Изменена цена услуги: ${formatCurrency(value)}`);
-    if (key === 'discount') queueHistory(`Изменена скидка: ${formatCurrency(value)}`);
-  };
-
-  const updatePayment = (idx, key, value) => {
-    setCurrentOrder((prev) => {
-      const payments = [...(prev.payments || [])];
-      payments[idx] = { ...payments[idx], [key]: value };
-      return { ...prev, payments };
-    });
-    queueHistory(`Обновлен платёж: поле ${key} -> ${value}`);
-  };
-
-  const addPayment = (article) => {
-    setCurrentOrder((prev) => ({
-      ...prev,
-      payments: [ ...(prev.payments || []), { article, method: 'Наличные', receipt: 'Нет', employee: 'vblazhenov', date: new Date().toLocaleString('ru-RU'), amount: 0 } ]
-    }));
-    queueHistory(`Добавлен платёж: ${article}`);
-  };
-
-  const updateTask = (idx, key, value) => {
-    setCurrentOrder((prev) => {
-      const tasks = [...(prev.tasks || [])];
-      tasks[idx] = { ...tasks[idx], [key]: value };
-      return { ...prev, tasks };
-    });
-    if (key === 'done') queueHistory(`Статус задачи изменён: ${value ? 'Готово' : 'В работе'}`);
-    if (key === 'assignee') queueHistory(`Назначен исполнитель задачи: ${value || '-'}`);
-    if (key === 'title') queueHistory('Изменено название задачи');
-  };
-
-  const addTask = () => {
-    setCurrentOrder((prev) => ({
-      ...prev,
-      tasks: [ ...(prev.tasks || []), { title: 'Новая задача', assignee: '', done: false } ]
-    }));
-    queueHistory('Добавлена задача');
-  };
-
-  const addItem = () => {
-    setCurrentOrder((prev) => {
-      const items = [ ...(prev.items || []), { name: '', performer: '', qty: 1, warrantyDays: 0, price: 0, discount: 0 } ];
-      const amount = calcAmount(items);
-      return { ...prev, items, amount };
-    });
-    queueHistory('Добавлена услуга/товар');
-  };
-
-  const selectServiceForItem = (idx, serviceName) => {
-    const service = SERVICES.find((s) => s.name === serviceName);
-    const price = service ? Number(service.price) : 0;
-    setCurrentOrder((prev) => {
-      const items = [...(prev.items || [])];
-      items[idx] = { ...items[idx], name: serviceName, price };
-      const amount = calcAmount(items);
-      return { ...prev, items, amount };
-    });
-    queueHistory(`Выбрана услуга: "${serviceName}" (цена ${formatCurrency(price)})`);
-  };
-
-  const selectPerformerForItem = (idx, performer) => {
-    updateItem(idx, 'performer', performer);
+  const submitStatusChange = async () => {
+    if (!currentOrder) return;
+    try {
+      await http.patch(`/orders/${currentOrder.id}/status`, { code: currentOrder.status, prevStatus: lastStatus });
+      await loadStatusLogs(currentOrder.id);
+    } catch (e) {
+      console.warn('Не удалось сменить статус', e);
+    }
   };
 
   const handleStatusChange = (status) => {
-    setCurrentOrder((prev) => ({ ...prev, status }));
+    setCurrentOrder((prev) => {
+      setLastStatus(prev?.status || '');
+      return { ...prev, status };
+    });
     queueHistory(`Изменён статус на "${status}"`);
   };
 

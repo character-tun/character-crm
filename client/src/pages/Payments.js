@@ -7,7 +7,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useLocation } from 'react-router-dom';
 
-const LS_KEY = 'payments';
+const LS_PAYMENTS_KEY = 'payments';
 
 const currency = (v) => `₽${Number(v || 0).toLocaleString('ru-RU')}`;
 const genId = (prefix = 'pay') => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
@@ -56,13 +56,38 @@ const defaultReceiptTemplate = `<!doctype html>
 </body>
 </html>`;
 
+const LS_CATEGORIES_KEY = 'payment_categories';
+
+function normalizeCategories(raw) {
+  try {
+    const parsed = JSON.parse(raw || 'null');
+    if (!parsed) return { income: [], expense: [] };
+    // Новый формат: дерево {income:[{name,children}], expense:[...]}
+    if (typeof parsed === 'object' && Array.isArray(parsed.income) && parsed.income.every(x => typeof x === 'object')) {
+      return parsed;
+    }
+    // Старый объект: строки в массиве -> оборачиваем в одну категорию
+    if (typeof parsed === 'object') {
+      return {
+        income: [{ name: 'Без категории (доход)', children: Array.isArray(parsed.income) ? parsed.income : [] }],
+        expense: [{ name: 'Без категории (расход)', children: Array.isArray(parsed.expense) ? parsed.expense : [] }],
+      };
+    }
+    // Плоский массив
+    if (Array.isArray(parsed)) {
+      return { income: [{ name: 'Без категории (доход)', children: parsed }], expense: [] };
+    }
+  } catch {}
+  return { income: [], expense: [] };
+}
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(LS_PAYMENTS_KEY) || '[]'); } catch { return []; }
   });
 
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(payments));
+    localStorage.setItem(LS_PAYMENTS_KEY, JSON.stringify(payments));
   }, [payments]);
 
   // Подтягиваем методы и категории из настроек
@@ -78,8 +103,13 @@ export default function PaymentsPage() {
   const availableCategories = useMemo(() => {
     try {
       const raw = localStorage.getItem('payment_categories');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr)) return arr;
+      const parsed = JSON.parse(raw || '[]');
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') {
+        const inc = Array.isArray(parsed.income) ? parsed.income : [];
+        const exp = Array.isArray(parsed.expense) ? parsed.expense : [];
+        return [...inc, ...exp];
+      }
     } catch {}
     return [];
   }, []);
@@ -94,7 +124,27 @@ export default function PaymentsPage() {
   const [dialogMode, setDialogMode] = useState('create'); // 'create' | 'edit'
   const [draftType, setDraftType] = useState('income'); // 'income' | 'expense'
   const [draft, setDraft] = useState({ amount: 0, method: METHODS[0], article: '', basis: '', description: '', receipt: 'Нет', employee: 'vblazhenov', date: new Date().toISOString(), client: '', orderId: '' });
+  const [editId, setEditId] = useState(null);
   const location = useLocation();
+
+  // Категории/подкатегории (иерархия)
+  const categoriesTree = useMemo(() => normalizeCategories(localStorage.getItem(LS_CATEGORIES_KEY)), [dialogOpen, draftType]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
+  useEffect(() => { setSelectedSubcategory(''); }, [selectedCategory]);
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const cats = draftType === 'income' ? (categoriesTree.income || []) : (categoriesTree.expense || []);
+    const article = draft.article || '';
+    let catName = cats[0]?.name || '';
+    let subName = '';
+    for (const c of cats) {
+      if (c.name === article) { catName = c.name; subName = ''; break; }
+      if ((c.children || []).includes(article)) { catName = c.name; subName = article; break; }
+    }
+    setSelectedCategory(catName);
+    setSelectedSubcategory(subName);
+  }, [dialogOpen, draftType, categoriesTree, draft.article]);
 
   const openCreate = (type) => {
     setDialogMode('create');
@@ -102,23 +152,35 @@ export default function PaymentsPage() {
     const sp = new URLSearchParams(location.search);
     const clientQ = sp.get('client') || '';
     const orderQ = sp.get('order') || '';
-    setDraft({ amount: 0, method: (availableMethods[0] || METHODS[0]), article: (availableCategories[0] || ''), basis: orderQ ? `Оплата заказа ${orderQ}` : '', description: '', receipt: 'Нет', employee: 'vblazhenov', date: new Date().toISOString(), client: clientQ, orderId: orderQ });
+    setDraft({ amount: 0, method: (availableMethods[0] || METHODS[0]), article: '', basis: orderQ ? `Оплата заказа ${orderQ}` : '', description: '', receipt: 'Нет', employee: 'vblazhenov', date: new Date().toISOString(), client: clientQ, orderId: orderQ });
+    setEditId(null);
     setDialogOpen(true);
   };
 
-  const [editId, setEditId] = useState(null);
   const openEdit = (row) => {
     setDialogMode('edit');
+    setDraftType(row.type || 'income');
+    setDraft({
+      amount: Number(row.amount || 0),
+      method: row.method || (availableMethods[0] || METHODS[0]),
+      article: row.article || '',
+      basis: row.basis || '',
+      description: row.description || '',
+      receipt: row.receipt || 'Нет',
+      employee: row.employee || 'vblazhenov',
+      date: row.date || new Date().toISOString(),
+      client: row.client || '',
+      orderId: row.orderId || '',
+    });
     setEditId(row.id);
-    setDraftType(row.type);
-    setDraft({ amount: row.amount || 0, method: row.method || (availableMethods[0] || METHODS[0]), article: row.article || (availableCategories[0] || ''), basis: row.basis || '', description: row.description || '', receipt: row.receipt || 'Нет', employee: row.employee || 'vblazhenov', date: row.date || new Date().toISOString(), client: row.client || '', orderId: row.orderId || '' });
     setDialogOpen(true);
   };
 
   const saveDraft = () => {
     const amount = Number(draft.amount || 0);
     if (!amount || amount < 0) return;
-    const payload = { id: editId || genId('pay'), type: draftType, amount, method: draft.method, article: draft.article, basis: draft.basis, description: draft.description, receipt: draft.receipt, employee: draft.employee, date: draft.date, client: draft.client, orderId: draft.orderId };
+    const chosenArticle = selectedSubcategory || selectedCategory || draft.article;
+    const payload = { id: editId || genId('pay'), type: draftType, amount, method: draft.method, article: chosenArticle, basis: draft.basis, description: draft.description, receipt: draft.receipt, employee: draft.employee, date: draft.date, client: draft.client, orderId: draft.orderId };
     if (dialogMode === 'create') setPayments((prev) => [payload, ...prev]);
     else setPayments((prev) => prev.map((p) => (p.id === editId ? { ...payload } : p)));
     setDialogOpen(false);
@@ -140,6 +202,11 @@ export default function PaymentsPage() {
       basis: row.basis || '-',
       description: row.description || '-',
       employee: row.employee || '-',
+      // extended variables
+      receipt: row.receipt || 'Нет',
+      client: row.client || '-',
+      orderId: row.orderId || '-',
+      currency: '₽',
     };
     const tpl = getDocumentTemplate('payment_receipt', defaultReceiptTemplate);
     const html = renderTemplate(tpl, ctx);
@@ -260,13 +327,29 @@ export default function PaymentsPage() {
               <TextField label="Заказ" fullWidth value={draft.orderId} onChange={(e) => setDraft((d) => ({ ...d, orderId: e.target.value }))} />
             </Grid>
             <Grid item xs={12}>
-              {availableCategories.length ? (
-                <FormControl fullWidth>
-                  <InputLabel id="article-label">Статья</InputLabel>
-                  <Select labelId="article-label" label="Статья" value={draft.article} onChange={(e) => setDraft((d) => ({ ...d, article: e.target.value }))}>
-                    {availableCategories.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                  </Select>
-                </FormControl>
+              {((categoriesTree.income || []).length || (categoriesTree.expense || []).length) ? (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel id="category-label">Категория</InputLabel>
+                      <Select labelId="category-label" label="Категория" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+                        {(draftType === 'income' ? (categoriesTree.income || []) : (categoriesTree.expense || [])).map((c) => (
+                          <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel id="subcategory-label">Подкатегория</InputLabel>
+                      <Select labelId="subcategory-label" label="Подкатегория" value={selectedSubcategory} onChange={(e) => setSelectedSubcategory(e.target.value)} disabled={!selectedCategory}>
+                        {(((draftType === 'income' ? (categoriesTree.income || []) : (categoriesTree.expense || [])).find((c) => c.name === selectedCategory)?.children) || []).map((s) => (
+                          <MenuItem key={s} value={s}>{s}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
               ) : (
                 <TextField label="Статья" fullWidth value={draft.article} onChange={(e) => setDraft((d) => ({ ...d, article: e.target.value }))} />
               )}

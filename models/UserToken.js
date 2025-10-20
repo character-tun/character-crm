@@ -8,7 +8,7 @@ const UserTokenSchema = new mongoose.Schema({
   user_agent: { type: String },
   ip: { type: String },
   expires_at: { type: Date, required: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
 UserTokenSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });

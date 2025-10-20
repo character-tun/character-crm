@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -10,7 +11,7 @@ const UserRole = require('../models/UserRole');
 const UserToken = require('../models/UserToken');
 
 const ACCESS_TTL_MINUTES = 15; // 15 minutes
-const REFRESH_TTL_DAYS = 30;   // 30 days
+const REFRESH_TTL_DAYS = 30; // 30 days
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
 // DEV MODE: allow auth without MongoDB
@@ -25,16 +26,18 @@ const DEV_PASSWORD = process.env.AUTH_DEV_PASSWORD || 'admin';
 const DEV_REFRESH_STORE = new Set();
 
 const signAccess = (user, roles) => {
-  const payload = { id: user._id, email: user.email, roles, role: roles && roles.length ? roles[0] : 'manager' };
+  const payload = {
+    id: user._id, email: user.email, roles, role: roles && roles.length ? roles[0] : 'manager',
+  };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: `${ACCESS_TTL_MINUTES}m` });
 };
 
 const getUserRoles = async (userId) => {
   const relations = await UserRole.find({ user_id: userId }).lean();
   if (!relations.length) return [];
-  const roleIds = relations.map(r => r.role_id);
+  const roleIds = relations.map((r) => r.role_id);
   const roles = await Role.find({ _id: { $in: roleIds } }).lean();
-  return roles.map(r => r.code);
+  return roles.map((r) => r.code);
 };
 
 const sanitizeUser = (u, roles) => ({ id: u._id, email: u.email, roles });
@@ -52,7 +55,9 @@ router.post('/bootstrap-admin', async (req, res) => {
       return res.status(400).json({ error: 'email, password, name are required' });
     }
     const pass_hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, pass_hash, full_name: name, is_active: true });
+    const user = await User.create({
+      email, pass_hash, full_name: name, is_active: true,
+    });
 
     // Ensure Admin role exists
     let adminRole = await Role.findOne({ code: 'Admin' }).lean();
@@ -62,7 +67,7 @@ router.post('/bootstrap-admin', async (req, res) => {
     await UserRole.updateOne(
       { user_id: user._id, role_id: adminRole._id },
       { $setOnInsert: { user_id: user._id, role_id: adminRole._id } },
-      { upsert: true }
+      { upsert: true },
     );
 
     const roles = await getUserRoles(user._id);
@@ -104,7 +109,9 @@ router.post('/login', async (req, res) => {
     const expires_at = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
     const user_agent = req.headers['user-agent'] || '';
     const ip = req.headers['x-forwarded-for'] || req.ip || '';
-    await UserToken.create({ user_id: user._id, refresh_token: refresh, user_agent, ip, expires_at });
+    await UserToken.create({
+      user_id: user._id, refresh_token: refresh, user_agent, ip, expires_at,
+    });
 
     return res.json({ access, refresh, user: sanitizeUser(user, roles) });
   } catch (err) {

@@ -24,7 +24,7 @@ const Company = () => {
         setForm({ ...form, ...parsed });
       } catch {}
     }
-    // eslint-disable-next-line
+     
   }, []);
 
   const handleChange = (e) => {

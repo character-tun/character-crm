@@ -20,7 +20,9 @@ const withUser = (req, res, next) => {
     const email = req.headers['x-user-email'] || '';
     const name = req.headers['x-user-name'] || '';
     const roles = role ? [role] : [];
-    user = { id, email, role: role || null, roles, name: name || id || '' };
+    user = {
+      id, email, role: role || null, roles, name: name || id || '',
+    };
   }
 
   req.user = user;
@@ -46,4 +48,15 @@ const requireRoles = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { withUser, requireAuth, requireRoles };
+// Single-role guard convenience wrapper
+const requireRole = (role) => (req, res, next) => requireRoles(role)(req, res, next);
+
+// Any-of list convenience wrapper (accepts array)
+const requireAnyRole = (roles) => {
+  const list = Array.isArray(roles) ? roles : [roles];
+  return (req, res, next) => requireRoles(...list)(req, res, next);
+};
+
+module.exports = {
+  withUser, requireAuth, requireRoles, requireRole, requireAnyRole,
+};

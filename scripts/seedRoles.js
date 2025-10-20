@@ -21,7 +21,7 @@ const NAMES_RU = {
       const res = await Role.updateOne(
         { code },
         { $setOnInsert: { code, name } },
-        { upsert: true }
+        { upsert: true },
       );
       // When upsert happens, res.upsertedCount is available on newer drivers; fallback check
       if (res.upsertedCount || (res.upserted && res.upserted.length)) {

@@ -1,11 +1,12 @@
 const express = require('express');
+
 const router = express.Router();
 const Client = require('../models/Client');
 const { requireRoles } = require('../middleware/auth');
 
 // @route   GET api/clients
 // @desc    Get all clients
-// @access  Public
+// @access  Authenticated
 router.get('/', async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 });
@@ -18,15 +19,15 @@ router.get('/', async (req, res) => {
 
 // @route   GET api/clients/:id
 // @desc    Get client by ID
-// @access  Public
+// @access  Authenticated
 router.get('/:id', async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
-    
+
     if (!client) {
       return res.status(404).json({ msg: 'Клиент не найден' });
     }
-    
+
     res.json(client);
   } catch (err) {
     console.error(err.message);
@@ -40,8 +41,10 @@ router.get('/:id', async (req, res) => {
 // @route   POST api/clients
 // @desc    Create a client
 // @access  Restricted
-router.post('/', requireRoles('Admin','Manager','Detailing','Production','Finance'), async (req, res) => {
-  const { name, phone, telegram, city, vehicle, tags, notes } = req.body;
+router.post('/', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), async (req, res) => {
+  const {
+    name, phone, telegram, city, vehicle, tags, notes,
+  } = req.body;
 
   try {
     const newClient = new Client({
@@ -51,7 +54,7 @@ router.post('/', requireRoles('Admin','Manager','Detailing','Production','Financ
       city,
       vehicle,
       tags,
-      notes
+      notes,
     });
 
     const client = await newClient.save();
@@ -65,8 +68,10 @@ router.post('/', requireRoles('Admin','Manager','Detailing','Production','Financ
 // @route   PUT api/clients/:id
 // @desc    Update a client
 // @access  Restricted
-router.put('/:id', requireRoles('Admin','Manager','Detailing','Production','Finance'), async (req, res) => {
-  const { name, phone, telegram, city, vehicle, tags, notes } = req.body;
+router.put('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), async (req, res) => {
+  const {
+    name, phone, telegram, city, vehicle, tags, notes,
+  } = req.body;
 
   // Build client object
   const clientFields = {};
@@ -88,7 +93,7 @@ router.put('/:id', requireRoles('Admin','Manager','Detailing','Production','Fina
     client = await Client.findByIdAndUpdate(
       req.params.id,
       { $set: clientFields },
-      { new: true }
+      { new: true },
     );
 
     res.json(client);
@@ -104,7 +109,7 @@ router.put('/:id', requireRoles('Admin','Manager','Detailing','Production','Fina
 // @route   DELETE api/clients/:id
 // @desc    Delete a client
 // @access  Restricted
-router.delete('/:id', requireRoles('Admin','Manager','Detailing','Production','Finance'), async (req, res) => {
+router.delete('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
 

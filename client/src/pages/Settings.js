@@ -62,7 +62,7 @@ const Settings = () => {
       group: 'Заказы',
       items: [
         { title: 'Общие настройки', subtitle: 'Базовые параметры заказа', icon: <SettingsIcon />, to: '/settings/orders/general' },
-        { title: 'Статусы заказов', subtitle: 'Настройка этапов и статусов', icon: <ListAltIcon />, to: '/settings/orders/statuses' },
+        { title: 'Статусы заказов', subtitle: 'Настройка этапов и статусов', icon: <ListAltIcon />, to: '/settings/order-statuses' },
         { title: 'SMS шаблоны', subtitle: 'Сообщения клиентам по этапам', icon: <SmsIcon />, to: '/settings/orders/sms' },
         { title: 'Типы заказов', subtitle: 'Категории и типы работ', icon: <ShoppingCartIcon />, to: '/settings/forms/order-types' },
         { title: 'Поля заказа', subtitle: 'Конструктор полей', icon: <ListAltIcon />, to: '/settings/forms/order-fields' },

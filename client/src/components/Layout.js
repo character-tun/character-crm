@@ -148,6 +148,7 @@ export default function Layout() {
     '/reports': ['Admin','Manager'],
     '/announcements': ['Admin','Manager'],
     '/settings': ['Admin','Manager'],
+    '/settings/order-statuses': ['Admin','settings.statuses:*','settings.statuses:list'],
   };
 
   const isAllowed = (path) => {
@@ -191,7 +192,9 @@ export default function Layout() {
     { text: 'Магазин', icon: <ShoppingCartIcon />, path: '/shop' },
     { text: 'Отчеты', icon: <ReceiptIcon />, path: '/reports' },
     { text: 'Объявления', icon: <AnnouncementIcon />, path: '/announcements' },
-    { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
+    { text: 'Настройки', icon: <SettingsIcon />, path: '/settings', subItems: [
+      { text: 'Статусы заказов', path: '/settings/order-statuses' },
+    ] },
     { text: 'База знаний', icon: <SchoolIcon />, path: '/knowledge' },
   ];
 

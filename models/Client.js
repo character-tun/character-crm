@@ -4,34 +4,34 @@ const { v4: uuidv4 } = require('uuid');
 const ClientSchema = new mongoose.Schema({
   _id: {
     type: String,
-    default: uuidv4
+    default: uuidv4,
   },
   name: {
     type: String,
-    required: true
+    required: true,
   },
   phone: {
-    type: String
+    type: String,
   },
   telegram: {
-    type: String
+    type: String,
   },
   city: {
-    type: String
+    type: String,
   },
   vehicle: {
-    type: String
+    type: String,
   },
   tags: {
-    type: [String]
+    type: [String],
   },
   notes: {
-    type: String
+    type: String,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model('Client', ClientSchema);

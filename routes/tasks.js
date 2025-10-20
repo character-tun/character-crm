@@ -1,11 +1,12 @@
 const express = require('express');
+
 const router = express.Router();
 const Task = require('../models/Task');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 
 // DEV auth mode: enable in-memory tasks store when AUTH_DEV_MODE=1
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
-const statusOrder = ['Назначено','В работе','Проверка','Готово'];
+const statusOrder = ['Назначено', 'В работе', 'Проверка', 'Готово'];
 const isManagerUser = (user = {}) => {
   const role = (user.role || '').toLowerCase();
   const roles = Array.isArray(user.roles) ? user.roles.map((r) => String(r).toLowerCase()) : [];
@@ -16,7 +17,8 @@ const nextId = () => `T-${mem.idSeq++}`;
 const sortMem = (list) => list.slice().sort((a, b) => {
   const sDiff = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
   if (sDiff !== 0) return sDiff;
-  const ao = a.order ?? 0, bo = b.order ?? 0;
+  const ao = a.order ?? 0; const
+    bo = b.order ?? 0;
   if (ao !== bo) return ao - bo;
   const ad = new Date(a.createdAt || 0).getTime();
   const bd = new Date(b.createdAt || 0).getTime();
@@ -32,7 +34,7 @@ router.get('/', requireAuth, async (req, res) => {
       const list = isManager ? mem.tasks.slice() : mem.tasks.filter((t) => t.assignee === user.id);
       return res.json(sortMem(list));
     }
-    const isManager = ['admin','manager'].includes(user.role) || (Array.isArray(user.roles) && (user.roles.includes('Admin') || user.roles.includes('Manager')));
+    const isManager = ['admin', 'manager'].includes(user.role) || (Array.isArray(user.roles) && (user.roles.includes('Admin') || user.roles.includes('Manager')));
     const filter = isManager ? {} : { assignee: user.id };
     const tasks = await Task.find(filter).sort({ status: 1, order: 1, createdAt: -1 });
     res.json(tasks);
@@ -60,7 +62,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Задача не найдена' });
 
-    const isManager = ['admin','manager'].includes(user.role);
+    const isManager = ['admin', 'manager'].includes(user.role);
     const isAssignee = task.assignee && task.assignee === user.id;
     if (!isManager && !isAssignee) {
       return res.status(403).json({ msg: 'Недостаточно прав для просмотра задачи' });
@@ -109,7 +111,7 @@ router.post('/', requireAuth, async (req, res) => {
       tags: body.tags || [],
       checklist: body.checklist || [],
       order: typeof body.order === 'number' ? body.order : 0,
-      activity: [{ type: 'create', message: 'Задача создана', user: (req.user && req.user.id) || body.assignee || '' }]
+      activity: [{ type: 'create', message: 'Задача создана', user: (req.user && req.user.id) || body.assignee || '' }],
     });
     const saved = await task.save();
     res.json(saved);
@@ -145,7 +147,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Задача не найдена' });
 
-    const isManager = ['admin','manager'].includes(user.role);
+    const isManager = ['admin', 'manager'].includes(user.role);
     const isAssignee = task.assignee && task.assignee === user.id;
 
     if ('assignee' in patch && patch.assignee !== task.assignee && !isManager) {
@@ -194,7 +196,7 @@ router.patch('/:id/position', requireAuth, async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Задача не найдена' });
 
-    const isManager = ['admin','manager'].includes(user.role);
+    const isManager = ['admin', 'manager'].includes(user.role);
     const isAssignee = task.assignee && task.assignee === user.id;
     if (!isManager && !isAssignee) {
       return res.status(403).json({ msg: 'Недостаточно прав для перемещения задачи' });
@@ -231,7 +233,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ msg: 'Задача не найдена' });
 
-    const isManager = ['admin','manager'].includes(user.role);
+    const isManager = ['admin', 'manager'].includes(user.role);
     const isAssignee = task.assignee && task.assignee === user.id;
     if (!isManager && !isAssignee) {
       return res.status(403).json({ msg: 'Недостаточно прав для удаления задачи' });

@@ -6,6 +6,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrderTypesSettingsPage from './pages/settings/OrderTypes';
+import PaymentArticlesPage from './pages/settings/PaymentArticles';
+import OrderStatusesSettingsPage from './pages/settings/OrderStatuses';
 
 // Layout components
 import Layout from './components/Layout';
@@ -31,6 +33,8 @@ import OrdersGeneral from './pages/settings/OrdersGeneral';
 import OrdersSMS from './pages/settings/OrdersSMS';
 import ClientsNotifications from './pages/settings/ClientsNotifications';
 import FieldsBuilderPage from './pages/settings/FieldsBuilderPage';
+import DocumentsSettingsPage from './pages/settings/Documents';
+import DocumentEditorPage from './pages/settings/DocumentEditor';
 import TasksBoard from './pages/TasksBoard';
 import TasksList from './pages/TasksList';
 import TaskDetails from './pages/TaskDetails';
@@ -72,13 +76,14 @@ function App() {
             <Route path="settings" element={<ProtectedRoute roles={["Admin","Manager"]}><Settings /></ProtectedRoute>} />
             <Route path="settings/company" element={<ProtectedRoute roles={["Admin","Manager"]}><Company /></ProtectedRoute>} />
             <Route path="settings/employees" element={<ProtectedRoute roles={["Admin","Manager"]}><Employees /></ProtectedRoute>} />
-            <Route path="settings/users" element={<ProtectedRoute roles={["Admin","Manager"]}><UsersSettingsPage /></ProtectedRoute>} />
-            <Route path="settings/roles" element={<ProtectedRoute roles={["Admin","Manager"]}><RolesSettingsPage /></ProtectedRoute>} />
-            <Route path="settings/documents" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Документы" storageKey="settings_documents" initialItems={["Акт выполненных работ","Акт приема-передачи ТС","Приемная квитанция","Товарный чек","Ценник ленточный","Этикетка ленточная"]} /></ProtectedRoute>} />
+            <Route path="settings/users" element={<ProtectedRoute roles={["Admin"]}><UsersSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/roles" element={<ProtectedRoute roles={["Admin"]}><RolesSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/documents" element={<ProtectedRoute roles={["Admin","Manager"]}><DocumentsSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/documents/:name" element={<ProtectedRoute roles={["Admin","Manager"]}><DocumentEditorPage /></ProtectedRoute>} />
             <Route path="settings/orders/general" element={<ProtectedRoute roles={["Admin","Manager"]}><OrdersGeneral /></ProtectedRoute>} />
-            <Route path="settings/orders/statuses" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Статусы заказов" storageKey="settings_order_statuses" initialItems={["Новый","В работе","Готов","Отменён"]} /></ProtectedRoute>} />
+            <Route path="settings/order-statuses" element={<ProtectedRoute roles={["Admin","settings.statuses:*","settings.statuses:list"]}><OrderStatusesSettingsPage /></ProtectedRoute>} />
             <Route path="settings/orders/sms" element={<ProtectedRoute roles={["Admin","Manager"]}><OrdersSMS /></ProtectedRoute>} />
-            <Route path="settings/payments/articles" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Категории платежей (статьи)" storageKey="payment_categories" initialItems={["Зарплата","Аренда","Материалы","Инструменты","Налоги","Продажа","Услуги"]} /></ProtectedRoute>} />
+            <Route path="settings/payments/articles" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PaymentArticlesPage /></ProtectedRoute>} />
             <Route path="settings/payments/methods" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Способы оплаты" storageKey="payment_methods" initialItems={["Наличные","Карта","Банковский перевод"]} /></ProtectedRoute>} />
             <Route path="settings/clients/notifications" element={<ProtectedRoute roles={["Admin","Manager"]}><ClientsNotifications /></ProtectedRoute>} />
             <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin","Manager"]}><OrderTypesSettingsPage /></ProtectedRoute>} />

@@ -181,8 +181,8 @@ export default function OrderTypesSettingsPage() {
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
-            <TextField size="small" fullWidth label="Название типа" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} />
-            <Button variant="contained" onClick={handleAddType}>Добавить тип</Button>
+            <TextField size="small" fullWidth label="Название типа" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (newTypeName || '').trim()) { handleAddType(); } }} autoFocus />
+            <Button variant="contained" onClick={handleAddType} disabled={!((newTypeName || '').trim())}>Добавить тип</Button>
           </Stack>
 
           <Stack direction="row" spacing={1} flexWrap="wrap">

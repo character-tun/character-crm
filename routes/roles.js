@@ -1,12 +1,17 @@
 const express = require('express');
+
 const router = express.Router();
 const Role = require('../models/Role');
 const UserRole = require('../models/UserRole');
+const { requireRole } = require('../middleware/auth');
 
 // DEV auth mode: enable in-memory roles store when AUTH_DEV_MODE=1
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 const mem = { roles: [], idSeq: 1 };
 const nextId = () => `R-${mem.idSeq++}`;
+
+// Применяем Admin-only ко всем маршрутам (включая GET)
+router.use(requireRole('Admin'));
 
 // List roles
 router.get('/', async (req, res) => {
@@ -73,7 +78,7 @@ router.put('/:id', async (req, res) => {
     const updated = await Role.findByIdAndUpdate(
       req.params.id,
       { $set: { name } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).lean();
     if (!updated) return res.status(404).json({ error: 'Role not found' });
     res.json(updated);

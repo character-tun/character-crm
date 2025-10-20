@@ -1,0 +1,15 @@
+{
+  "at": "2025-10-20T15:01:08.457Z",
+  "args": {
+    "dryRun": false,
+    "since": null,
+    "limit": null
+  },
+  "mapPath": null,
+  "processed": 1,
+  "updated": 1,
+  "skipped": 0,
+  "unknownCount": 0,
+  "unknown": [],
+  "errors": []
+}
