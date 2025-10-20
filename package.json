@@ -11,7 +11,8 @@
     "install-client": "cd client && npm install",
     "build": "cd client && npm run build",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm run install-client && npm run build",
-    "test": "jest"
+    "test": "jest",
+    "seed:orderTypes": "node scripts/seedOrderTypes.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

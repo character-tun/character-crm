@@ -86,7 +86,7 @@ function App() {
             <Route path="settings/payments/articles" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PaymentArticlesPage /></ProtectedRoute>} />
             <Route path="settings/payments/methods" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Способы оплаты" storageKey="payment_methods" initialItems={["Наличные","Карта","Банковский перевод"]} /></ProtectedRoute>} />
             <Route path="settings/clients/notifications" element={<ProtectedRoute roles={["Admin","Manager"]}><ClientsNotifications /></ProtectedRoute>} />
-            <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin","Manager"]}><OrderTypesSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin"]}><OrderTypesSettingsPage /></ProtectedRoute>} />
             <Route path="settings/forms/order-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля заказа" storageKey="settings_order_fields" /></ProtectedRoute>} />
             <Route path="settings/forms/client-types" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Типы клиентов" storageKey="settings_client_types" initialItems={["VIP","Постоянный","Новый"]} /></ProtectedRoute>} />
             <Route path="settings/forms/client-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля клиента" storageKey="settings_client_fields" /></ProtectedRoute>} />

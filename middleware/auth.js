@@ -57,6 +57,35 @@ const requireAnyRole = (roles) => {
   return (req, res, next) => requireRoles(...list)(req, res, next);
 };
 
+// RBAC permissions map (resource.action -> allowed roles)
+const RBAC_MAP = {
+  'orderTypes.read': ['Admin'],
+  'orderTypes.write': ['Admin'],
+};
+
+const userHasAnyRole = (user, roles) => {
+  const u = user || {};
+  const required = new Set(roles || []);
+  const hasArray = Array.isArray(u.roles) && u.roles.some((r) => required.has(r));
+  const hasSingle = u.role && required.has(u.role);
+  return !!(hasArray || hasSingle);
+};
+
+const hasPermission = (reqOrUser, permission) => {
+  const u = reqOrUser && reqOrUser.user ? reqOrUser.user : reqOrUser;
+  const roles = RBAC_MAP[permission] || [];
+  if (!roles.length) return false; // unknown permission => deny
+  return userHasAnyRole(u, roles);
+};
+
+const requirePermission = (permission) => (req, res, next) => {
+  if (!hasPermission(req, permission)) {
+    return res.status(403).json({ msg: 'Недостаточно прав' });
+  }
+  return next();
+};
+
 module.exports = {
   withUser, requireAuth, requireRoles, requireRole, requireAnyRole,
+  RBAC_MAP, hasPermission, requirePermission,
 };

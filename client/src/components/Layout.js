@@ -149,6 +149,7 @@ export default function Layout() {
     '/announcements': ['Admin','Manager'],
     '/settings': ['Admin','Manager'],
     '/settings/order-statuses': ['Admin','settings.statuses:*','settings.statuses:list'],
+    '/settings/forms/order-types': ['Admin'],
   };
 
   const isAllowed = (path) => {
@@ -194,6 +195,7 @@ export default function Layout() {
     { text: 'Объявления', icon: <AnnouncementIcon />, path: '/announcements' },
     { text: 'Настройки', icon: <SettingsIcon />, path: '/settings', subItems: [
       { text: 'Статусы заказов', path: '/settings/order-statuses' },
+      { text: 'Типы заказов', path: '/settings/forms/order-types' },
     ] },
     { text: 'База знаний', icon: <SchoolIcon />, path: '/knowledge' },
   ];

@@ -8,6 +8,8 @@ const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
 const Order = require('../models/Order');
 const { getDevState } = require('../services/statusActionsHandler');
+const OrderStatus = require('../models/OrderStatus');
+let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 // In-memory status logs for DEV mode without Mongo
@@ -18,6 +20,52 @@ const httpError = (statusCode, message) => {
   err.statusCode = statusCode;
   return err;
 };
+
+// POST /api/orders — create order with OrderType linkage and initial status
+router.post('/', requireRoles('Admin', 'Manager'), async (req, res, next) => {
+  try {
+    const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+    if (!mongoReady) return next(httpError(503, 'MongoDB is required for order creation'));
+
+    if (!OrderType) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+
+    const { orderTypeId } = req.body || {};
+    if (!orderTypeId) return next(httpError(400, 'orderTypeId is required'));
+
+    // Load type to determine initial status and validate config
+    const type = await OrderType.findById(orderTypeId).lean();
+    if (!type) return next(httpError(404, 'OrderType not found'));
+
+    const hasStart = !!type.startStatusId;
+    const allowed = Array.isArray(type.allowedStatuses) ? type.allowedStatuses : [];
+    if (!hasStart && allowed.length === 0) {
+      return next(httpError(400, 'ORDERTYPE_NO_STATUSES'));
+    }
+
+    let statusCode = null;
+    if (hasStart) {
+      const st = await OrderStatus.findById(type.startStatusId).lean();
+      if (!st) return next(httpError(400, 'INVALID_REFERENCE_START_STATUS'));
+      statusCode = st.code;
+    }
+
+    const now = new Date();
+    const doc = {
+      orderTypeId,
+      paymentsLocked: false,
+    };
+    if (statusCode) {
+      doc.status = statusCode;
+      doc.statusChangedAt = now;
+    }
+
+    const created = await Order.create(doc);
+    const item = await Order.findById(created._id).lean();
+    return res.status(201).json({ ok: true, item });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 // GET /api/orders/:id/status-logs — return logs sorted by createdAt desc
 router.get('/:id/status-logs', async (req, res, next) => {

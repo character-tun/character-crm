@@ -6,8 +6,8 @@ const OrderTypeSchema = new Schema({
   code: { type: String, required: true, unique: true, trim: true },
   name: { type: String, required: true },
 
-  startStatusId: { type: Schema.Types.ObjectId, ref: 'OrderStatus' },
-  allowedStatuses: [{ type: Schema.Types.ObjectId, ref: 'OrderStatus' }],
+  startStatusId: { type: String, ref: 'OrderStatus' },
+  allowedStatuses: [{ type: String, ref: 'OrderStatus' }],
 
   fieldsSchemaId: { type: Schema.Types.ObjectId, ref: 'FieldSchema' },
   docTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'DocTemplate' }],

@@ -15,6 +15,7 @@ const RBAC_MENU = {
   '/reports': ['Admin','Manager'],
   '/announcements': ['Admin','Manager'],
   '/settings': ['Admin','Manager'],
+  '/settings/forms/order-types': ['Admin'],
 };
 
 const ALL_MENU = [
@@ -30,6 +31,8 @@ export default function RbacTest() {
     return hasAnyRole(need);
   });
 
+  const canOrderTypesRead = hasAnyRole(['Admin']);
+  const canOrderTypesWrite = hasAnyRole(['Admin']);
   const canClientsCRUD = hasAnyRole(['Admin','Manager','Detailing','Production','Finance']);
   const canPayments = hasAnyRole(['Admin','Finance']);
   const canMarketing = hasAnyRole(['Admin','Manager']);
@@ -64,6 +67,8 @@ export default function RbacTest() {
 
       <Typography variant="h6" sx={{ mb: 1 }}>Разрешённые действия</Typography>
       <List dense>
+        <ListItem><ListItemText primary={`Типы заказов (orderTypes.read): ${canOrderTypesRead ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Типы заказов (orderTypes.write): ${canOrderTypesWrite ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Задачи: создавать — доступно всем; просматривать ${isManagerOrAdmin ? 'все задачи' : 'только свои'}; перемещать/обновлять — ${isManagerOrAdmin ? 'все' : 'только свои'}`} /></ListItem>
         <ListItem><ListItemText primary={`Клиенты: создавать/редактировать/удалять — ${canClientsCRUD ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Платежи: доступ к разделу — ${canPayments ? 'разрешено' : 'нет доступа'}`} /></ListItem>

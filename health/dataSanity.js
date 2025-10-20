@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
   health/dataSanity.js
-  Проверяет инварианты в БД для коллекций OrderStatus, Orders и логи OrderStatusLog.
+  Проверяет инварианты в БД для коллекций OrderStatus, Orders, OrderStatusLog и OrderTypes.
   Выводит JSON-отчёт со списком проблемных ID. Завершает процесс с кодом 0.
 */
 
@@ -13,6 +13,7 @@ const Order = require('../models/Order');
 const OrderStatusLog = require('../models/OrderStatusLog');
 const NotifyTemplate = require('../models/NotifyTemplate');
 const DocTemplate = require('../models/DocTemplate');
+const OrderType = require('../server/models/OrderType');
 
 const asObjectId = (s) => {
   try {
@@ -36,10 +37,13 @@ const asObjectId = (s) => {
 
   const report = {
     mongoConnected,
+    ok: false,
     summary: {
       statusesCount: 0,
       ordersCount: 0,
       logsCount: 0,
+      orderTypesCount: 0,
+      problemsTotal: 0,
     },
     problems: {
       orderStatus: {
@@ -48,8 +52,13 @@ const asObjectId = (s) => {
         orphanActions: [], // { statusId, index, type, ref: 'templateId'|'docId', refId }
         invalidNotifyActions: [], // { statusId, index, error }
       },
+      orderTypes: {
+        invalidStartStatus: [], // orderTypeIds
+        systemCodeUnexpected: [], // { id, code }
+      },
       orders: {
         unknownStatus: [], // orderIds
+        unknownOrderTypeId: [], // orderIds
         closedFailedPaymentsUnlocked: [], // orderIds
         missingStatusChangedAt: [], // orderIds
       },
@@ -63,7 +72,9 @@ const asObjectId = (s) => {
     info: {
       limitations: [
         'Нет модели Payments в БД: проверка незавершённых платежей при closed.success=true пропущена.',
+        'Иммутабельность code системных типов проверяется эвристикой: код должен принадлежать зарезервированному набору (по умолчанию [\'default\']).',
       ],
+      reservedSystemCodes: ['default'],
     },
     when: new Date().toISOString(),
   };
@@ -76,16 +87,21 @@ const asObjectId = (s) => {
 
   try {
     // Collect refs
-    const statuses = await OrderStatus.find({}).lean();
-    const orders = await Order.find({}).lean();
-    const logs = await OrderStatusLog.find({}).lean();
+    const [statuses, orders, logs, orderTypes] = await Promise.all([
+      OrderStatus.find({}).lean(),
+      Order.find({}).lean(),
+      OrderStatusLog.find({}).lean(),
+      OrderType.find({}).lean(),
+    ]);
 
     report.summary.statusesCount = statuses.length;
     report.summary.ordersCount = orders.length;
     report.summary.logsCount = logs.length;
+    report.summary.orderTypesCount = orderTypes.length;
 
     const allowedGroups = OrderStatus.GROUPS || ['draft', 'in_progress', 'closed_success', 'closed_fail'];
     const statusCodes = new Set((statuses || []).map((s) => s.code).filter(Boolean));
+    const orderTypeIds = new Set((orderTypes || []).map((t) => String(t._id)));
 
     // 1) OrderStatus checks
     const codeMap = new Map();
@@ -126,18 +142,38 @@ const asObjectId = (s) => {
       if ((ids || []).length > 1) report.problems.orderStatus.duplicateCodes.push({ code, ids });
     }
 
-    // 2) Orders checks
+    // 2) OrderTypes checks
+    const reservedSystemCodes = (report.info && report.info.reservedSystemCodes) || ['default'];
+    for (const t of orderTypes) {
+      // startStatusId ∈ allowedStatuses (если start задан)
+      if (t && t.startStatusId) {
+        const allowed = Array.isArray(t.allowedStatuses) ? t.allowedStatuses : [];
+        const included = allowed.some((id) => (id && t.startStatusId) && String(id) === String(t.startStatusId));
+        if (!included) report.problems.orderTypes.invalidStartStatus.push(t._id);
+      }
+      // у системных типов code неизменяем: эвристика — код должен быть из зарезервированного списка
+      if (t && t.isSystem === true) {
+        const code = (t.code || '').toString().trim().toLowerCase();
+        if (!reservedSystemCodes.includes(code)) {
+          report.problems.orderTypes.systemCodeUnexpected.push({ id: t._id, code: t.code });
+        }
+      }
+    }
+
+    // 3) Orders checks
     for (const o of orders) {
       const st = o.status || null;
       if (!st || !statusCodes.has(st)) report.problems.orders.unknownStatus.push(o._id || o.id);
       if (!o.statusChangedAt) report.problems.orders.missingStatusChangedAt.push(o._id || o.id);
+      // orderTypeId должен существовать
+      const typeId = o.orderTypeId ? String(o.orderTypeId) : null;
+      if (!typeId || !orderTypeIds.has(typeId)) report.problems.orders.unknownOrderTypeId.push(o._id || o.id);
       // closed.success=false => paymentsLocked=true
       const closedFail = !!(o.closed && o.closed.success === false);
       if (closedFail && o.paymentsLocked !== true) report.problems.orders.closedFailedPaymentsUnlocked.push(o._id || o.id);
-      // closed.success=true => нет незавершённых платежей — недоступно без Payment модели
     }
 
-    // 3) Logs checks
+    // 4) Logs checks
     // index by orderId
     const logsByOrder = new Map();
     for (const lg of logs) {
@@ -179,6 +215,27 @@ const asObjectId = (s) => {
         }
       }
     }
+
+    // Aggregate OK flag and total problems
+    const counts = [
+      report.problems.orderStatus.duplicateCodes.length,
+      report.problems.orderStatus.invalidGroups.length,
+      report.problems.orderStatus.orphanActions.length,
+      report.problems.orderStatus.invalidNotifyActions.length,
+      report.problems.orderTypes.invalidStartStatus.length,
+      report.problems.orderTypes.systemCodeUnexpected.length,
+      report.problems.orders.unknownStatus.length,
+      report.problems.orders.unknownOrderTypeId.length,
+      report.problems.orders.closedFailedPaymentsUnlocked.length,
+      report.problems.orders.missingStatusChangedAt.length,
+      report.problems.logs.invalidTransitions.length,
+      report.problems.logs.invalidStatusCodes.length,
+      report.problems.logs.duplicateLogs.length,
+      report.problems.logs.actionDuplicates.length,
+    ];
+    const problemsTotal = counts.reduce((a, b) => a + b, 0);
+    report.summary.problemsTotal = problemsTotal;
+    report.ok = problemsTotal === 0;
 
     console.log(JSON.stringify(report, null, 2));
     process.exit(0);

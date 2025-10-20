@@ -4,7 +4,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import { DataGrid } from '@mui/x-data-grid';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import OrderTimeline from '../components/OrderTimeline';
-import http from '../services/http';
+// import OrderTimeline from '../components/OrderTimeline';
+ import http from '../services/http';
+import { orderTypesService } from '../services/orderTypesService';
+import { getStatuses } from '../services/statusesService';
 
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
@@ -127,50 +130,43 @@ export default function Orders() {
   const [logsError, setLogsError] = useState('');
   const [lastStatus, setLastStatus] = useState('');
 
-  // Настройки: статусы, типы, методы оплаты, статьи платежей, доп. поля
-  const orderStatuses = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('settings_order_statuses');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr) && arr.length) return arr;
-    } catch {}
-    return ORDER_STATUSES;
-  }, []);
+  // Рефы из API: статусы, типы, схемы полей (best-effort)
+  const [statusesGroups, setStatusesGroups] = useState([]);
+  const statuses = useMemo(() => flattenStatuses(statusesGroups), [statusesGroups]);
+  const allowedStatusNames = useMemo(() => {
+    const arr = (statuses || []).map((s) => s.name).filter(Boolean);
+    return arr.length ? arr : ORDER_STATUSES;
+  }, [statuses]);
+  const [orderTypeItems, setOrderTypeItems] = useState([]);
+  const [fieldSchemas, setFieldSchemas] = useState([]);
 
-  const orderTypes = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('settings_order_types');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr) && arr.length) return arr;
-    } catch {}
-    return ALL_TYPES;
+  useEffect(() => {
+    let mounted = true;
+    const loadRefs = async () => {
+      try {
+        const [stRes, typesRes] = await Promise.all([
+          getStatuses().then(r => Array.isArray(r?.data) ? r.data : []),
+          orderTypesService.list().then(r => Array.isArray(r?.items) ? r.items : []),
+        ]);
+        if (mounted) {
+          setStatusesGroups(stRes);
+          setOrderTypeItems(typesRes);
+        }
+      } catch (e) {
+        // фолбэк — используем локальные настройки ниже
+      }
+      try {
+        const r = await http.get('/field-schemas');
+        const list = Array.isArray(r?.data?.items) ? r.data.items : (Array.isArray(r?.data) ? r.data : []);
+        if (mounted) setFieldSchemas(list || []);
+      } catch (e) {
+        if (mounted) setFieldSchemas([]);
+      }
+    };
+    loadRefs();
+    return () => { mounted = false; };
   }, []);
-
-  const availableMethods = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('payment_methods');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr) && arr.length) return arr;
-    } catch {}
-    return ['Наличные','Карта','Банковский перевод'];
-  }, []);
-  const availableCategories = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('payment_categories');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr)) return arr;
-    } catch {}
-    return [];
-  }, []);
-
-  const orderFields = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('settings_order_fields');
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr)) return arr;
-    } catch {}
-    return [];
-  }, []);
+  const [orderFields, setOrderFields] = useState([]);
 
   const typeMap = {
     parts: 'Детали',
@@ -244,7 +240,6 @@ export default function Orders() {
   };
 
   // Helpers: items/payments/tasks updates
-  const logHistory = (text) => setHistory((prev) => ([{ text, ts: new Date() }, ...prev]));
   const queueHistory = (text) => setPendingHistory((prev) => ([{ text, ts: new Date() }, ...prev]));
 
   // Helpers for items/payments/tasks and totals
@@ -281,57 +276,77 @@ export default function Orders() {
     });
   };
 
+  const updateItem = (idx, key, value) => {
+    setCurrentOrder((prev) => {
+      const items = (prev.items || []).slice();
+      items[idx] = { ...items[idx], [key]: value };
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory('Обновлены работы/товары');
+      return { ...prev, items, ...totals };
+    });
+  };
+
+  const removeItem = (idx) => {
+    setCurrentOrder((prev) => {
+      const items = (prev.items || []).slice();
+      items.splice(idx, 1);
+      const totals = computeOrderTotals({ ...prev, items });
+      queueHistory('Удалён элемент работ');
+      return { ...prev, items, ...totals };
+    });
+  };
+
   const selectServiceForItem = (idx, name) => {
     const svc = SERVICES.find((s) => s.name === name);
     setCurrentOrder((prev) => {
-      const items = [...(prev.items || [])];
-      items[idx] = { ...(items[idx] || {}), name, price: svc?.price ?? items[idx]?.price ?? 0 };
+      const items = (prev.items || []).slice();
+      const it = items[idx] || {};
+      const qty = Number(it.qty || 1);
+      const price = Number(svc?.price || 0);
+      items[idx] = { ...it, name, price, qty };
       const totals = computeOrderTotals({ ...prev, items });
-      queueHistory(`Услуга выбрана: ${name || '-'}`);
+      queueHistory(`Выбрана услуга: ${name}`);
       return { ...prev, items, ...totals };
     });
   };
 
   const selectPerformerForItem = (idx, performer) => {
     setCurrentOrder((prev) => {
-      const items = [...(prev.items || [])];
-      items[idx] = { ...(items[idx] || {}), performer };
-      const totals = computeOrderTotals({ ...prev, items });
-      queueHistory(`Назначен исполнитель: ${performer || '-'}`);
-      return { ...prev, items, ...totals };
-    });
-  };
-
-  const updateItem = (idx, field, value) => {
-    setCurrentOrder((prev) => {
-      const items = [...(prev.items || [])];
-      const item = { ...(items[idx] || {}) };
-      item[field] = value;
-      items[idx] = item;
-      const totals = computeOrderTotals({ ...prev, items });
-      queueHistory('Изменены параметры работы');
-      return { ...prev, items, ...totals };
+      const items = (prev.items || []).slice();
+      const it = items[idx] || {};
+      items[idx] = { ...it, performer };
+      queueHistory('Назначен исполнитель');
+      return { ...prev, items };
     });
   };
 
   const addPayment = (article) => {
     setCurrentOrder((prev) => {
-      const newPayment = { article: article || '', method: '', receipt: 'Нет', employee: '', date: new Date().toLocaleDateString('ru-RU'), amount: 0 };
-      const payments = [...(prev.payments || []), newPayment];
+      const payments = [...(prev.payments || []), { article, method: '', receipt: 'Нет', employee: '', date: '', amount: 0 }];
       const totals = computeOrderTotals({ ...prev, payments });
-      queueHistory(`Добавлен платёж: ${article || '-'}`);
+      queueHistory(`Добавлен платёж: ${article}`);
       return { ...prev, payments, ...totals };
     });
   };
 
-  const updatePayment = (idx, field, value) => {
+  const updatePayment = (idx, keyOrAmount, maybeValue) => {
+    const key = typeof keyOrAmount === 'string' ? keyOrAmount : 'amount';
+    const value = typeof keyOrAmount === 'string' ? maybeValue : keyOrAmount;
     setCurrentOrder((prev) => {
-      const payments = [...(prev.payments || [])];
-      const p = { ...(payments[idx] || {}) };
-      p[field] = value;
-      payments[idx] = p;
+      const payments = (prev.payments || []).slice();
+      payments[idx] = { ...payments[idx], [key]: value };
       const totals = computeOrderTotals({ ...prev, payments });
-      queueHistory('Изменены параметры платежа');
+      queueHistory('Обновлены платежи');
+      return { ...prev, payments, ...totals };
+    });
+  };
+
+  const removePayment = (idx) => {
+    setCurrentOrder((prev) => {
+      const payments = (prev.payments || []).slice();
+      payments.splice(idx, 1);
+      const totals = computeOrderTotals({ ...prev, payments });
+      queueHistory('Удалён платёж');
       return { ...prev, payments, ...totals };
     });
   };
@@ -344,13 +359,11 @@ export default function Orders() {
     });
   };
 
-  const updateTask = (idx, field, value) => {
+  const updateTask = (idx, key, value) => {
     setCurrentOrder((prev) => {
-      const tasks = [...(prev.tasks || [])];
-      const t = { ...(tasks[idx] || {}) };
-      t[field] = value;
-      tasks[idx] = t;
-      queueHistory('Изменены параметры задачи');
+      const tasks = (prev.tasks || []).slice();
+      tasks[idx] = { ...tasks[idx], [key]: value };
+      queueHistory('Обновлены задачи');
       return { ...prev, tasks };
     });
   };
@@ -358,15 +371,14 @@ export default function Orders() {
   const printCurrentOrder = () => {
     if (!currentOrder) return;
     const itemsRows = (currentOrder.items || []).map((it) => {
-      const total = Number(it.qty || 0) * Number(it.price || 0) - Number(it.discount || 0);
       return `<tr>
         <td>${it.name || '-'}</td>
         <td>${it.performer || '-'}</td>
-        <td class="right">${Number(it.qty || 0)}</td>
-        <td class="right">${Number(it.warrantyDays || 0)}</td>
+        <td class="right">${Number(it.qty || 0).toLocaleString('ru-RU')}</td>
+        <td class="right">${Number(it.warrantyDays || 0).toLocaleString('ru-RU')}</td>
         <td class="right">${Number(it.price || 0).toLocaleString('ru-RU')}</td>
         <td class="right">${Number(it.discount || 0).toLocaleString('ru-RU')}</td>
-        <td class="right">${total.toLocaleString('ru-RU')}</td>
+        <td class="right">${Number(it.qty * it.price - (it.discount || 0)).toLocaleString('ru-RU')}</td>
       </tr>`;
     }).join('');
     const itemsHtml = `<table><thead><tr>
@@ -447,6 +459,27 @@ export default function Orders() {
     queueHistory(`Изменены типы: ${(types || []).join(', ')}`);
   };
 
+  const handleTypeChange = (orderTypeId) => {
+    const t = orderTypeItems.find((it) => String(it._id) === String(orderTypeId));
+    const typeName = t ? (t.name || t.code) : '';
+    let nextStatus = currentOrder?.status || '';
+    if (t && t.startStatusId) {
+      const sid = typeof t.startStatusId === 'object' ? t.startStatusId?._id : t.startStatusId;
+      const st = statuses.find((s) => String(s._id) === String(sid));
+      if (st && st.name) nextStatus = st.name;
+    }
+    setCurrentOrder((prev) => ({
+      ...prev,
+      orderTypeId: orderTypeId || '',
+      types: typeName ? [typeName] : [],
+      status: nextStatus,
+    }));
+    queueHistory(`Выбран тип заказа: ${typeName || '—'}`);
+    if (t && t.startStatusId) {
+      queueHistory(`Начальный статус установлен: "${nextStatus}"`);
+    }
+  };
+
   // Добавление нового заказа
   const createNewOrder = () => {
     const nextNumericId = Math.max(
@@ -459,11 +492,36 @@ export default function Orders() {
     const newId = `ORD-${nextNumericId}`;
     const now = new Date();
     const defaultTypes = typeMap[type] ? [typeMap[type]] : [];
+
+    // попробовать выбрать тип из загруженных по названию из маршрута
+    let orderTypeId = '';
+    let initialStatus = 'Новый';
+    if (orderTypeItems.length) {
+      const preferredName = typeMap[type];
+      const t = orderTypeItems.find((it) => (it.name || it.code) === preferredName) || orderTypeItems[0];
+      if (t) {
+        orderTypeId = t._id;
+        const sid = typeof t.startStatusId === 'object' ? t.startStatusId?._id : t.startStatusId;
+        const st = statuses.find((s) => String(s._id) === String(sid));
+        if (st && st.name) initialStatus = st.name;
+      }
+    }
+
+    const derivedTypes = (() => {
+      if (!orderTypeItems.length) return defaultTypes;
+      if (orderTypeId) {
+        const found = orderTypeItems.find(it => String(it._id) === String(orderTypeId));
+        return [found?.name || found?.code || ''];
+      }
+      return [];
+    })();
+
     const newOrder = {
       id: newId,
       client: '',
-      types: defaultTypes,
-      status: 'Новый',
+      types: derivedTypes,
+      orderTypeId: orderTypeId || undefined,
+      status: orderTypeItems.length ? initialStatus : 'Новый',
       startDate: now,
       endDateForecast: new Date(now.getTime() + 24 * 60 * 60 * 1000),
       amount: 0,
@@ -497,40 +555,17 @@ export default function Orders() {
     },
     {
       field: 'endDateForecast',
-      headerName: 'Прогноз завершения',
-      width: 190,
+      headerName: 'План завершения',
+      width: 170,
       valueFormatter: (params) => new Date(params.value).toLocaleString('ru-RU'),
     },
-    {
-      field: 'amount',
-      headerName: 'Сумма',
-      width: 140,
-      valueFormatter: (params) => formatCurrency(params.value),
-    },
-    {
-      field: 'paid',
-      headerName: 'Оплачено',
-      width: 140,
-      valueFormatter: (params) => formatCurrency(params.value),
-    },
-    {
-      field: 'debt',
-      headerName: 'Задолженность',
-      width: 160,
-      valueGetter: (params) => Number(params.row.amount || 0) - Number(params.row.paid || 0),
-      valueFormatter: (params) => formatCurrency(params.value),
-    },
-    {
-      field: 'profit',
-      headerName: 'Прибыль',
-      width: 140,
-      valueFormatter: (params) => formatCurrency(params.value),
-    },
+    { field: 'amount', headerName: 'Сумма', width: 140 },
+    { field: 'paid', headerName: 'Оплачено', width: 140 },
+    { field: 'profit', headerName: 'Прибыль', width: 140 },
     {
       field: 'actions',
       headerName: 'Действия',
-      width: 240,
-      sortable: false,
+      width: 280,
       renderCell: (params) => (
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" size="small" onClick={() => handleEditClick(params.row)}>Редактировать</Button>
@@ -571,18 +606,27 @@ export default function Orders() {
               <Typography variant="h6" sx={{ mr: 2 }}>{`Заказ ${currentOrder.id}`}</Typography>
               <Chip color="primary" label={formatCurrency(currentOrder.amount || 0)} sx={{ mr: 2 }} />
               <FormControl size="small" sx={{ minWidth: 160, mr: 1 }}>
-                <Select value={currentOrder.status || 'Новый'} onChange={(e)=>handleStatusChange(e.target.value)}>
-                  {orderStatuses.map((s)=> (
+                <Select value={currentOrder.status || ''} onChange={(e)=>handleStatusChange(e.target.value)} disabled={!!orderTypeItems.length && !currentOrder.orderTypeId}>
+                  {allowedStatusNames.map((s)=> (
                     <MenuItem key={s} value={s}>{s}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
               <FormControl size="small" sx={{ minWidth: 220 }}>
-                <Select multiple value={currentOrder.types || []} onChange={(e)=>handleTypesChange(e.target.value)} renderValue={(selected)=>(selected || []).join(', ')}>
-                  {orderTypes.map((t)=> (
-                    <MenuItem key={t} value={t}>{t}</MenuItem>
-                  ))}
-                </Select>
+                {orderTypeItems.length ? (
+                  <Select value={currentOrder.orderTypeId || ''} onChange={(e)=>handleTypeChange(e.target.value)} displayEmpty>
+                    <MenuItem value=""><em>Тип не выбран</em></MenuItem>
+                    {orderTypeItems.map((t)=> (
+                      <MenuItem key={t._id} value={t._id}>{t.name || t.code}</MenuItem>
+                    ))}
+                  </Select>
+                ) : (
+                  <Select multiple value={currentOrder.types || []} onChange={(e)=>handleTypesChange(e.target.value)} renderValue={(selected)=>(selected || []).join(', ')}>
+                    {ALL_TYPES.map((t)=> (
+                      <MenuItem key={t} value={t}>{t}</MenuItem>
+                    ))}
+                  </Select>
+                )}
               </FormControl>
               <Box sx={{ flexGrow: 1 }} />
               <IconButton aria-label="close" onClick={() => setEditOpen(false)}>
@@ -605,8 +649,13 @@ export default function Orders() {
                   <Divider />
                   <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
                     <List dense>
-                      {history.map((h, idx) => (
-                        <ListItem key={idx} alignItems="flex-start">
+                      {pendingHistory.map((h) => (
+                        <ListItem key={`p-${h.ts}`}>
+                          <ListItemText primary={h.text} secondary={new Date(h.ts).toLocaleString('ru-RU')} />
+                        </ListItem>
+                      ))}
+                      {history.map((h) => (
+                        <ListItem key={h.ts}>
                           <ListItemText primary={h.text} secondary={new Date(h.ts).toLocaleString('ru-RU')} />
                         </ListItem>
                       ))}
@@ -614,98 +663,76 @@ export default function Orders() {
                   </Box>
                 </Grid>
 
-                {/* Right: Order info & editing */}
-                <Grid item xs={12} md={8} lg={9} sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
-                  {/* Товары и услуги */}
-                  <Typography variant="h6" gutterBottom>Товары и услуги</Typography>
-                  <Paper sx={{ mb: 3 }}>
-                    <Box sx={{ p: 2 }}>
-                      <Button variant="outlined" size="small" onClick={addItem}>Добавить</Button>
-                    </Box>
-                    <Divider />
-                    <Box sx={{ p: 2 }}>
-                      <Grid container spacing={1}>
-                        <Grid item xs={3}><Typography variant="body2">Название</Typography></Grid>
-                        <Grid item xs={2}><Typography variant="body2">Исполнитель</Typography></Grid>
-                        <Grid item xs={1}><Typography variant="body2">Кол-во</Typography></Grid>
-                        <Grid item xs={2}><Typography variant="body2">Гарантия, дн.</Typography></Grid>
-                        <Grid item xs={1.5}><Typography variant="body2">Цена, ₽</Typography></Grid>
-                        <Grid item xs={1.5}><Typography variant="body2">Скидка, ₽</Typography></Grid>
-                        <Grid item xs={1.5}><Typography variant="body2">Итого, ₽</Typography></Grid>
-                      </Grid>
-                      <Divider sx={{ my: 1 }} />
+                {/* Right: Editor */}
+                <Grid item xs={12} md={8} lg={9} sx={{ p: 3, overflow: 'auto' }}>
+                  <Typography variant="h6" gutterBottom>Позиции</Typography>
+                  <Paper sx={{ mb: 3, p: 2 }}>
+                    <Stack spacing={2}>
                       {(currentOrder.items || []).map((it, idx) => (
-                        <Grid key={idx} container spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                          <Grid item xs={3}>
-                            <Select fullWidth size="small" value={it.name || ''} onChange={(e)=>selectServiceForItem(idx, e.target.value)} displayEmpty>
-                              <MenuItem value=""><em>-</em></MenuItem>
-                              {SERVICES.map((s) => (
-                                <MenuItem key={s.name} value={s.name}>{s.name}</MenuItem>
-                              ))}
-                            </Select>
+                        <Grid container spacing={2} key={idx}>
+                          <Grid item xs={12} md={4}>
+                            <TextField label="Наименование" fullWidth size="small" value={it.name} onChange={(e)=>updateItem(idx, 'name', e.target.value)} />
                           </Grid>
-                          <Grid item xs={2}>
-                            <Select fullWidth size="small" value={it.performer || ''} onChange={(e)=>selectPerformerForItem(idx, e.target.value)} displayEmpty>
-                              <MenuItem value=""><em>-</em></MenuItem>
-                              {PERFORMERS.map((p) => (
+                          <Grid item xs={12} md={2}>
+                            <TextField label="Кол-во" type="number" fullWidth size="small" value={it.qty} onChange={(e)=>updateItem(idx, 'qty', Number(e.target.value))} />
+                          </Grid>
+                          <Grid item xs={12} md={2}>
+                            <TextField label="Цена" type="number" fullWidth size="small" value={it.price} onChange={(e)=>updateItem(idx, 'price', Number(e.target.value))} />
+                          </Grid>
+                          <Grid item xs={12} md={2}>
+                            <TextField label="Сумма" type="number" fullWidth size="small" value={it.total} disabled />
+                          </Grid>
+                          <Grid item xs={12} md={2}>
+                            <Select fullWidth size="small" displayEmpty value={it.assignee || ''} onChange={(e)=>updateItem(idx, 'assignee', e.target.value)}>
+                              <MenuItem value=""><em>Исполнитель</em></MenuItem>
+                              {PERFORMERS.map((p)=> (
                                 <MenuItem key={p} value={p}>{p}</MenuItem>
                               ))}
                             </Select>
                           </Grid>
-                          <Grid item xs={1}><TextField type="number" fullWidth size="small" value={it.qty} onChange={(e)=>updateItem(idx,'qty',Number(e.target.value))} /></Grid>
-                          <Grid item xs={2}><TextField type="number" fullWidth size="small" value={it.warrantyDays} onChange={(e)=>updateItem(idx,'warrantyDays',Number(e.target.value))} /></Grid>
-                          <Grid item xs={1.5}><TextField type="number" fullWidth size="small" value={it.price} onChange={(e)=>updateItem(idx,'price',Number(e.target.value))} /></Grid>
-                          <Grid item xs={1.5}><TextField type="number" fullWidth size="small" value={it.discount} onChange={(e)=>updateItem(idx,'discount',Number(e.target.value))} /></Grid>
-                          <Grid item xs={1.5}><Typography>{formatCurrency(it.qty*it.price - (it.discount||0))}</Typography></Grid>
+                          <Grid item xs={12}>
+                            <Stack direction="row" spacing={1}>
+                              <Button variant="outlined" size="small" onClick={()=>selectServiceForItem(idx, 'Полировка кузова')}>Полировка кузова</Button>
+                              <Button variant="outlined" size="small" onClick={()=>selectServiceForItem(idx, 'Замена стекла')}>Замена стекла</Button>
+                              <Button variant="outlined" size="small" onClick={()=>removeItem(idx)}>Удалить</Button>
+                            </Stack>
+                          </Grid>
                         </Grid>
                       ))}
-                    </Box>
+                      <Box>
+                        <Button variant="outlined" size="small" onClick={addItem}>Добавить позицию</Button>
+                      </Box>
+                    </Stack>
                   </Paper>
 
-                  {/* Платежи */}
+                  {/* Payments */}
                   <Typography variant="h6" gutterBottom>Платежи</Typography>
-                  <Paper sx={{ mb: 3 }}>
-                    <Box sx={{ p: 2 }}>
-                      <Stack direction="row" spacing={1}>
-                        <Chip label="Предоплата" onClick={() => addPayment('Предоплата')} />
-                        <Chip label="Возврат предоплаты" onClick={() => addPayment('Возврат предоплаты')} />
-                        <Chip label="Служебный расход" onClick={() => addPayment('Служебный расход')} />
-                      </Stack>
-                    </Box>
-                    <Divider />
-                    <Box sx={{ p: 2 }}>
-                      <Grid container spacing={1}>
-                        <Grid item xs={3}><Typography variant="body2">Статья</Typography></Grid>
-                        <Grid item xs={2}><Typography variant="body2">Метод</Typography></Grid>
-                        <Grid item xs={1.5}><Typography variant="body2">Чек</Typography></Grid>
-                        <Grid item xs={2}><Typography variant="body2">Сотрудник</Typography></Grid>
-                        <Grid item xs={2}><Typography variant="body2">Дата</Typography></Grid>
-                        <Grid item xs={1.5}><Typography variant="body2">Сумма, ₽</Typography></Grid>
-                      </Grid>
-                      <Divider sx={{ my: 1 }} />
+                  <Paper sx={{ mb: 3, p: 2 }}>
+                    <Stack spacing={1}>
                       {(currentOrder.payments || []).map((p, idx) => (
-                        <Grid key={idx} container spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                          <Grid item xs={3}><Select fullWidth size="small" value={p.article || ''} onChange={(e)=>updatePayment(idx,'article',e.target.value)}>
-                            <MenuItem value="">-</MenuItem>
-                            {availableCategories.map((c)=>(<MenuItem key={c} value={c}>{c}</MenuItem>))}
-                          </Select></Grid>
-                          <Grid item xs={2}><Select fullWidth size="small" value={p.method || ''} onChange={(e)=>updatePayment(idx,'method',e.target.value)}>
-                            <MenuItem value="">-</MenuItem>
-                            {availableMethods.map((m)=>(<MenuItem key={m} value={m}>{m}</MenuItem>))}
-                          </Select></Grid>
-                          <Grid item xs={1.5}><Select fullWidth size="small" value={p.receipt || 'Нет'} onChange={(e)=>updatePayment(idx,'receipt',e.target.value)}>
-                            <MenuItem value="Да">Да</MenuItem>
-                            <MenuItem value="Нет">Нет</MenuItem>
-                          </Select></Grid>
-                          <Grid item xs={2}><TextField fullWidth size="small" value={p.employee} onChange={(e)=>updatePayment(idx,'employee',e.target.value)} /></Grid>
-                          <Grid item xs={2}><TextField fullWidth size="small" value={p.date} onChange={(e)=>updatePayment(idx,'date',e.target.value)} /></Grid>
-                          <Grid item xs={1.5}><TextField type="number" fullWidth size="small" value={p.amount} onChange={(e)=>updatePayment(idx,'amount',Number(e.target.value))} /></Grid>
-                        </Grid>
+                        <Stack key={idx} direction="row" spacing={2} alignItems="center">
+                          <Chip label={new Date(p.date).toLocaleString('ru-RU')} />
+                          <TextField label="Сумма" type="number" size="small" value={p.amount} onChange={(e)=>updatePayment(idx, Number(e.target.value))} />
+                          <Button variant="outlined" size="small" onClick={()=>removePayment(idx)}>Удалить</Button>
+                        </Stack>
                       ))}
-                    </Box>
+                      <Box>
+                        <Button variant="outlined" size="small" onClick={addPayment}>Добавить платёж</Button>
+                      </Box>
+                    </Stack>
                   </Paper>
 
-                  {/* Задачи */}
+                  {/* Timeline */}
+                  <Typography variant="h6" gutterBottom>Сроки</Typography>
+                  <Paper sx={{ mb: 3, p: 2 }}>
+                    <OrderTimeline
+                      startDate={currentOrder.startDate}
+                      endDateForecast={currentOrder.endDateForecast}
+                      onChange={(start, end) => setCurrentOrder((prev) => ({ ...prev, startDate: start, endDateForecast: end }))}
+                    />
+                  </Paper>
+
+                  {/* Tasks */}
                   <Typography variant="h6" gutterBottom>Задачи</Typography>
                   <Paper sx={{ mb: 3, p: 2 }}>
                     <Stack spacing={1}>
@@ -776,4 +803,10 @@ export default function Orders() {
     </Box>
   );
 
+}
+
+function flattenStatuses(groups) {
+  const arr = [];
+  (groups || []).forEach((g) => (g.items || []).forEach((s) => arr.push(s)));
+  return arr;
 }

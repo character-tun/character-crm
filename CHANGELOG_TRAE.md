@@ -189,6 +189,45 @@ Least covered (server, by lines):
 - Server coverage: `coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
 - Client coverage: `client/coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
 
+## 3.2 — OrderTypes (финал)
+
+Подзадачи:
+- API: защита `/api/order-types*` через `requirePermission(orderTypes.read|orderTypes.write)`.
+- RBAC: добавлены `orderTypes.read`/`orderTypes.write` в `RBAC_MAP` и мидлвар `requirePermission`.
+- UI: скрытие пункта меню и защита маршрута `settings/forms/order-types` только для `Admin`.
+- Settings: страница «Типы заказов» переведена на полноценный CRUD через API; выбор `startStatusId`, `allowedStatuses`, `docTemplateIds`.
+- Health/Data Sanity: проверки связей Orders ↔ OrderTypes, инвариант `startStatusId ∈ allowedStatuses`.
+- OpenAPI/Артефакты: Swagger обновлён; выделен контракт `storage/reports/api-contracts/ordertype.json`.
+- Tests: контрактные и e2e‑тесты для CRUD/guards; RBAC‑покрытие.
+
+Файлы (основные):
+- `routes/orderTypes.js`, `middleware/auth.js`, `server/models/OrderType.js`
+- `client/src/pages/settings/OrderTypes.js`, `client/src/components/Layout.js`, `client/src/App.js`, `client/src/pages/RbacTest.js`
+- `health/dataSanity.js`, `scripts/generateSwagger.js`, `scripts/extractOrderTypeSpec.js`
+- `tests/orderTypes.contract.test.js`, `tests/orderTypes.e2e.test.js`, `tests/rbac.e2e.test.js`
+- `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+
+Схемы/миграции:
+- Схема: `server/models/OrderType.js` (2025‑10; поля: `startStatusId`, `allowedStatuses`, `docTemplateIds`, `isSystem`; нормализация `code`).
+- Миграция: `scripts/migrations/2025-10-OrderType-backfill.js`.
+
+Краткий тест‑чеклист:
+- Admin: видит пункт меню «Типы заказов», открывает страницу, выполняет CRUD.
+- Manager/без ролей: не видит меню и не открывает страницу; API `GET/POST/PATCH/DELETE /api/order-types*` → `403`.
+- POST/PATCH: нарушение `startStatusId ∈ allowedStatuses` → `400 ORDERTYPE_INVALID_START_STATUS`.
+- DELETE: системный тип → `409 SYSTEM_TYPE`; тип в использовании → `409 ORDERTYPE_IN_USE`.
+- Создание заказа с `orderTypeId`: берёт стартовый статус из типа; переходы вне `allowedStatuses` блокируются.
+
+2025-10-20T22:00:00+02:00 (Europe/Warsaw) | TECH_OVERVIEW.md, CHANGELOG_TRAE.md, /Users/admin/Downloads/TECH_OVERVIEW.md
+- docs(overview): обновлён статус OrderTypes: «Основные модули — OK», «Состояние проекта» — удалён этап 3.2; «UI — возможности пользователя» описывает настройку типов и влияние на заказ.
+- docs(changelog): добавлен раздел «3.2 — OrderTypes (финал)» с подзадачами, файлами, схемами/миграциями и тест‑чеклистом.
+- docs(export): синхронизирован `/Users/admin/Downloads/TECH_OVERVIEW.md`.
+
+### Acceptance
+- TECH_OVERVIEW отражает итоговый статус 3.2 (OrderTypes — OK) и актуальные возможности UI.
+- CHANGELOG содержит структурированный раздел 3.2 и финальную dated‑запись.
+- Файл в `Downloads` обновлён и соответствует репозиторию.
+
 ## Кэширование (TTL 60s)
 - Добавлен in-memory TTL-кэш для `GET /api/statuses` и `GET /api/doc-templates`.
 - Инвалидаторы: при `POST/PUT/PATCH/DELETE` соответствующих сущностей кэш очищается.
@@ -251,7 +290,382 @@ Least covered (server, by lines):
 - Server coverage: `coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
 - Client coverage: `client/coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
 2025-10-20T17:50:47+03:00 | client/src/App.js, client/src/components/SettingsBackBar.js, client/src/pages/Settings.js, client/src/pages/settings/ClientsNotifications.js, client/src/pages/settings/Company.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/OrdersGeneral.js, client/src/pages/settings/OrdersSMS.js, client/src/pages/settings/Roles.js, client/src/pages/settings/Users.js | feat(settings): implement unified settings back bar and order types configuration
-2025-10-20T18:04:04+03:00 | .env, .env.example, .eslintignore, .eslintrc.cjs, .gitignore, .trae/rules/project_rules.md, CHANGELOG_TRAE.md, TECH_OVERVIEW.md, api-server.js, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/Layout.js, client/src/components/OrderTimeline.jsx, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Settings.js, client/src/pages/settings/Company.js, client/src/pages/settings/DocumentEditor.js, client/src/pages/settings/Documents.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/PaymentArticles.js, client/src/pages/settings/Roles.js, client/src/services/statusesService.js, config/db.js, contracts/apiContracts.js, demo.js, health/dataSanity.js, middleware/auth.js, middleware/error.js, middleware/validate.js, mock-api-server.js, models/Box.js, models/Client.js, models/DetailingOrder.js, models/DocTemplate.js, models/NotifyTemplate.js, models/Order.js, models/OrderStatus.js, models/OrderStatusLog.js, models/Role.js, models/Task.js, models/User.js, models/UserRole.js, models/UserToken.js, package-lock.json, package.json, queues/statusActionQueue.js, routes/auth.js, routes/boxes.js, routes/clients.js, routes/detailingOrders.js, routes/docTemplates.js, routes/files.js, routes/notifyDev.js, routes/notifyTemplates.js, routes/orders.js, routes/payments.js, routes/public.js, routes/queue.js, routes/roles.js, routes/statuses.js, routes/tasks.js, routes/users.js, scripts/changelog.js, scripts/createTestOrder.js, scripts/generate-static-analysis-report.js, scripts/generateApiContractsReport.js, scripts/generateSwagger.js, scripts/migrateOrderStatuses.js, scripts/perfDiagnostics.js, scripts/seedOrderStatuses.js, scripts/seedRoles.js, scripts/seedStatusGroups.js, scripts/testStatusModels.js, server-demo.js, server.js, services/configValidator.js, services/fileStore.js, services/orderStatusService.js, services/queueMetrics.js, services/statusActionsHandler.js, services/statusDeletionGuard.js, services/templatesStore.js, services/ttlCache.js, storage/reports/migrateOrderStatuses-1760972468458.csv, storage/reports/migrateOrderStatuses-1760972468458.json, tests/api.contracts.payments.test.js, tests/api.contracts.queue.metrics.test.js, tests/api.contracts.templates.test.js, tests/cache.statuses.docTemplates.e2e.test.js, tests/env.validator.test.js, tests/migrateOrderStatuses.test.js, tests/notify.print.e2e.dev.test.js, tests/notify.print.e2e.prodlike.test.js, tests/notify.unit.test.js, tests/orderStatusService.reopen.test.js, tests/orders.contract.test.js, tests/orders.reopen.e2e.test.js, tests/payments.locked.e2e.test.js, tests/print.unit.test.js, tests/queue.statusActions.behavior.e2e.test.js, tests/queue.statusActions.metrics.e2e.test.js, tests/queue.statusActions.metrics.unit.test.js, tests/rbac.e2e.test.js, tests/statusActions.closeWithoutPayment.test.js, tests/statusActionsHandler.validation.unit.test.js, tests/statuses.contract.test.js, tests/statuses.delete.test.js, tests/statuses.references.test.js, tests/templates.delete.guard.e2e.test.js, validation/clientSchema.js | feat(services): add status services and metrics; test: add e2e/contract suites; scripts: add migrations and reports; docs(overview): UI capabilities, preflight, last push; docs(changelog): grouped push and preflight; chore(gitignore): normalize node_modules and add coverage/artifacts
-2025-10-20T18:06:37+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md | docs(overview,changelog): record push details (origin/main @ f3e6b11)
-2025-10-20T18:10:53+03:00 | README.md | docs(readme): refresh setup, scripts, tests, env and links
-2025-10-20T18:18:23+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, server/models/OrderType.js | feat(models): add OrderType model; docs(overview,changelog): mark OrderTypes In progress
+2025-10-20T20:15:00+02:00 (Europe/Warsaw) | routes/orderTypes.js, server.js, scripts/generateSwagger.js
+- feat(api): добавлен CRUD для `/api/order-types` с RBAC и защитами удаления
+- server: смонтирован маршрут `app.use('/api/order-types', require('./routes/orderTypes'))`
+- routes/orderTypes.js:
+  - GET `/api/order-types`, GET `/api/order-types/:id` — роли `Admin | Manager`, populate ссылок (`startStatusId`, `allowedStatuses`, `docTemplateIds`, `fieldsSchemaId` при наличии)
+  - POST `/api/order-types` — роль `Admin`, создание, нормализация `code`, обработка `409 CODE_EXISTS`
+  - PATCH `/api/order-types/:id` — роль `Admin`, частичное обновление, валидация инварианта `startStatusId ∈ allowedStatuses`
+  - DELETE `/api/order-types/:id` — роль `Admin`, запрет при `isSystem=true` или если тип используется в `Order` (жёсткие/мягкие ссылки: `type|types|orderTypeId|meta.orderType*`)
+- scripts/generateSwagger.js: добавлены схемы `OrderType`, `OrderTypesListResponse`, `OrderTypeItemResponse`; описаны пути `/api/order-types` и `/api/order-types/{id}`
+- docs: обновлён `CHANGELOG_TRAE.md`; подготовлен сниппет для `TECH_OVERVIEW.md` (внешний путь)
+
+### Acceptance
+- GET/POST/PATCH/DELETE для `/api/order-types` работают согласно RBAC
+- Системный тип (`isSystem=true`) удалить нельзя (`400 SYSTEM_TYPE`)
+- Тип, используемый в заказах, удалить нельзя (`400 TYPE_IN_USE`)
+- Swagger содержит схемы и пути для OrderTypes
+
+2025-10-20T18:53:19+0200 (Europe/Warsaw) | models/Order.js, routes/orders.js, services/orderStatusService.js
+- feat(orders): связка Order ↔ OrderType и проверки allowedStatuses
+- models/Order.js: добавлен `orderTypeId` (ObjectId, ref: `OrderType`, required, index).
+- routes/orders.js: `POST /api/orders` — обязателен `orderTypeId`; стартовый статус из `OrderType.startStatusId`; запрет создания при пустом `startStatusId` и пустом `allowedStatuses`; 503 при отсутствии Mongo; доступ `Admin|Manager`.
+- services/orderStatusService.js: проверка, что новый статус ∈ `allowedStatuses` выбранного типа; при нарушении — `409 STATUS_NOT_ALLOWED`.
+- docs: обновлён `TECH_OVERVIEW.md` (синхронизированы статусы/разделы/артефакты), `CHANGELOG_TRAE.md`.
+
+### Acceptance
+- Заказ создаётся только с валидным `orderTypeId`, стартовый статус подставляется из типа (если задан).
+- При `startStatusId` отсутствует и `allowedStatuses` пуст — создание запрещено (`400 ORDERTYPE_NO_STATUSES`).
+- Смена на статус вне `allowedStatuses` — запрещена (`409 STATUS_NOT_ALLOWED`).
+
+2025-10-20T19:19:27+02:00 (Europe/Warsaw) | routes/orderTypes.js
+- guard(orderTypes): запрет удаления используемого типа заказов
+- routes/orderTypes.js: перед удалением проверка наличия заказов, использующих тип (включая `orderTypeId` и совместимые ссылки); при наличии — `409 ORDERTYPE_IN_USE`.
+- docs: обновлены разделы Rules/Guards в `TECH_OVERVIEW.md`, добавлена запись в `CHANGELOG_TRAE.md`.
+
+### Acceptance
+- Попытка удалить тип, используемый хотя бы одним заказом — `409 ORDERTYPE_IN_USE`.
+
+2025-10-20T19:45:00+02:00 (Europe/Warsaw) | scripts/seedOrderTypes.js, server/models/OrderType.js, package.json
+- feat(seeds): добавлен сидер типов заказов — создаёт/обновляет системный тип `default` со стартовым статусом черновика и `allowedStatuses = [черновик]`.
+- server/models/OrderType.js: ссылки на статусы переведены на строковые ID (`String`), совместимые с `OrderStatus`.
+- package.json: добавлен скрипт `seed:orderTypes`.
+- docs: обновлён `TECH_OVERVIEW.md` (блок про сидер OrderTypes).
+
+### Acceptance
+- После `npm run seed:orderStatuses` запуск `npm run seed:orderTypes` создаёт/обновляет тип `default` с `isSystem=true`, `startStatusId` = id статуса группы `draft`, `allowedStatuses` = [тот же id].
+- Повторный запуск не создаёт дублей (upsert).
+- В логах отображается статус операции (создан/обновлён) и `startStatusId`.
+
+2025-10-20T20:10:00+02:00 (Europe/Warsaw) | client/src/services/orderTypesService.js, TECH_OVERVIEW.md
+- feat(client/services): добавлен клиентский сервис `orderTypesService` с методами `list`, `create`, `update`, `remove` на `/api/order-types`.
+- docs: обновлён `TECH_OVERVIEW.md` (Client Services / orderTypesService).
+
+### Acceptance
+- `list()` → GET `/api/order-types` возвращает `data` с `items`.
+- `create(payload)`/`update(id,payload)`/`remove(id)` возвращают `data` (`item`/`ok`).
+- Ошибки не перехватываются в сервисе и пробрасываются наверх.
+
+2025-10-20T20:35:00+02:00 (Europe/Warsaw) | client/src/services/docTemplatesService.js, TECH_OVERVIEW.md
+- feat(client/services): добавлен `docTemplatesService.list()` для `/api/doc-templates` (возвращает `items`), ошибки пробрасываются.
+- docs: обновлён `TECH_OVERVIEW.md` (Client Services / docTemplatesService).
+
+### Acceptance
+- `list()` → GET `/api/doc-templates` возвращает `data.items`.
+
+2025-10-20T20:55:00+02:00 (Europe/Warsaw) | client/src/pages/settings/OrderTypes.js, client/src/components/Layout.js, client/src/App.js, client/src/services/orderTypesService.js, client/src/services/docTemplatesService.js, client/src/services/statusesService.js
+- feat(client/settings): страница «Типы заказов» переведена на полный API CRUD; действия ограничены RBAC (Admin — CRUD, Manager — просмотр).
+- feat(ui/menu): добавлен пункт «Типы заказов» в «Настройки»; доступ Admin|Manager.
+- refactor: удалён `localStorage`; данные грузятся через `orderTypesService`, `statusesService`, `docTemplatesService`; добавлен выбор стартового статуса, разрешённых статусов и связанных шаблонов документов.
+- docs: обновлены `CHANGELOG_TRAE.md`, `TECH_OVERVIEW.md`.
+
+### Acceptance
+- Список типов отображается; Admin может создавать/редактировать/удалять; Manager видит список.
+- При ошибках API показываются уведомления; серверная валидация инварианта `startStatusId ∈ allowedStatuses` соблюдается.
+
+2025-10-20T21:05:00+02:00 (Europe/Warsaw) | dev
+- chore(dev): запущены dev‑серверы; проверено отображение меню «Типы заказов» и загрузка страницы без рантайм‑ошибок.
+- note(lint): остаются ESLint предупреждения (не исправлялись в рамках задачи).
+
+### Acceptance
+- Приложение открывается по http://localhost:3007/; страница настроек доступна по `/settings/forms/order-types` (Admin).
+
+2025-10-20T21:22:00+02:00 (Europe/Warsaw) | TECH_OVERVIEW.md, CHANGELOG_TRAE.md, storage/reports/TECH_OVERVIEW.md
+- docs(3.2): финал — OrderTypes помечен как OK, roadmap обновлён, UI описание уточнено.
+- TECH_OVERVIEW: обновлены разделы «Основные модули», «Состояние проекта», «UI — возможности пользователя».
+- CHANGELOG: добавлен раздел «3.2 — OrderTypes (финал)» (подзадачи, файлы, схемы/миграции, тест‑чеклист).
+- Export: создана копия `storage/reports/TECH_OVERVIEW.md` для синхронизации с `~/Downloads`.
+
+### Acceptance
+- Оба файла обновлены и согласованы (модули, статус, UI).
+- Раздел «3.2 — OrderTypes (финал)» присутствует в CHANGELOG.
+- Экспортная копия `storage/reports/TECH_OVERVIEW.md` совпадает с текущим `TECH_OVERVIEW.md`.
+- UI: страница «Типы заказов» (Admin), влияние на статусы и печать отражены в документации.
+
+2025-10-20T21:25:00+02:00 (Europe/Warsaw) | middleware/auth.js, routes/orderTypes.js, client/src/components/Layout.js, client/src/App.js, client/src/pages/RbacTest.js, TECH_OVERVIEW.md
+- feat(auth/rbac): добавлены permission‑флаги `orderTypes.read` и `orderTypes.write` (RBAC_MAP) и хелпер `requirePermission`.
+- feat(api/orderTypes): все маршруты `/api/order-types*` защищены правами: GET — `orderTypes.read`, POST/PATCH/DELETE — `orderTypes.write`.
+- feat(ui/menu+route): пункт «Настройки → Типы заказов» скрыт для не‑Admin; маршрут `settings/forms/order-types` доступен только `Admin`.
+- feat(docs/demo): страница «RBAC тест» показывает `orderTypes.read`/`orderTypes.write` и видимость маршрута.
+- docs: обновлены `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`.
+
+### Acceptance
+- Пользователь с ролью `Manager` (или без прав):
+  - не видит пункт меню «Типы заказов»;
+  - прямой переход на `/#/settings/forms/order-types` не открывает страницу (защищённый маршрут);
+  - API: `GET /api/order-types` и `POST/PATCH/DELETE /api/order-types*` → `403` с `{ msg: 'Недостаточно прав' }`.
+- Пользователь `Admin`:
+  - видит меню и открывает страницу «Типы заказов»;
+  - успешно читает/создаёт/обновляет/удаляет типы через API и UI.
+
+## 2025-10-20T21:40:00+02:00 (Europe/Warsaw) — Migration: OrderType backfill for existing Orders
+- Changes:
+  - Added migration script `scripts/migrations/2025-10-OrderType-backfill.js`.
+  - Ensures `OrderType{code: 'default', isSystem: true}` exists (creates minimal if missing).
+  - Backfills all `Order` documents lacking `orderTypeId` with the `default` type id.
+  - If an order has no `status` and the type has `startStatusId`, sets order `status` from the type.
+  - Logs counts and prints a structured JSON summary.
+- Files:
+  - `scripts/migrations/2025-10-OrderType-backfill.js`
+  - `TECH_OVERVIEW.md`
+- How to run:
+  - `node scripts/migrations/2025-10-OrderType-backfill.js` (uses `MONGO_URI|MONGO_URL`).
+- Acceptance:
+  - First run updates only orders with missing `orderTypeId`; optional status backfill runs only when `startStatusId` is set in the type.
+  - Re-running is safe and produces `0` updates (idempotent).
+  - Summary JSON includes `ok`, counts for `orderTypeBackfilled` and `statusBackfilled`, and `when`/`durationMs`.
+
+
+## 2025-10-20T21:25:00+02:00 (Europe/Warsaw) — Health/Data Sanity: OrderTypes integrity and aggregated report
+- Changes:
+  - health/dataSanity.js: added checks
+    - Orders: verify each `orderTypeId` exists in `OrderType` collection → report to `problems.orders.unknownOrderTypeId`.
+    - OrderTypes: ensure `startStatusId ∈ allowedStatuses` when `startStatusId` is set → report to `problems.orderTypes.invalidStartStatus`.
+    - System OrderTypes: treat `code` as immutable via reserved set heuristic (default `['default']`) → report to `problems.orderTypes.systemCodeUnexpected` when `isSystem=true` and `code` is not reserved.
+  - Aggregation: introduce `summary.problemsTotal` and top-level `ok` flag when DB is connected.
+  - Resilience: when Mongo is not reachable, script prints JSON with `mongoConnected=false` and exits 0.
+- Files:
+  - `health/dataSanity.js`
+  - `TECH_OVERVIEW.md`
+- How to run:
+  - `node health/dataSanity.js` (uses `MONGO_URI|MONGO_URL`).
+- Acceptance:
+  - Connected dataset, no violations → `ok=true`, `summary.problemsTotal=0`.
+  - Unknown `orderTypeId` references listed under `problems.orders.unknownOrderTypeId` (ids included).
+  - `startStatusId` not in `allowedStatuses` listed under `problems.orderTypes.invalidStartStatus` (orderType ids included).
+  - System type `code` outside reserved set listed under `problems.orderTypes.systemCodeUnexpected`.
+  - No DB connection does not crash; JSON report includes `mongoConnected=false`.
+
+2025-10-20T21:50:00+02:00 (Europe/Warsaw) | OpenAPI — /api/order-types
+- docs(swagger): обновлены пути `/api/order-types` и `/api/order-types/{id}` — добавлены `403`, `500`, уточнён `409` для DELETE (примеры: `SYSTEM_TYPE`, `ORDERTYPE_IN_USE`), примеры для `400` (`ORDERTYPE_INVALID_START_STATUS`, `VALIDATION_ERROR`) и `409` (`CODE_EXISTS`); добавлен пример тела запроса.
+- scripts: добавлен `scripts/extractOrderTypeSpec.js` для выделения подмножества спецификации.
+- artifacts: сгенерирован `storage/reports/api-contracts/ordertype.json`.
+- docs: обновлён `TECH_OVERVIEW.md` (ссылка на артефакт, перечисление кодов ошибок).
+
+### Acceptance
+- Swagger для `/api/order-types` содержит DTO‑схемы и примеры.
+- Отражены коды ошибок: `400` (`ORDERTYPE_INVALID_START_STATUS`, `VALIDATION_ERROR`), `403`, `404`, `409` (`CODE_EXISTS`, `SYSTEM_TYPE`, `ORDERTYPE_IN_USE`), `500`.
+- Артефакт доступен по пути `storage/reports/api-contracts/ordertype.json`, ссылка добавлена в TECH_OVERVIEW.md.
+
+2025-10-20T21:30:00+02:00 (Europe/Warsaw) | routes/orderTypes.js, tests/orderTypes.contract.test.js, tests/orderTypes.e2e.test.js, TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- feat(server/tests): добавлены контрактные и e2e‑тесты для OrderTypes (CRUD, guards, интеграция с Orders).
+- fix(routes): удаление системного типа возвращает `409 SYSTEM_TYPE` (DEV/DB ветки).
+- docs: обновлены TECH_OVERVIEW.md (Tests/Coverage) и CHANGELOG_TRAE.md.
+
+### Acceptance
+- CRUD типов — покрыт контрактными тестами; код нормализуется (`normalizeCode`).
+- Удаление системного типа → `409 SYSTEM_TYPE`; типа, используемого заказами → `409 ORDERTYPE_IN_USE`.
+- `startStatusId ∈ allowedStatuses` — валидируется для POST/PATCH (400 `ORDERTYPE_INVALID_START_STATUS`).
+- Создание заказа с `orderTypeId` — стартовый статус берётся из `startStatusId` OrderType.
+- Смена статуса вне `allowedStatuses` → `409 STATUS_NOT_ALLOWED`.
+- Покрытие зафиксировано по таргетированному прогону; глобальный gate проверяется на полном CI прогоны.
+
+Артефакты:
+- Server coverage: `coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+- Client coverage: `client/coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+
+## Кэширование (TTL 60s)
+- Добавлен in-memory TTL-кэш для `GET /api/statuses` и `GET /api/doc-templates`.
+- Инвалидаторы: при `POST/PUT/PATCH/DELETE` соответствующих сущностей кэш очищается.
+- ENV: `CACHE_TTL_SECS` (дефолт `60`), добавлено в `.env.example`.
+- Метрики: логируются `hits/misses`, а также `set/invalidate` с именем кэша и ключом.
+- Тесты: `tests/cache.statuses.docTemplates.e2e.test.js` — два подряд `GET` → второй из кэша; после `POST` кэш сбрасывается и следующий `GET` — miss, затем hit.
+- Примечание: для e2e тестов `OrderStatus` замокан (без реальной Mongo), DEV-ветка для doc-templates.
+
+Routes and Swagger alignment
+- Updated `@access Public` comments to `@access Authenticated` for GET in `routes/clients.js`, `routes/boxes.js`, `routes/detailingOrders.js` to match global `requireAuth`.
+- Generated TECH_OVERVIEW.md (project inventory & architecture summary)
+- Swagger updated:
+  - Added `bearerAuth` GET paths: `/api/clients`, `/api/clients/{id}`, `/api/boxes`, `/api/boxes/{id}`, `/api/detailing-orders`, `/api/detailing-orders/batch`, `/api/detailing-orders/{id}`, `/api/detailing-orders/client/{clientId}`.
+  - Added public paths: `/api/public/health`, `/api/public/status`.
+- Artifact regenerated: `artifacts/swagger.json`.
+- Consistency: route comments, guards, and Swagger aligned; no discrepancies found.
+
+## Fix: statusActionsHandler missing-template errors and template deletion guards — 2025-10-20
+
+- statusActionsHandler: ensured missing notify/doc templates throw errors even in DEV.
+  - Added awaited pickTemplate calls across notify/print adapters and pre-checks.
+  - Verified via unit tests: `tests/statusActionsHandler.validation.unit.test.js` now passes.
+- routes/notifyTemplates.js, routes/docTemplates.js: reinforced deletion guards.
+  - Check for `OrderStatus.exists` by id and code; return `400 TEMPLATE_IN_USE` when referenced.
+  - Added Jest DEV fallback for `resetModules` cloning: infer usage by id/code when `exists` mock is undefined.
+  - Verified via e2e: `tests/templates.delete.guard.e2e.test.js` passes.
+- Observability: added debug logs around deletion guard checks to aid diagnosis.
+
+Coverage deltas (server):
+- routes/notifyTemplates.js — improved exercised lines around delete guard.
+- routes/docTemplates.js — improved exercised lines around delete guard.
+- Statements: ~56%
+- Lines: ~57.6%
+- Functions: ~45.9%
+
+Coverage (client):
+- Statements: 0%
+- Lines: 0%
+- Functions: 0%
+
+Threshold policy:
+- Target: lines >= 70%, statements >= 70%.
+- Dynamic rule: if current < 70%, require at least current+5pp for the next run.
+  - Server next-run thresholds: lines ≥ 62.6%, statements ≥ 61% (final target 70%).
+  - Client next-run thresholds: lines ≥ 5%, statements ≥ 5% (final target 70%).
+
+Least covered (server, by lines):
+- services/orderStatusService.js — 13.6%
+- services/statusDeletionGuard.js — 16.7%
+- routes/docTemplates.js — 24.5%
+- routes/notifyTemplates.js — 26.3%
+- models/OrderStatus.js — 32.7%
+
+3 быстрых тест-кейса для повышения покрытия:
+- orderStatusService: покрыть changeOrderStatus — успешный переход (200) и ошибка (404/400), мок моделей и очереди.
+- statusDeletionGuard: покрыть isStatusInOrderTypes — true/false для нескольких типов заказов и статусов.
+- docTemplates routes: e2e GET/POST в DEV-режиме с заголовком x-user-role=\"settings.docs:*\", проверить 200 и схему ответа.
+
+Артефакты:
+- Server coverage: `coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+- Client coverage: `client/coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+
+## Кэширование (TTL 60s)
+- Добавлен in-memory TTL-кэш для `GET /api/statuses` и `GET /api/doc-templates`.
+- Инвалидаторы: при `POST/PUT/PATCH/DELETE` соответствующих сущностей кэш очищается.
+- ENV: `CACHE_TTL_SECS` (дефолт `60`), добавлено в `.env.example`.
+- Метрики: логируются `hits/misses`, а также `set/invalidate` с именем кэша и ключом.
+- Тесты: `tests/cache.statuses.docTemplates.e2e.test.js` — два подряд `GET` → второй из кэша; после `POST` кэш сбрасывается и следующий `GET` — miss, затем hit.
+- Примечание: для e2e тестов `OrderStatus` замокан (без реальной Mongo), DEV-ветка для doc-templates.
+
+Routes and Swagger alignment
+- Updated `@access Public` comments to `@access Authenticated` for GET in `routes/clients.js`, `routes/boxes.js`, `routes/detailingOrders.js` to match global `requireAuth`.
+- Generated TECH_OVERVIEW.md (project inventory & architecture summary)
+- Swagger updated:
+  - Added `bearerAuth` GET paths: `/api/clients`, `/api/clients/{id}`, `/api/boxes`, `/api/boxes/{id}`, `/api/detailing-orders`, `/api/detailing-orders/batch`, `/api/detailing-orders/{id}`, `/api/detailing-orders/client/{clientId}`.
+  - Added public paths: `/api/public/health`, `/api/public/status`.
+- Artifact regenerated: `artifacts/swagger.json`.
+- Consistency: route comments, guards, and Swagger aligned; no discrepancies found.
+
+## Fix: statusActionsHandler missing-template errors and template deletion guards — 2025-10-20
+
+- statusActionsHandler: ensured missing notify/doc templates throw errors even in DEV.
+  - Added awaited pickTemplate calls across notify/print adapters and pre-checks.
+  - Verified via unit tests: `tests/statusActionsHandler.validation.unit.test.js` now passes.
+- routes/notifyTemplates.js, routes/docTemplates.js: reinforced deletion guards.
+  - Check for `OrderStatus.exists` by id and code; return `400 TEMPLATE_IN_USE` when referenced.
+  - Added Jest DEV fallback for `resetModules` cloning: infer usage by id/code when `exists` mock is undefined.
+  - Verified via e2e: `tests/templates.delete.guard.e2e.test.js` passes.
+- Observability: added debug logs around deletion guard checks to aid diagnosis.
+
+Coverage deltas (server):
+- routes/notifyTemplates.js — improved exercised lines around delete guard.
+- routes/docTemplates.js — improved exercised lines around delete guard.
+- Statements: ~56%
+- Lines: ~57.6%
+- Functions: ~45.9%
+
+Coverage (client):
+- Statements: 0%
+- Lines: 0%
+- Functions: 0%
+
+Threshold policy:
+- Target: lines >= 70%, statements >= 70%.
+- Dynamic rule: if current < 70%, require at least current+5pp for the next run.
+  - Server next-run thresholds: lines ≥ 62.6%, statements ≥ 61% (final target 70%).
+  - Client next-run thresholds: lines ≥ 5%, statements ≥ 5% (final target 70%).
+
+Least covered (server, by lines):
+- services/orderStatusService.js — 13.6%
+- services/statusDeletionGuard.js — 16.7%
+- routes/docTemplates.js — 24.5%
+- routes/notifyTemplates.js — 26.3%
+- models/OrderStatus.js — 32.7%
+
+3 быстрых тест-кейса для повышения покрытия:
+- orderStatusService: покрыть changeOrderStatus — успешный переход (200) и ошибка (404/400), мок моделей и очереди.
+- statusDeletionGuard: покрыть isStatusInOrderTypes — true/false для нескольких типов заказов и статусов.
+- docTemplates routes: e2e GET/POST в DEV-режиме с заголовком x-user-role=\"settings.docs:*\", проверить 200 и схему ответа.
+
+Артефакты:
+- Server coverage: `coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+- Client coverage: `client/coverage/` (`lcov.info`, `coverage-final.json`, HTML `lcov-report/`)
+2025-10-20T17:50:47+03:00 | client/src/App.js, client/src/components/SettingsBackBar.js, client/src/pages/Settings.js, client/src/pages/settings/ClientsNotifications.js, client/src/pages/settings/Company.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/OrdersGeneral.js, client/src/pages/settings/OrdersSMS.js, client/src/pages/settings/Roles.js, client/src/pages/settings/Users.js | feat(settings): implement unified settings back bar and order types configuration
+2025-10-20T20:15:00+02:00 (Europe/Warsaw) | routes/orderTypes.js, server.js, scripts/generateSwagger.js
+- feat(api): добавлен CRUD для `/api/order-types` с RBAC и защитами удаления
+- server: смонтирован маршрут `app.use('/api/order-types', require('./routes/orderTypes'))`
+- routes/orderTypes.js:
+  - GET `/api/order-types`, GET `/api/order-types/:id` — роли `Admin | Manager`, populate ссылок (`startStatusId`, `allowedStatuses`, `docTemplateIds`, `fieldsSchemaId` при наличии)
+  - POST `/api/order-types` — роль `Admin`, создание, нормализация `code`, обработка `409 CODE_EXISTS`
+  - PATCH `/api/order-types/:id` — роль `Admin`, частичное обновление, валидация инварианта `startStatusId ∈ allowedStatuses`
+  - DELETE `/api/order-types/:id` — роль `Admin`, запрет при `isSystem=true` или если тип используется в `Order` (жёсткие/мягкие ссылки: `type|types|orderTypeId|meta.orderType*`)
+- scripts/generateSwagger.js: добавлены схемы `OrderType`, `OrderTypesListResponse`, `OrderTypeItemResponse`; описаны пути `/api/order-types` и `/api/order-types/{id}`
+- docs: обновлён `CHANGELOG_TRAE.md`; подготовлен сниппет для `TECH_OVERVIEW.md` (внешний путь)
+
+### Acceptance
+- GET/POST/PATCH/DELETE для `/api/order-types` работают согласно RBAC
+- Системный тип (`isSystem=true`) удалить нельзя (`400 SYSTEM_TYPE`)
+- Тип, используемый в заказах, удалить нельзя (`400 TYPE_IN_USE`)
+- Swagger содержит схемы и пути для OrderTypes
+
+2025-10-20T18:53:19+0200 (Europe/Warsaw) | models/Order.js, routes/orders.js, services/orderStatusService.js
+- feat(orders): связка Order ↔ OrderType и проверки allowedStatuses
+- models/Order.js: добавлен `orderTypeId` (ObjectId, ref: `OrderType`, required, index).
+- routes/orders.js: `POST /api/orders` — обязателен `orderTypeId`; стартовый статус из `OrderType.startStatusId`; запрет создания при пустом `startStatusId` и пустом `allowedStatuses`; 503 при отсутствии Mongo; доступ `Admin|Manager`.
+- services/orderStatusService.js: проверка, что новый статус ∈ `allowedStatuses` выбранного типа; при нарушении — `409 STATUS_NOT_ALLOWED`.
+- docs: обновлён `TECH_OVERVIEW.md` (синхронизированы статусы/разделы/артефакты), `CHANGELOG_TRAE.md`.
+
+### Acceptance
+- Заказ создаётся только с валидным `orderTypeId`, стартовый статус подставляется из типа (если задан).
+- При `startStatusId` отсутствует и `allowedStatuses` пуст — создание запрещено (`400 ORDERTYPE_NO_STATUSES`).
+- Смена на статус вне `allowedStatuses` — запрещена (`409 STATUS_NOT_ALLOWED`).
+
+2025-10-20T19:19:27+02:00 (Europe/Warsaw) | routes/orderTypes.js
+- guard(orderTypes): запрет удаления используемого типа заказов
+- routes/orderTypes.js: перед удалением проверка наличия заказов, использующих тип (включая `orderTypeId` и совместимые ссылки); при наличии — `409 ORDERTYPE_IN_USE`.
+- docs: обновлены разделы Rules/Guards в `TECH_OVERVIEW.md`, добавлена запись в `CHANGELOG_TRAE.md`.
+
+### Acceptance
+- Попытка удалить тип, используемый хотя бы одним заказом — `409 ORDERTYPE_IN_USE`.
+
+2025-10-20T19:45:00+02:00 (Europe/Warsaw) | scripts/seedOrderTypes.js, server/models/OrderType.js, package.json
+- feat(seeds): добавлен сидер типов заказов — создаёт/обновляет системный тип `default` со стартовым статусом черновика и `allowedStatuses = [черновик]`.
+- server/models/OrderType.js: ссылки на статусы переведены на строковые ID (`String`), совместимые с `OrderStatus`.
+- package.json: добавлен скрипт `seed:orderTypes`.
+- docs: обновлён `TECH_OVERVIEW.md` (блок про сидер OrderTypes).
+
+### Acceptance
+- После `npm run seed:orderStatuses` запуск `npm run seed:orderTypes` создаёт/обновляет тип `default` с `isSystem=true`, `startStatusId` = id статуса группы `draft`, `allowedStatuses` = [тот же id].
+- Повторный запуск не создаёт дублей (upsert).
+- В логах отображается статус операции (создан/обновлён) и `startStatusId`.
+
+2025-10-20T20:10:00+02:00 (Europe/Warsaw) | client/src/services/orderTypesService.js, TECH_OVERVIEW.md
+- feat(client/services): добавлен клиентский сервис `orderTypesService` с методами `list`, `create`, `update`, `remove` на `/api/order-types`.
+- docs: обновлён `TECH_OVERVIEW.md` (Client Services / orderTypesService).
+
+### Acceptance
+- `list()` → GET `/api/order-types` возвращает `data` с `items`.
+- `create(payload)`/`update(id,payload)`/`remove(id)` возвращают `data` (`item`/`ok`).
+- Ошибки не перехватываются в сервисе и пробрасываются наверх.
+
+2025-10-20T20:35:00+02:00 (Europe/Warsaw) | client/src/services/docTemplatesService.js, TECH_OVERVIEW.md
+- feat(client/services): добавлен `docTemplatesService.list()` для `/api/doc-templates` (возвращает `items`), ошибки пробрасываются.
+- docs: обновлён `TECH_OVERVIEW.md` (Client Services / docTemplatesService).
+
+### Acceptance
+- `list()` → GET `/api/doc-templates` возвращает `data.items`.
+
+2025-10-20T20:55:00+02:00 (Europe/Warsaw) | client/src/pages/settings/OrderTypes.js, client/src/components/Layout.js, client/src/App.js, client/src/services/orderTypesService.js, client/src/services/docTemplatesService.js, client/src/services/statusesService.js
+- feat(client/settings): страница «Типы заказов» переведена на полный API CRUD; действия ограничены RBAC (Admin — CRUD, Manager — просмотр).
+- feat(ui/menu): добавлен пункт «Типы заказов» в «Настройки»; доступ Admin|Manager.
+- refactor: удалён `localStorage`; данные грузятся через `orderTypesService`, `statusesService`, `docTemplatesService`; добавлен выбор стартового статуса, разрешённых статусов и связанных шаблонов документов.
+- docs: обновлены `CHANGELOG_TRAE.md`, `TECH_OVERVIEW.md`.
+
+### Acceptance
+- Список типов отображается; Admin может создавать/редактировать/удалять; Manager видит список.
+- При ошибках API показываются уведомления; серверная валидация инварианта `startStatusId ∈ allowedStatuses` соблюдается.
+
+2025-10-20T21:05:00+02:00 (Europe/Warsaw) | dev
+- chore(dev): запущены dev‑серверы; проверено отображение меню «Типы заказов» и загрузка страницы без рантайм‑ошибок.
+- note(lint): остаются ESLint предупреждения (не исправлялись в рамках задачи).
+
+### Acceptance
+- Приложение открывается по http://localhost:3007/; страница настроек доступна по `/settings/forms/order-types` (Admin).

@@ -1,259 +1,286 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Paper, Stack, TextField, Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Grid, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Switch, Checkbox, Typography } from '@mui/material';
+import { Box, Paper, Stack, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, FormControl, InputLabel, Select, MenuItem, Checkbox, ListItemText, Typography, IconButton, Chip, Alert } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import SettingsBackBar from '../../components/SettingsBackBar';
+import { useAuth } from '../../context/AuthContext';
+import { orderTypesService } from '../../services/orderTypesService';
+import { getStatuses } from '../../services/statusesService';
+import { docTemplatesService } from '../../services/docTemplatesService';
+import http from '../../services/http';
 
-const TYPE_LIST_KEY = 'settings_order_types';
-const TYPE_CONFIG_KEY = 'settings_order_type_configs';
-const STATUS_KEY = 'settings_order_statuses';
-const DOCS_KEY = 'settings_documents';
-const FIELDS_KEY = 'settings_order_fields';
-
-const fallbackStatuses = ['Новый', 'В работе', 'Готов', 'Отменён'];
-const fallbackDocs = ['Акт выполненных работ','Акт приема-передачи ТС','Приемная квитанция','Товарный чек'];
+function flattenStatuses(groups) {
+  const arr = [];
+  (groups || []).forEach((g) => (g.items || []).forEach((s) => arr.push(s)));
+  return arr;
+}
 
 export default function OrderTypesSettingsPage() {
-  const [types, setTypes] = useState([]);
-  const [configs, setConfigs] = useState({});
-  const [newTypeName, setNewTypeName] = useState('');
-  const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState(null);
+  const { hasAnyRole } = useAuth();
+  const isAdmin = hasAnyRole(['Admin']);
 
-  const statuses = useMemo(() => {
-    try {
-      const raw = localStorage.getItem(STATUS_KEY);
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr) && arr.length) return arr;
-    } catch {}
-    return fallbackStatuses;
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const documents = useMemo(() => {
-    try {
-      const raw = localStorage.getItem(DOCS_KEY);
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr) && arr.length) return arr;
-    } catch {}
-    return fallbackDocs;
-  }, []);
+  const [items, setItems] = useState([]); // list of order types
+  const [statusesGroups, setStatusesGroups] = useState([]);
+  const statuses = useMemo(() => flattenStatuses(statusesGroups), [statusesGroups]);
+  const [docTemplates, setDocTemplates] = useState([]);
+  const [fieldSchemas, setFieldSchemas] = useState([]);
 
-  const fields = useMemo(() => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ code: '', name: '', startStatusId: '', allowedStatuses: [], docTemplateIds: [], fieldsSchemaId: '' });
+  const isEdit = Boolean(editingId);
+
+  const loadRefs = async () => {
     try {
-      const raw = localStorage.getItem(FIELDS_KEY);
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr)) return arr;
-    } catch {}
-    return [];
-  }, []);
+      const [st, dt] = await Promise.all([
+        getStatuses().then(r => Array.isArray(r?.data) ? r.data : []),
+        docTemplatesService.list().then(r => Array.isArray(r?.items) ? r.items : []),
+      ]);
+      setStatusesGroups(st);
+      setDocTemplates(dt);
+    } catch (e) {
+      // best-effort; show error only if both fail
+      console.warn('[OrderTypes] loadRefs warn', e?.message || e);
+    }
+    // field-schemas — опционально, может отсутствовать на сервере
+    try {
+      const r = await http.get('/field-schemas');
+      const list = Array.isArray(r?.data?.items) ? r.data.items : (Array.isArray(r?.data) ? r.data : []);
+      setFieldSchemas(list);
+    } catch (e) {
+      setFieldSchemas([]);
+    }
+  };
+
+  const loadItems = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await orderTypesService.list();
+      setItems(Array.isArray(res?.items) ? res.items : []);
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || 'Ошибка загрузки типов заказов');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(TYPE_LIST_KEY);
-      const arr = JSON.parse(raw || '[]');
-      if (Array.isArray(arr)) setTypes(arr);
-    } catch {}
+    loadRefs();
+    loadItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
+  const resetForm = () => setForm({ code: '', name: '', startStatusId: '', allowedStatuses: [], docTemplateIds: [], fieldsSchemaId: '' });
+
+  const openCreate = () => {
+    resetForm();
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (row) => {
+    const startId = typeof row.startStatusId === 'object' ? row.startStatusId?._id : row.startStatusId;
+    const allowed = (row.allowedStatuses || []).map(v => (typeof v === 'object' ? v._id : v));
+    const docs = (row.docTemplateIds || []).map(v => (typeof v === 'object' ? v._id : v));
+    const fieldsId = row.fieldsSchemaId && (typeof row.fieldsSchemaId === 'object' ? row.fieldsSchemaId._id : row.fieldsSchemaId);
+    setForm({ code: row.code || '', name: row.name || '', startStatusId: startId || '', allowedStatuses: allowed, docTemplateIds: docs, fieldsSchemaId: fieldsId || '' });
+    setEditingId(row._id);
+    setModalOpen(true);
+  };
+
+  const onChange = (patch) => setForm(prev => ({ ...prev, ...patch }));
+
+  const save = async () => {
+    setError('');
+    setSuccess('');
+    const payload = { ...form };
+    // клиентское обеспечение инварианта: startStatusId ∈ allowedStatuses
+    if (payload.startStatusId && !(payload.allowedStatuses || []).some(id => String(id) === String(payload.startStatusId))) {
+      payload.allowedStatuses = [...(payload.allowedStatuses || []), payload.startStatusId];
+    }
     try {
-      const raw = localStorage.getItem(TYPE_CONFIG_KEY);
-      const obj = JSON.parse(raw || '{}');
-      if (obj && typeof obj === 'object') setConfigs(obj);
-    } catch {}
-  }, []);
-
-
-
-  const defaultConfig = (name) => ({
-    name,
-    initialStatus: statuses[0] || 'Новый',
-    allowPrepayment: true,
-    allowItemsOnCreate: true,
-    documents: [],
-    attachedFields: [],
-  });
-
-  useEffect(() => {
-    if (!types.length) return;
-    setConfigs((prev) => {
-      const updated = { ...prev };
-      let changed = false;
-      types.forEach((name) => {
-        if (!updated[name]) { updated[name] = defaultConfig(name); changed = true; }
-      });
-      if (changed) {
-        try { localStorage.setItem(TYPE_CONFIG_KEY, JSON.stringify(updated)); } catch {}
-        return updated;
+      if (isEdit) {
+        const res = await orderTypesService.update(editingId, payload);
+        const updated = res?.item;
+        setItems(prev => prev.map(it => (it._id === updated._id ? updated : it)));
+        setSuccess('Тип заказа обновлён');
+      } else {
+        const res = await orderTypesService.create(payload);
+        const created = res?.item;
+        setItems(prev => [created, ...prev]);
+        setSuccess('Тип заказа создан');
       }
-      return prev;
-    });
-  }, [types]);
-
-  const openEdit = (name) => {
-    const cfg = configs[name] || defaultConfig(name);
-    setEditData({ ...cfg });
-    setEditOpen(true);
-  };
-
-  const handleAddType = () => {
-    const name = (newTypeName || '').trim();
-    if (!name) return;
-    if (types.includes(name)) {
-      setNewTypeName('');
-      return;
+      setModalOpen(false);
+      setEditingId(null);
+      resetForm();
+    } catch (e) {
+      const err = e?.response?.data?.error || e?.message || 'Ошибка сохранения';
+      setError(err);
     }
-    const updatedTypes = [...types, name];
-    const updatedConfigs = { ...configs, [name]: configs[name] || defaultConfig(name) };
-    setTypes(updatedTypes);
-    setConfigs(updatedConfigs);
+  };
+
+  const remove = async (row) => {
+    if (!isAdmin) return;
+    if (!window.confirm(`Удалить тип «${row.name || row.code}»?`)) return;
+    setError('');
+    setSuccess('');
     try {
-      localStorage.setItem(TYPE_LIST_KEY, JSON.stringify(updatedTypes));
-      localStorage.setItem(TYPE_CONFIG_KEY, JSON.stringify(updatedConfigs));
-    } catch {}
-    setNewTypeName('');
-  };
-
-  const handleDeleteType = (name) => {
-    const updatedTypes = types.filter((t) => t !== name);
-    const updatedConfigs = { ...configs };
-    delete updatedConfigs[name];
-    setTypes(updatedTypes);
-    setConfigs(updatedConfigs);
-    try {
-      localStorage.setItem(TYPE_LIST_KEY, JSON.stringify(updatedTypes));
-      localStorage.setItem(TYPE_CONFIG_KEY, JSON.stringify(updatedConfigs));
-    } catch {}
-  };
-
-  const toggleDoc = (doc, checked) => {
-    setEditData((prev) => {
-      const docs = new Set(prev.documents || []);
-      if (checked) docs.add(doc); else docs.delete(doc);
-      return { ...prev, documents: Array.from(docs) };
-    });
-  };
-
-  const toggleField = (fname, checked) => {
-    setEditData((prev) => {
-      const fset = new Set(prev.attachedFields || []);
-      if (checked) fset.add(fname); else fset.delete(fname);
-      return { ...prev, attachedFields: Array.from(fset) };
-    });
-  };
-
-  const handleEditSave = () => {
-    if (!editData) return;
-    const oldName = editData.name && types.includes(editData.name) ? editData.name : null;
-    const prevName = (oldName && oldName !== undefined) ? oldName : (editData._prevName || editData.name);
-
-    // Если переименовали тип
-    const nameChanged = prevName && editData.name && prevName !== editData.name;
-
-    let updatedTypes = types;
-    if (nameChanged) {
-      updatedTypes = types.map((t) => (t === prevName ? editData.name : t));
+      await orderTypesService.remove(row._id);
+      setItems(prev => prev.filter(it => it._id !== row._id));
+      setSuccess('Тип заказа удалён');
+    } catch (e) {
+      const err = e?.response?.data?.error || e?.message || 'Ошибка удаления';
+      setError(err);
     }
-
-    const updatedConfigs = { ...configs };
-    if (nameChanged) delete updatedConfigs[prevName];
-    updatedConfigs[editData.name] = { ...editData };
-
-    setTypes(updatedTypes);
-    setConfigs(updatedConfigs);
-    try {
-      localStorage.setItem(TYPE_LIST_KEY, JSON.stringify(updatedTypes));
-      localStorage.setItem(TYPE_CONFIG_KEY, JSON.stringify(updatedConfigs));
-    } catch {}
-
-    setEditOpen(false);
-    setEditData(null);
   };
 
-  const saveAll = () => {
-    try {
-      localStorage.setItem(TYPE_LIST_KEY, JSON.stringify(types));
-      localStorage.setItem(TYPE_CONFIG_KEY, JSON.stringify(configs));
-    } catch {}
+  const renderStatusName = (idOrObj) => {
+    const id = typeof idOrObj === 'object' ? idOrObj?._id : idOrObj;
+    const s = statuses.find(st => String(st._id) === String(id));
+    return s ? s.name : '—';
   };
 
   return (
     <Box>
-      <SettingsBackBar title="Типы заказов" onSave={saveAll} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={2}>
-            <TextField size="small" fullWidth label="Название типа" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (newTypeName || '').trim()) { handleAddType(); } }} autoFocus />
-            <Button variant="contained" onClick={handleAddType} disabled={!((newTypeName || '').trim())}>Добавить тип</Button>
-          </Stack>
+      <SettingsBackBar title="Типы заказов" />
 
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {types.map((t) => (
-              <Chip key={t} label={t} onClick={() => openEdit(t)} onDelete={() => handleDeleteType(t)} sx={{ m: 0.5 }} />
-            ))}
-            {types.length === 0 && (
-              <Typography variant="body2" sx={{ opacity: 0.7 }}>Нет типов. Добавьте первый.</Typography>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37', mt: 2 }}>
+        <Stack spacing={2}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Список типов</Typography>
+            {isAdmin && (
+              <Button variant="contained" onClick={openCreate}>Создать тип</Button>
             )}
           </Stack>
+
+          {error && <Alert severity="error">{String(error)}</Alert>}
+          {success && <Alert severity="success">{String(success)}</Alert>}
+
+          <Box>
+            <Grid container sx={{ fontWeight: 600, opacity: 0.7, mb: 1 }}>
+              <Grid item xs={3}>Код</Grid>
+              <Grid item xs={3}>Название</Grid>
+              <Grid item xs={2}>Начальный статус</Grid>
+              <Grid item xs={2}>Допустимые</Grid>
+              <Grid item xs={1}>Док-ты</Grid>
+              <Grid item xs={1} sx={{ textAlign: 'right' }}>Действия</Grid>
+            </Grid>
+            {(items || []).map((row) => (
+              <Grid key={row._id} container alignItems="center" sx={{ py: 1, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <Grid item xs={3}><Typography>{row.code}</Typography></Grid>
+                <Grid item xs={3}><Typography>{row.name}</Typography></Grid>
+                <Grid item xs={2}><Typography>{renderStatusName(row.startStatusId)}</Typography></Grid>
+                <Grid item xs={2}>
+                  <Stack direction="row" spacing={0.5} sx={{ overflowX: 'auto' }}>
+                    {(row.allowedStatuses || []).slice(0, 3).map((s) => {
+                      const nm = typeof s === 'object' ? s.name : renderStatusName(s);
+                      return <Chip key={typeof s === 'object' ? s._id : s} size="small" label={nm} />;
+                    })}
+                    {(row.allowedStatuses || []).length > 3 && (
+                      <Chip size="small" label={`+${(row.allowedStatuses || []).length - 3}`} />
+                    )}
+                  </Stack>
+                </Grid>
+                <Grid item xs={1}><Typography>{(row.docTemplateIds || []).length || 0}</Typography></Grid>
+                <Grid item xs={1} sx={{ textAlign: 'right' }}>
+                  {isAdmin ? (
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <IconButton size="small" onClick={() => openEdit(row)}><EditIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => remove(row)}><DeleteIcon fontSize="small" /></IconButton>
+                    </Stack>
+                  ) : (
+                    <Typography sx={{ opacity: 0.6 }}>Нет прав</Typography>
+                  )}
+                </Grid>
+              </Grid>
+            ))}
+            {(!items || items.length === 0) && !loading && (
+              <Typography variant="body2" sx={{ opacity: 0.7 }}>Нет типов заказов.</Typography>
+            )}
+          </Box>
         </Stack>
       </Paper>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="md">
-        {editData && (
-          <>
-            <DialogTitle>Настройка типа заказа</DialogTitle>
-            <DialogContent dividers>
-              <Stack spacing={2}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField label="Название" value={editData.name} onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))} fullWidth />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel id="init-status-label">Начальный статус</InputLabel>
-                      <Select labelId="init-status-label" label="Начальный статус" value={editData.initialStatus || statuses[0]}
-                              onChange={(e) => setEditData((p) => ({ ...p, initialStatus: e.target.value }))}>
-                        {statuses.map((s) => (<MenuItem key={s} value={s}>{s}</MenuItem>))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <FormControlLabel control={<Switch checked={!!editData.allowPrepayment} onChange={(e) => setEditData((p) => ({ ...p, allowPrepayment: e.target.checked }))} />} label="Предоплата" />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <FormControlLabel control={<Switch checked={!!editData.allowItemsOnCreate} onChange={(e) => setEditData((p) => ({ ...p, allowItemsOnCreate: e.target.checked }))} />} label="Добавление товаров/услуг при создании" />
-                  </Grid>
-                </Grid>
+      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle>{isEdit ? 'Редактировать тип' : 'Создать тип'}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <TextField label="Код" value={form.code} onChange={(e) => onChange({ code: e.target.value })} fullWidth size="small" disabled={!isAdmin && isEdit} />
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <TextField label="Название" value={form.name} onChange={(e) => onChange({ name: e.target.value })} fullWidth size="small" />
+              </Grid>
 
-                <Typography variant="subtitle2">Печатные шаблоны</Typography>
-                <Grid container>
-                  {documents.map((d) => (
-                    <Grid item xs={12} md={6} key={d}>
-                      <FormControlLabel control={<Checkbox checked={(editData.documents || []).includes(d)} onChange={(e) => toggleDoc(d, e.target.checked)} />} label={d} />
-                    </Grid>
-                  ))}
-                  {documents.length === 0 && (
-                    <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Нет документов. Добавьте их в Настройки → Документы.</Typography></Grid>
-                  )}
-                </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="start-status">Начальный статус</InputLabel>
+                  <Select labelId="start-status" label="Начальный статус" value={form.startStatusId || ''} onChange={(e) => onChange({ startStatusId: e.target.value })}>
+                    {statuses.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>{s.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-                <Typography variant="subtitle2">Привязанные поля</Typography>
-                <Grid container>
-                  {fields.map((f) => (
-                    <Grid item xs={12} md={6} key={f.name}>
-                      <FormControlLabel control={<Checkbox checked={(editData.attachedFields || []).includes(f.name)} onChange={(e) => toggleField(f.name, e.target.checked)} />} label={`${f.label} (${f.type})`} />
-                    </Grid>
-                  ))}
-                  {fields.length === 0 && (
-                    <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Нет полей. Добавьте их в Настройки → Поля заказа.</Typography></Grid>
-                  )}
-                </Grid>
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setEditOpen(false)}>Отмена</Button>
-              <Button variant="contained" onClick={handleEditSave}>Сохранить</Button>
-            </DialogActions>
-          </>
-        )}
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="allowed-statuses">Допустимые статусы</InputLabel>
+                  <Select labelId="allowed-statuses" multiple label="Допустимые статусы" value={form.allowedStatuses || []} onChange={(e) => onChange({ allowedStatuses: e.target.value })} renderValue={(selected) => (selected || []).map(id => (statuses.find(s => String(s._id) === String(id))?.name || id)).join(', ')}>
+                    {statuses.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>
+                        <Checkbox checked={(form.allowedStatuses || []).some((id) => String(id) === String(s._id))} />
+                        <ListItemText primary={s.name} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="doc-templates">Печатные шаблоны</InputLabel>
+                  <Select labelId="doc-templates" multiple label="Печатные шаблоны" value={form.docTemplateIds || []} onChange={(e) => onChange({ docTemplateIds: e.target.value })} renderValue={(selected) => (selected || []).map(id => (docTemplates.find(d => String(d._id) === String(id))?.name || id)).join(', ')}>
+                    {docTemplates.map((d) => (
+                      <MenuItem key={d._id} value={d._id}>
+                        <Checkbox checked={(form.docTemplateIds || []).some((id) => String(id) === String(d._id))} />
+                        <ListItemText primary={d.name} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small" disabled={!fieldSchemas.length}>
+                  <InputLabel id="field-schema">Схема полей</InputLabel>
+                  <Select labelId="field-schema" label="Схема полей" value={form.fieldsSchemaId || ''} onChange={(e) => onChange({ fieldsSchemaId: e.target.value })}>
+                    <MenuItem value=""><em>Не выбрано</em></MenuItem>
+                    {fieldSchemas.map((f) => (
+                      <MenuItem key={f._id || f.id} value={f._id || f.id}>{f.name || f.code || (f._id || f.id)}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {!fieldSchemas.length && (
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>Схемы полей недоступны в этой сборке.</Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              Примечание: начальный статус автоматически будет добавлен в допустимые статусы при сохранении.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalOpen(false)}>Отмена</Button>
+          <Button variant="contained" onClick={save} disabled={!isAdmin}>Сохранить</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

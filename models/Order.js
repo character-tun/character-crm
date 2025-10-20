@@ -7,6 +7,7 @@ const ClosedSchema = new mongoose.Schema({
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({
+  orderTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'OrderType', required: true, index: true },
   status: { type: String, index: true },
   statusChangedAt: { type: Date },
   closed: { type: ClosedSchema, default: undefined },

@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const OrderStatus = require('../models/OrderStatus');
 const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
+let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 
 /**
  * changeOrderStatus
@@ -46,6 +47,20 @@ async function changeOrderStatus({ orderId, newStatusCode, userId, note, roles =
     const err = new Error('Status not found');
     err.statusCode = 404;
     throw err;
+  }
+
+  // Enforce OrderType.allowedStatuses constraint when order has a type
+  if (OrderType && order.orderTypeId) {
+    const type = await OrderType.findById(order.orderTypeId).lean();
+    if (type) {
+      const allowed = Array.isArray(type.allowedStatuses) ? type.allowedStatuses : [];
+      const isAllowed = allowed.some((id) => String(id) === String(status._id));
+      if (!isAllowed) {
+        const err = new Error('STATUS_NOT_ALLOWED');
+        err.statusCode = 409;
+        throw err;
+      }
+    }
   }
 
   const from = order.status || null;

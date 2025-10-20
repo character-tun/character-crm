@@ -80,6 +80,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/notify/templates', require('./routes/notifyTemplates'));
 app.use('/api/notify/dev', require('./routes/notifyDev'));
 app.use('/api/doc-templates', require('./routes/docTemplates'));
+app.use('/api/order-types', require('./routes/orderTypes'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/public', require('./routes/public'));

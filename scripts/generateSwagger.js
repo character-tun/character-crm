@@ -126,6 +126,34 @@ const spec = {
         required: ['processed24h', 'failed24h', 'active', 'waiting', 'delayed'],
         additionalProperties: true,
       },
+      OrderType: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          code: { type: 'string' },
+          name: { type: 'string' },
+          startStatusId: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          allowedStatuses: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] } },
+          fieldsSchemaId: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          docTemplateIds: { type: 'array', items: { anyOf: [ { type: 'string' }, { $ref: '#/components/schemas/DocTemplate' } ] } },
+          isSystem: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['code', 'name'],
+        additionalProperties: true,
+      },
+      OrderTypesListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/OrderType' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      OrderTypeItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/OrderType' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
     },
   },
   security: [{ bearerAuth: [] }],
@@ -269,6 +297,110 @@ const spec = {
           '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] } } } },
           '400': { description: 'Template in use', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/order-types': {
+      get: {
+        summary: 'List order types',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypesListResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      post: {
+        summary: 'Create order type',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/OrderType' },
+              example: {
+                code: 'default',
+                name: 'Default',
+                startStatusId: 'st_new',
+                allowedStatuses: ['st_new', 'st_in_progress'],
+                docTemplateIds: ['doc_invoice', 'doc_contract'],
+                isSystem: true
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'OK',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } }
+          },
+          '400': {
+            description: 'Bad Request',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                examples: {
+                  invalidStart: { value: { error: 'ORDERTYPE_INVALID_START_STATUS' } },
+                  validation: { value: { error: 'VALIDATION_ERROR' } }
+                }
+              }
+            }
+          },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+          '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        },
+      },
+    },
+    '/api/order-types/{id}': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      get: {
+        summary: 'Get order type',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      patch: {
+        summary: 'Update order type',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderType' } } },
+        },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } } },
+          '400': {
+            description: 'Bad Request: invalid start status not in allowedStatuses',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'ORDERTYPE_INVALID_START_STATUS' } } }
+          },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+          '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      delete: {
+        summary: 'Delete order type',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DeleteResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': {
+            description: 'Conflict: cannot delete system type or type in use',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                examples: {
+                  systemType: { value: { error: 'SYSTEM_TYPE' } },
+                  inUse: { value: { error: 'ORDERTYPE_IN_USE' } }
+                }
+              }
+            }
+          },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },
     },
