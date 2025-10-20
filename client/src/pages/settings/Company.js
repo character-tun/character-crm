@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Stack, TextField, Button, Grid } from '@mui/material';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_company';
 
@@ -45,7 +46,7 @@ const Company = () => {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>Компания</Typography>
+      <SettingsBackBar title="Компания" onSave={handleSave} />
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <Grid container spacing={2}>

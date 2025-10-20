@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Box, Typography, Paper, Stack, TextField, Button, Chip } from '@mui/material';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const ListSettingsPage = ({ title, storageKey, placeholder = 'Название', initialItems = [] }) => {
   const [items, setItems] = useState([]);
@@ -71,9 +72,13 @@ const ListSettingsPage = ({ title, storageKey, placeholder = 'Название',
     e.target.value = '';
   };
 
+  const saveAll = () => {
+    localStorage.setItem(storageKey, JSON.stringify(items));
+  };
+
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>{title}</Typography>
+      <SettingsBackBar title={title} onSave={saveAll} />
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>

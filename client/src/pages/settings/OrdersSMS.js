@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Stack, TextField, Button } from '@mui/material';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_orders_sms_templates';
 
@@ -34,9 +35,13 @@ const OrdersSMS = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultTemplates));
   };
 
+  const saveAll = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+  };
+
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>SMS шаблоны</Typography>
+      <SettingsBackBar title="SMS шаблоны" onSave={saveAll} />
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <TextField label="Создан" name="created" value={templates.created} onChange={handleChange} fullWidth multiline minRows={2} />

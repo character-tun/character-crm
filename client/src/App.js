@@ -5,6 +5,7 @@ import theme from './theme';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import OrderTypesSettingsPage from './pages/settings/OrderTypes';
 
 // Layout components
 import Layout from './components/Layout';
@@ -80,7 +81,7 @@ function App() {
             <Route path="settings/payments/articles" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Категории платежей (статьи)" storageKey="payment_categories" initialItems={["Зарплата","Аренда","Материалы","Инструменты","Налоги","Продажа","Услуги"]} /></ProtectedRoute>} />
             <Route path="settings/payments/methods" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Способы оплаты" storageKey="payment_methods" initialItems={["Наличные","Карта","Банковский перевод"]} /></ProtectedRoute>} />
             <Route path="settings/clients/notifications" element={<ProtectedRoute roles={["Admin","Manager"]}><ClientsNotifications /></ProtectedRoute>} />
-            <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Типы заказов" storageKey="settings_order_types" initialItems={["Детали","Детейлинг","Кузовной ремонт"]} /></ProtectedRoute>} />
+            <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin","Manager"]}><OrderTypesSettingsPage /></ProtectedRoute>} />
             <Route path="settings/forms/order-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля заказа" storageKey="settings_order_fields" /></ProtectedRoute>} />
             <Route path="settings/forms/client-types" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Типы клиентов" storageKey="settings_client_types" initialItems={["VIP","Постоянный","Новый"]} /></ProtectedRoute>} />
             <Route path="settings/forms/client-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля клиента" storageKey="settings_client_fields" /></ProtectedRoute>} />

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Paper, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_employees';
 const DEFAULT_ROLES = ['Администратор', 'Менеджер', 'Мастер'];
@@ -62,10 +63,14 @@ const Employees = () => {
     handleClose();
   };
 
+  const saveAll = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+  };
+
   return (
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>Сотрудники</Typography>
+        <SettingsBackBar title="Сотрудники" onSave={saveAll} />
         <Button variant="contained" onClick={handleOpen}>Добавить сотрудника</Button>
       </Stack>
 

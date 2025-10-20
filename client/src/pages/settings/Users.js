@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { listUsers, createUser, updateUser, deleteUser } from '../../services/usersService';
 import { listRoles } from '../../services/rolesService';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 export default function UsersSettingsPage() {
   const [users, setUsers] = useState([]);
@@ -68,9 +69,22 @@ export default function UsersSettingsPage() {
     }));
   };
 
+  const saveAll = async () => {
+    setError('');
+    try {
+      await Promise.all(users.map(u => updateUser(u._id, {
+        full_name: u.full_name,
+        is_active: !!u.is_active,
+        roles: Array.isArray(u.roles) ? u.roles : []
+      })));
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message);
+    }
+  };
+
   return (
     <div style={{ padding: 16 }}>
-      <h2>Настройки · Пользователи</h2>
+      <SettingsBackBar title="Настройки · Пользователи" onSave={saveAll} />
       {error && <div style={{ color: '#ff6b6b', marginBottom: 12 }}>Ошибка: {error}</div>}
       <form onSubmit={onCreate} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
         <input

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Stack, FormControlLabel, Switch, TextField } from '@mui/material';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_orders_general';
 
@@ -28,9 +29,13 @@ const OrdersGeneral = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
+  const saveAll = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  };
+
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>Заказы: общие настройки</Typography>
+      <SettingsBackBar title="Заказы: общие настройки" onSave={saveAll} />
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <FormControlLabel control={<Switch checked={state.autoCreateInvoice} onChange={handleToggle('autoCreateInvoice')} />} label="Автосоздание счёта при создании заказа" />

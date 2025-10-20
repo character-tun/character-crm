@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { listRoles, createRole, updateRole, deleteRole } from '../../services/rolesService';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 export default function RolesSettingsPage() {
   const [roles, setRoles] = useState([]);
@@ -56,9 +57,18 @@ export default function RolesSettingsPage() {
     }
   };
 
+  const saveAll = async () => {
+    setError('');
+    try {
+      await Promise.all(roles.map(r => updateRole(r._id, { name: r.name })));
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message);
+    }
+  };
+
   return (
     <div style={{ padding: 16 }}>
-      <h2>Настройки · Роли</h2>
+      <SettingsBackBar title="Настройки · Роли" onSave={saveAll} />
       {error && <div style={{ color: '#ff6b6b', marginBottom: 12 }}>Ошибка: {error}</div>}
       <form onSubmit={onCreate} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
         <input

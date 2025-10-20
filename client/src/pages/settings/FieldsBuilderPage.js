@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Stack, TextField, Button, Grid, MenuItem, Select, InputLabel, FormControl, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SettingsBackBar from '../../components/SettingsBackBar';
 
 const FIELD_TYPES = ['text', 'number', 'date', 'select', 'checkbox'];
 
@@ -37,9 +38,13 @@ const FieldsBuilderPage = ({ title, storageKey }) => {
     localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
+  const saveAll = () => {
+    localStorage.setItem(storageKey, JSON.stringify(fields));
+  };
+
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>{title}</Typography>
+      <SettingsBackBar title={title} onSave={saveAll} />
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
         <Stack spacing={2}>
           <Grid container spacing={2}>

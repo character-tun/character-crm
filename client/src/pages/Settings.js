@@ -53,8 +53,8 @@ const Settings = () => {
       items: [
         { title: 'Компания', subtitle: 'Название, контакты, реквизиты, страна, валюта', icon: <BusinessIcon />, to: '/settings/company' },
         { title: 'Сотрудники', subtitle: 'Список, роли и права', icon: <PeopleIcon />, to: '/settings/employees' },
-+       { title: 'Пользователи', subtitle: 'Учётные записи для входа', icon: <PeopleIcon />, to: '/settings/users' },
-+       { title: 'Роли', subtitle: 'Права доступа и код роли', icon: <AssignmentIndIcon />, to: '/settings/roles' },
+        { title: 'Пользователи', subtitle: 'Учётные записи для входа', icon: <PeopleIcon />, to: '/settings/users' },
+        { title: 'Роли', subtitle: 'Права доступа и код роли', icon: <AssignmentIndIcon />, to: '/settings/roles' },
         { title: 'Документы', subtitle: 'Шаблоны актов и квитанций', icon: <DescriptionIcon />, to: '/settings/documents' },
       ]
     },
@@ -104,7 +104,7 @@ const Settings = () => {
             <Box key={section.group}>
               <Chip label={section.group} sx={{ mb: 2, fontWeight: 700 }} />
               <Grid container spacing={2}>
-                {section.items.map((item) => (
+                {section.items.filter(item => item && item.title && item.to).map((item) => (
                   <Grid item xs={12} sm={6} md={4} key={item.title}>
                     <ItemCard {...item} />
                   </Grid>
