@@ -20,7 +20,7 @@ export default function LogoutButton() {
   };
 
   return (
-    <button onClick={onClick} style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #2a2f37', background: '#1f242b', color: '#e5e7eb' }}>
+    <button onClick={onClick} style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
       Выйти
     </button>
   );

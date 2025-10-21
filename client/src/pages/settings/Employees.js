@@ -74,7 +74,7 @@ const Employees = () => {
         <Button variant="contained" onClick={handleOpen}>Добавить сотрудника</Button>
       </Stack>
 
-      <Paper sx={{ height: 420, p: 1, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ height: 420, p: 1, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <DataGrid rows={employees} columns={columns} pageSize={5} rowsPerPageOptions={[5, 10]} />
       </Paper>
 

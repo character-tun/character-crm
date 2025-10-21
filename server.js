@@ -86,6 +86,10 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/queue', require('./routes/queue'));
 
+// 3.3 Step 2: FieldSchemas & Dictionaries
+app.use('/api/fields', require('./routes/fields'));
+app.use('/api/dicts', require('./routes/dicts'));
+
 // Error handler
 app.use(errorHandler);
 

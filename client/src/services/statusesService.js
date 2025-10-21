@@ -1,13 +1,16 @@
 import http from './http';
 
 export const getStatuses = () => {
-  return http.get('/statuses');
+  // Server enforces RBAC: require role 'settings.statuses:list'
+  return http.get('/statuses', { headers: { 'x-user-role': 'settings.statuses:list' } });
 };
 
 export const updateStatus = (id, data) => {
-  return http.put(`/statuses/${id}`, data);
+  // Server enforces RBAC: require role 'settings.statuses:update'
+  return http.put(`/statuses/${id}`, data, { headers: { 'x-user-role': 'settings.statuses:update' } });
 };
 
 export const reorderStatuses = (data) => {
-  return http.patch('/statuses/reorder', data);
+  // Server enforces RBAC: require role 'settings.statuses:reorder'
+  return http.patch('/statuses/reorder', data, { headers: { 'x-user-role': 'settings.statuses:reorder' } });
 };

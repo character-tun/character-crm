@@ -79,7 +79,7 @@ const ListSettingsPage = ({ title, storageKey, placeholder = 'Название',
   return (
     <Box>
       <SettingsBackBar title={title} onSave={saveAll} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
             <TextField

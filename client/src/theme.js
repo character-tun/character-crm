@@ -22,7 +22,7 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: { backgroundColor: '#0b1220' },
+        body: { backgroundColor: 'var(--color-bg)' },
       },
     },
     MuiPaper: {
@@ -50,26 +50,26 @@ const theme = createTheme({
       styleOverrides: {
         root: { borderRadius: 8, textTransform: 'none', fontWeight: 600 },
         contained: { boxShadow: 'none' },
-        outlined: { borderColor: '#233042' },
+        outlined: { borderColor: 'var(--color-border)' },
       },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: '#0b1422',
+          backgroundColor: 'var(--color-surfaceAlt)',
           borderRadius: 8,
           '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: alpha(theme.palette.divider, 0.9) },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main },
         }),
-        input: { color: '#e5e7eb' },
+        input: { color: 'var(--color-text)' },
       },
     },
     MuiInputLabel: {
-      styleOverrides: { root: { color: '#9aa4b2' } },
+      styleOverrides: { root: { color: 'var(--color-textMuted)' } },
     },
     MuiSelect: {
-      styleOverrides: { outlined: { backgroundColor: '#0b1422' } },
+      styleOverrides: { outlined: { backgroundColor: 'var(--color-surfaceAlt)' } },
     },
     MuiChip: {
       styleOverrides: {
@@ -84,37 +84,37 @@ const theme = createTheme({
           const color = map[ownerState.color || 'default'] || theme.palette.primary.main;
           const isOutlined = ownerState.variant === 'outlined';
           return isOutlined
-            ? { borderColor: alpha(color, 0.6), color: alpha(color, 0.95), backgroundColor: alpha(color, 0.06), borderRadius: 8, fontWeight: 600 }
-            : { backgroundColor: alpha(color, 0.28), color: '#fff', borderRadius: 8, fontWeight: 600 };
+            ? { borderColor: color, color, backgroundColor: 'transparent', borderRadius: 8, fontWeight: 600 }
+            : { backgroundColor: color, color: 'var(--color-text)', borderRadius: 8, fontWeight: 600 };
         },
       },
     },
     MuiDialog: {
       styleOverrides: {
-        paper: ({ theme }) => ({ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }),
+        paper: ({ theme }) => ({ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }),
       },
     },
     MuiDivider: {
-      styleOverrides: { root: ({ theme }) => ({ borderColor: theme.palette.divider }) },
+      styleOverrides: { root: { borderColor: 'var(--color-border)' } },
     },
     MuiSwitch: {
-      styleOverrides: { track: { backgroundColor: '#233042' } },
+      styleOverrides: { track: { backgroundColor: 'var(--color-border)' } },
     },
     MuiDrawer: {
       styleOverrides: {
         paper: ({ theme }) => ({
-          background: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-          borderRight: `1px solid ${theme.palette.divider}`,
-          color: theme.palette.text.primary,
+          background: 'var(--color-surface)',
+          borderRight: `1px solid var(--color-border)`,
+          color: 'var(--color-text)',
         }),
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: theme.palette.background.default,
+          backgroundColor: 'var(--color-surface)',
           boxShadow: 'none',
-          borderBottom: `1px solid ${theme.palette.divider}`,
+          borderBottom: `1px solid var(--color-border)`,
         }),
       },
     },
@@ -156,8 +156,8 @@ const theme = createTheme({
     MuiTable: {
       styleOverrides: {
         root: ({ theme }) => ({
-          '& tbody tr:nth-of-type(odd)': { backgroundColor: alpha(theme.palette.primary.main, 0.035) },
-          '& tbody tr:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.085) },
+          '& tbody tr:nth-of-type(odd)': { backgroundColor: 'var(--color-surfaceAlt)' },
+          '& tbody tr:hover': { backgroundColor: 'var(--color-surfaceAlt)' },
         }),
       },
     },

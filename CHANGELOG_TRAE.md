@@ -1,3 +1,27 @@
+## 2025-10-21 11:20 (Europe/Warsaw) | UI/Sidebar Linear
+- feat(ui): минималистичный сайдбар в стиле Relate/Linear
+- Компоненты: `client/src/components/sidebar/SidebarItem.jsx`, `client/src/components/sidebar/SidebarGroup.jsx`
+- Иконки: `lucide-react` (LayoutDashboard, Calendar, Briefcase, Folder, Zap, Wand2, CheckCircle2, ShoppingCart, CreditCard, Users, BarChart2, Settings)
+- Поведение: плавное раскрытие подпунктов (framer-motion), линия‑гид (`border-left: 1px rgba(--color-border, .2)`), активная полоса слева (`2px var(--color-primary)`), counters справа (badge)
+- Коллапс: при ширине <80px — только иконки + Tooltip по label
+- Layout: обновлён рендер меню и состояние `collapsed`, импорт lucide‑иконок
+- Конфиг: добавлена группа «Задачи» (Backlog 24, In progress 4, Validation 7, Done 13)
+- Маршруты: привязаны существующие `/tasks*`, `/orders*`, `/payments`, `/clients`, `/reports`, `/settings`
+
+## 2025-10-21 11:05 (Europe/Warsaw) | UI/Menu Compact
+- style(ui): уменьшены шрифты и межстрочные интервалы подпунктов
+- Добавлен левый вертикальный разделитель у групп подпунктов
+- Активный подпункт: `var(--color-primary)` + `font-weight: 700`
+- Файл: `client/src/components/Layout.js` (pl:4, py:0.5, minHeight:30; fontSize:13; lineHeight:20px)
+
+## 2025-10-21 10:45 (Europe/Warsaw) | UI/Menu
+- feat(ui): левое меню перестроено на секции с подпунктами
+- Секции: «Наш гараж», «Заказы», «Деньги», «Клиенты», «Маркетинг», «Услуги», «Товары», «Производство», «Склад», «Магазин», «Документы», «Отчёты», «Объявления», «Настройки»
+- Подпункты связаны с существующими маршрутами (orders/*, inventory/*, clients, payments, reports, settings)
+- Улучшена подсветка активных подпунктов: `var(--color-primary)` + `font-weight: 700`
+- Parent‑пункты подсвечиваются только для вложенных путей (без «двойной» подсветки на точных маршрутах)
+- RBAC: `/payments` теперь доступен для ролей `Admin` и `Finance`
+
 ## 2025-10-21 09:30 (Europe/Warsaw) | UI/Login
 - feat(ui): redesign login page (glassmorphism, dark garage supercars background)
 - Header: «Вход в CRM Character», fields: Email/Пароль, button: Войти
@@ -753,3 +777,4 @@ Least covered (server, by lines):
 ### Acceptance
 - покрытие достигнуто, тесты пройдены
 2025-10-21T13:31:56+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/assets/theme-overrides.css, client/src/components/Layout.js, client/src/components/ThemeSwitcher.jsx, client/src/components/ThemeSwitcher.tsx, client/src/context/ThemeContext.tsx, client/src/pages/settings/UiTheme.tsx, client/src/theme/CharacterDark.ts, client/src/theme/LightMinimal.ts, client/src/theme/index.ts, client/tsconfig.json | feat(ui): introduce theming system (CharacterDark + LightMinimal)
+2025-10-21T13:38:50+03:00 | CHANGELOG_TRAE.md | docs(changelog): add login page redesign entry

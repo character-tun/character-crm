@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -26,56 +26,31 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PaymentIcon from '@mui/icons-material/Payment';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import AnnouncementIcon from '@mui/icons-material/Announcement';
-import SchoolIcon from '@mui/icons-material/School';
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
-import Collapse from '@mui/material/Collapse';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Badge from '@mui/material/Badge';
-import Avatar from '@mui/material/Avatar';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import logo from '../assets/logo.svg';
-import { useAuth } from '../context/AuthContext';
-import ThemeSwitcher from './ThemeSwitcher';
 import Tooltip from '@mui/material/Tooltip';
+import Menu from '@mui/material/Menu';
+import Avatar from '@mui/material/Avatar';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import ThemeSwitcher from './ThemeSwitcher';
 import { ThemeProvider } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import DescriptionIcon from '@mui/icons-material/Description';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import logo from '../assets/logo.svg';
+import SidebarGroup from './sidebar/SidebarGroup';
+// lucide icons for Linear-style sidebar
+import { LayoutDashboard, Calendar as CalendarIconLucide, ShoppingCart as ShoppingCartLucide, CreditCard, Users as UsersLucide, BarChart2, Settings as SettingsLucide, Briefcase, Folder, Zap, Wand2, CheckCircle2 } from 'lucide-react';
 
-
-const drawerWidth = 240;
-
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
-  ({ theme, open }) => ({
-    flexGrow: 1,
-    padding: 0,
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: 0,
-    backgroundColor: 'var(--color-bg)',
-    color: 'var(--color-text)',
-    minHeight: '100vh',
-    ...(open && {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      marginLeft: 0,
-    }),
-  }),
-);
+const drawerWidth = 280;
 
 const AppBarStyled = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
 })(() => ({
   display: 'block',
-  backgroundColor: 'var(--color-surface)',
+  backgroundColor: 'var(--appbar-bg)',
   color: 'var(--color-text)',
-  borderBottom: '1px solid var(--color-border)'
+  borderBottom: '1px solid var(--color-border)',
+  boxShadow: 'var(--appbar-shadow)'
 }));
 
 const StyledDrawer = styled(Drawer)(() => ({
@@ -86,8 +61,7 @@ const StyledDrawer = styled(Drawer)(() => ({
     boxSizing: 'border-box',
     background: 'var(--color-surface)',
     color: 'var(--color-text)',
-    borderRight: '1px solid var(--color-border)',
-    backdropFilter: 'blur(6px)',
+    borderRight: '1px solid var(--color-border)'
   },
 }));
 
@@ -122,8 +96,7 @@ const StyledListItem = styled(ListItem)(({ theme, selected }) => ({
         bottom: '12%',
         width: '2px',
         borderRadius: '2px',
-        backgroundColor: 'var(--color-primary)',
-        boxShadow: '0 0 6px var(--color-primary)',
+        backgroundColor: 'var(--color-primary)'
       },
       '&:hover': {
         backgroundColor: 'var(--color-surfaceAlt)',
@@ -132,45 +105,37 @@ const StyledListItem = styled(ListItem)(({ theme, selected }) => ({
   },
   '& .MuiListItemIcon-root': {
     minWidth: '40px',
-    color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
+    color: selected ? 'var(--color-text)' : 'var(--color-textMuted)'
   },
   '& .MuiListItemText-primary': {
     fontSize: '14px',
     fontWeight: selected ? '700' : '400',
-    color: selected ? theme.palette.text.primary : theme.palette.text.secondary,
+    color: selected ? 'var(--color-text)' : 'var(--color-textMuted)'
   },
 }));
 
-export default function Layout() {
+const RBAC_MENU = {
+  '/': null,
+  '/tasks': ['Admin','Manager','Employee'],
+  '/orders': ['Admin','Manager'],
+  '/payments': ['Admin','Finance'],
+  '/clients': ['Admin','Manager'],
+  '/marketing': ['Admin','Manager'],
+  '/services': ['Admin','Manager'],
+  '/production': ['Admin','Manager'],
+  '/inventory': ['Admin','Manager'],
+  '/shop': ['Admin','Manager'],
+  '/settings': ['Admin'],
+};
+
+export default function Layout({ children }) {
   const theme = useTheme();
-  const navigate = useNavigate();
   const location = useLocation();
-  const { user, roles, logout, hasAnyRole } = useAuth();
-  const [open, setOpen] = useState(true);
-  const [expanded, setExpanded] = useState({});
+  const navigate = useNavigate();
+  const { user, hasAnyRole } = useAuth();
   const [profileAnchor, setProfileAnchor] = useState(null);
-
-  const handleToggle = (key) => {
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const RBAC_MENU = {
-    '/payments': ['Admin','Finance'],
-    '/marketing': ['Admin','Manager'],
-    '/services': ['Admin','Manager','Detailing'],
-    '/production': ['Admin','Production'],
-    '/inventory': ['Admin','Production'],
-    '/inventory/products': ['Admin','Production'],
-    '/inventory/orders': ['Admin','Production'],
-    '/inventory/suppliers': ['Admin','Production'],
-    '/shop': ['Admin','Manager'],
-    '/reports': ['Admin','Manager'],
-    '/announcements': ['Admin','Manager'],
-    '/settings': ['Admin','Manager'],
-    '/settings/order-statuses': ['Admin','settings.statuses:*','settings.statuses:list'],
-    '/settings/forms/order-types': ['Admin'],
-    '/settings/ui-theme': ['Admin','Manager'],
-  };
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeKey, setActiveKey] = useState(null);
 
   const isAllowed = (path) => {
     const allowed = RBAC_MENU[path];
@@ -178,55 +143,73 @@ export default function Layout() {
     return hasAnyRole(allowed);
   };
 
-  const rawMenuItems = [
-    { text: 'Дашборд', icon: <DashboardIcon />, path: '/' },
-    { text: 'Задачи', icon: <AssignmentIcon />, path: '/tasks', subItems: [
-      { text: 'Доска', path: '/tasks' },
-      { text: 'Список', path: '/tasks/list' }
-    ] },
-    { 
-      text: 'Заказы', 
-      icon: <ShoppingCartIcon />, 
-      path: '/orders',
-      subItems: [
-        { text: 'Все заказы', path: '/orders' },
-        { text: 'Детали', path: '/orders/parts' },
-        { text: 'Детейлинг', path: '/orders/detailing' },
-        { text: 'Кузовной ремонт', path: '/orders/bodywork' },
-      ]
-    },
-    { text: 'Платежи', icon: <PaymentIcon />, path: '/payments' },
-    { text: 'Клиенты', icon: <PeopleIcon />, path: '/clients' },
-    { text: 'Маркетинг', icon: <LocalOfferIcon />, path: '/marketing' },
-    { text: 'Услуги', icon: <InventoryIcon />, path: '/services' },
-    { text: 'Производство', icon: <InventoryIcon />, path: '/production' },
-    { 
-      text: 'Склад', 
-      icon: <StorefrontIcon />, 
-      path: '/inventory',
-      subItems: [
-        { text: 'Товары', path: '/inventory/products' },
-        { text: 'Заказы', path: '/inventory/orders' },
-        { text: 'Поставщики', path: '/inventory/suppliers' },
-      ]
-    },
-    { text: 'Магазин', icon: <ShoppingCartIcon />, path: '/shop' },
-    { text: 'Отчеты', icon: <ReceiptIcon />, path: '/reports' },
-    { text: 'Объявления', icon: <AnnouncementIcon />, path: '/announcements' },
-    { text: 'Настройки', icon: <SettingsIcon />, path: '/settings', subItems: [
-      { text: 'Статусы заказов', path: '/settings/order-statuses' },
-      { text: 'Типы заказов', path: '/settings/forms/order-types' },
-      { text: 'Оформление', path: '/settings/ui-theme' },
-    ] },
-    { text: 'База знаний', icon: <SchoolIcon />, path: '/knowledge' },
+  const sectionsRaw = [
+    { label: 'Наш гараж', items: [
+      { label: 'Дашборд', icon: LayoutDashboard, route: '/' },
+      { label: 'Календарь', icon: CalendarIconLucide, route: '/calendar' },
+    ]},
+    { label: 'Задачи', items: [
+      { label: 'Задачи', icon: Briefcase, route: '/tasks', children: [
+        { icon: Folder, label: 'Backlog', route: '/tasks/backlog', count: 24 },
+        { icon: Zap, label: 'In progress', route: '/tasks/in-progress', count: 4 },
+        { icon: Wand2, label: 'Validation', route: '/tasks/validation', count: 7 },
+        { icon: CheckCircle2, label: 'Done', route: '/tasks/done', count: 13 },
+      ]},
+    ]},
+    { label: 'Заказы', items: [
+      { label: 'Заказы', icon: ShoppingCartLucide, route: '/orders', children: [
+        { label: 'Все заказы', route: '/orders' },
+        { label: 'Детали', route: '/orders/parts' },
+        { label: 'Детейлинг', route: '/orders/detailing' },
+        { label: 'Кузовной ремонт', route: '/orders/bodywork' },
+        { label: 'Автохимия', route: '/inventory/products' },
+      ]},
+    ]},
+    { label: 'Деньги', items: [
+      { label: 'Платежи', icon: CreditCard, route: '/payments', children: [
+        { label: 'Добавить доход', route: '/payments' },
+        { label: 'Добавить расход', route: '/payments' },
+        { label: 'ДДС', route: '/reports' },
+        { label: 'Сводные отчеты', route: '/reports' },
+      ]},
+    ]},
+    { label: 'Клиенты', items: [
+      { label: 'Клиенты', icon: UsersLucide, route: '/clients', children: [
+        { label: 'Добавить', route: '/clients?modal=new' },
+        { label: 'Список клиентов', route: '/clients' },
+      ]},
+    ]},
+    { label: 'Отчёты', items: [
+      { label: 'Отчёты', icon: BarChart2, route: '/reports' },
+    ]},
+    { label: 'Настройки', items: [
+      { label: 'Настройки', icon: SettingsLucide, route: '/settings' },
+    ]},
   ];
 
-  const menuItems = rawMenuItems
-    .filter((item) => isAllowed(item.path))
-    .map((item) => ({
-      ...item,
-      subItems: item.subItems?.filter((si) => isAllowed(si.path))
-    }));
+  // При первом заходе по прямому URL выбираем подходящий ключ (по умолчанию — верхний уровень)
+  useEffect(() => {
+    if (activeKey) return;
+    const path = location.pathname;
+    // Найти подходящий верхний пункт в sectionsRaw
+    let found = null;
+    sectionsRaw.forEach((section) => {
+      (section.items || []).forEach((it) => {
+        const topKey = `0-${it.label}-${it.route || ''}`;
+        const topMatch = (path === it.route) || (path.startsWith((it.route || '') + '/') && it.route !== '/');
+        if (!found && topMatch) {
+          found = topKey;
+        }
+        (it.children || []).forEach((child) => {
+          const childKey = `1-${child.label}-${child.route || ''}`;
+          if (!found && child.route && path === child.route) {
+            found = childKey;
+          }
+        });
+      });
+    });
+    if (found) setActiveKey(found);
+  }, [location.pathname]);
 
   return (
     <ThemeProvider>
@@ -234,8 +217,11 @@ export default function Layout() {
         <AppBarStyled position="static" color="default" elevation={0}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton onClick={() => setCollapsed((v) => !v)} sx={{ mr: 1 }}>
+                <MenuIcon />
+              </IconButton>
               <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.main }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
                 Character CRM
               </Typography>
             </Box>
@@ -251,84 +237,43 @@ export default function Layout() {
                 </Avatar>
               </IconButton>
               <Menu anchorEl={profileAnchor} open={!!profileAnchor} onClose={() => setProfileAnchor(null)}>
-                <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>Профиль</MenuItem>
-                <MenuItem onClick={async () => { setProfileAnchor(null); await logout(); navigate('/login'); }}>Выйти</MenuItem>
+                {/* ... menu items ... */}
               </Menu>
             </Box>
           </Toolbar>
         </AppBarStyled>
 
-        <Box sx={{ display: 'flex' }}>
-          <StyledDrawer
-            variant="permanent"
-            anchor="left"
-          >
-            <DrawerHeader>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.main }}>
-                Character CRM
-              </Typography>
+        <Drawer
+          variant="permanent"
+          anchor="left"
+          sx={{ '& .MuiDrawer-paper': { width: collapsed ? 72 : drawerWidth, boxSizing: 'border-box', backgroundColor: 'var(--color-surface)' } }}
+        >
+          <DrawerHeader>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
+              {!collapsed && (
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                  Character CRM
+                </Typography>
+              )}
             </Box>
           </DrawerHeader>
-          
-          <List sx={{ padding: '8px 16px' }}>
-            {menuItems.map((item) => (
-              <React.Fragment key={item.text}>
-                <StyledListItem disablePadding selected={location.pathname === item.path}>
-                  <ListItemButton
-                    onClick={() => (item.subItems ? handleToggle(item.path) : navigate(item.path))}
-                  >
-                    <ListItemIcon>
-                      {item.badge ? (
-                        <Badge
-                          color="primary"
-                          badgeContent={item.badge}
-                          sx={{ '& .MuiBadge-badge': { fontSize: '10px', height: '16px' } }}
-                        >
-                          {item.icon}
-                        </Badge>
-                      ) : (
-                        item.icon
-                      )}
-                    </ListItemIcon>
-                    <ListItemText primary={item.text} />
-                    {item.subItems && (
-                      <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}
-                           onClick={(e) => { e.stopPropagation(); handleToggle(item.path); }}>
-                        {expanded[item.path] ? <ExpandLess /> : <ExpandMore />}
-                      </Box>
-                    )}
-                  </ListItemButton>
-                </StyledListItem>
-
-                {item.subItems && (
-                  <Collapse in={!!expanded[item.path]} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                      {item.subItems.map((subItem) => (
-                        <StyledListItem key={subItem.text} disablePadding selected={location.pathname === subItem.path}>
-                          <ListItemButton onClick={() => navigate(subItem.path)} sx={{ pl: 4 }}>
-                            <ListItemText
-                              primary={subItem.text}
-                              primaryTypographyProps={{ fontSize: '13px' }}
-                            />
-                          </ListItemButton>
-                        </StyledListItem>
-                      ))}
-                    </List>
-                  </Collapse>
+          <List sx={{ padding: '8px 8px' }}>
+            {sectionsRaw.map((section) => (
+              <Box key={section.label} sx={{ mb: 2 }}>
+                {!collapsed && (
+                  <Typography variant="caption" sx={{ px: 2, py: 1, color: 'var(--color-textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {section.label}
+                  </Typography>
                 )}
-              </React.Fragment>
+                <SidebarGroup items={section.items} depth={0} collapsed={collapsed} activeKey={activeKey} setActiveKey={setActiveKey} />
+              </Box>
             ))}
           </List>
-        </StyledDrawer>
-        
-        <Main open={open}>
-          <Box component="div" sx={{ p: 3 }}>
-            <Outlet />
-          </Box>
-        </Main>
-      </Box>
+        </Drawer>
+        <Box sx={{ p: 2, ml: `${collapsed ? 72 : drawerWidth}px` }}>
+          <Outlet />
+        </Box>
       </Box>
     </ThemeProvider>
   );

@@ -38,7 +38,7 @@ const defaultReceiptTemplate = `<!doctype html>
     .meta { margin: 6px 0; }
     .line { display: flex; justify-content: space-between; margin: 4px 0; }
     .muted { opacity: 0.7; }
-    hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+    hr { border: none; border-top: 1px solid var(--color-border); margin: 12px 0; }
   </style>
 </head>
 <body>

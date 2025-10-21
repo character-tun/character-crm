@@ -42,7 +42,7 @@ const OrdersSMS = () => {
   return (
     <Box>
       <SettingsBackBar title="SMS шаблоны" onSave={saveAll} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack spacing={2}>
           <TextField label="Создан" name="created" value={templates.created} onChange={handleChange} fullWidth multiline minRows={2} />
           <TextField label="В работе" name="inProgress" value={templates.inProgress} onChange={handleChange} fullWidth multiline minRows={2} />

@@ -99,7 +99,7 @@ const Clients = () => {
         <Box>
           {(params.value || []).map((tag, index) => (
             <span key={index} style={{ 
-              backgroundColor: '#e0e0e0', 
+              backgroundColor: 'var(--color-surfaceAlt)', 
               padding: '3px 8px',
               borderRadius: '16px',
               marginRight: '5px',

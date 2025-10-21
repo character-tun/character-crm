@@ -218,7 +218,7 @@ export default function OrderStatusesSettingsPage() {
       {!loading && groups.map((gr) => (
         <Box key={gr.group} sx={{ mb: 3 }}>
           <Chip label={GROUP_LABELS[gr.group] || gr.group || 'Группа'} sx={{ mb: 1, fontWeight: 700 }} />
-          <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+          <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
             <Stack spacing={1}>
               {(gr.items || []).map((s, idx) => (
                 <Box key={s._id} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

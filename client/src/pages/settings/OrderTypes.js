@@ -149,7 +149,7 @@ export default function OrderTypesSettingsPage() {
     <Box>
       <SettingsBackBar title="Типы заказов" />
 
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37', mt: 2 }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)', mt: 2 }}>
         <Stack spacing={2}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">Список типов</Typography>
@@ -171,7 +171,7 @@ export default function OrderTypesSettingsPage() {
               <Grid item xs={1} sx={{ textAlign: 'right' }}>Действия</Grid>
             </Grid>
             {(items || []).map((row) => (
-              <Grid key={row._id} container alignItems="center" sx={{ py: 1, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <Grid key={row._id} container alignItems="center" sx={{ py: 1, borderTop: '1px solid var(--color-border)' }}>
                 <Grid item xs={3}><Typography>{row.code}</Typography></Grid>
                 <Grid item xs={3}><Typography>{row.name}</Typography></Grid>
                 <Grid item xs={2}><Typography>{renderStatusName(row.startStatusId)}</Typography></Grid>

@@ -23,6 +23,11 @@ const spec = {
         properties: { error: { type: 'string' } },
         required: ['error'],
       },
+      DeleteResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' } },
+        required: ['ok'],
+      },
       PaymentCreateRequest: {
         type: 'object',
         properties: {
@@ -152,6 +157,110 @@ const spec = {
         type: 'object',
         properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/OrderType' } },
         required: ['item'],
+        additionalProperties: true,
+      },
+
+      // Field Schemas
+      FieldSpec: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          type: { type: 'string', enum: ['text', 'number', 'date', 'bool', 'list', 'multilist'] },
+          label: { type: 'string' },
+          required: { type: 'boolean' },
+          options: { type: 'array', items: { type: 'string' } },
+          note: { type: 'string' },
+        },
+        required: ['code', 'type'],
+        additionalProperties: true,
+      },
+      FieldSchema: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          scope: { type: 'string' },
+          name: { type: 'string' },
+          version: { type: 'integer', minimum: 1 },
+          isActive: { type: 'boolean' },
+          note: { type: 'string' },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdAt: { type: 'string', format: 'date-time' },
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+        },
+        required: ['scope', 'name'],
+        additionalProperties: true,
+      },
+      FieldSchemasListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/FieldSchema' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      FieldSchemaItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/FieldSchema' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      FieldSchemaCreateRequest: {
+        type: 'object',
+        properties: {
+          scope: { type: 'string' },
+          name: { type: 'string' },
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+          note: { type: 'string' },
+        },
+        required: ['scope', 'name'],
+        additionalProperties: true,
+      },
+      FieldSchemaPatchRequest: {
+        type: 'object',
+        properties: {
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+          note: { type: 'string' },
+        },
+        additionalProperties: true,
+      },
+
+      // Dictionaries
+      Dictionary: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['code'],
+        additionalProperties: true,
+      },
+      DictionariesListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/Dictionary' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      DictionaryItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/Dictionary' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      DictionaryCreateRequest: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+        },
+        required: ['code'],
+        additionalProperties: true,
+      },
+      DictionaryPatchRequest: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+        },
         additionalProperties: true,
       },
     },
@@ -517,6 +626,168 @@ const spec = {
         responses: {
           '200': { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { type: 'object', additionalProperties: true } } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+
+    // Field Schemas
+    '/api/fields': {
+      get: {
+        summary: 'List field schemas',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemasListResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      post: {
+        summary: 'Create field schema version',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaCreateRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { optionsRequired: { value: { error: 'FIELD_OPTIONS_REQUIRED' } } } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/fields/schemas': {
+      post: {
+        summary: 'Create field schema version (alias)',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaCreateRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { optionsRequired: { value: { error: 'FIELD_OPTIONS_REQUIRED' } } } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/fields/{id}': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      get: {
+        summary: 'Get field schema by id',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      patch: {
+        summary: 'Update field schema fields/note',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaPatchRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { optionsRequired: { value: { error: 'FIELD_OPTIONS_REQUIRED' } } } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      delete: {
+        summary: 'Delete field schema (forbidden if active)',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Cannot delete active', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'DELETE_ACTIVE_FORBIDDEN' } } } },
+        },
+      },
+    },
+    '/api/fields/{scope}/{name}/versions': {
+      parameters: [
+        { name: 'scope', in: 'path', required: true, schema: { type: 'string' } },
+        { name: 'name', in: 'path', required: true, schema: { type: 'string' } }
+      ],
+      get: {
+        summary: 'List schema versions for scope/name',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemasListResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/fields/{id}/activate': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      post: {
+        summary: 'Activate field schema version',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/fields/{id}/deactivate': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      post: {
+        summary: 'Deactivate field schema version',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+
+    // Dictionaries
+    '/api/dicts': {
+      get: {
+        summary: 'List dictionaries',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionariesListResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      post: {
+        summary: 'Create dictionary',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryCreateRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+        },
+      },
+    },
+    '/api/dicts/{id}': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      get: {
+        summary: 'Get dictionary',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      patch: {
+        summary: 'Update dictionary',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryPatchRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+        },
+      },
+      delete: {
+        summary: 'Delete dictionary',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/dicts/by-code/{code}': {
+      parameters: [ { name: 'code', in: 'path', required: true, schema: { type: 'string' } } ],
+      get: {
+        summary: 'Get dictionary by code',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryItemResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },
     },

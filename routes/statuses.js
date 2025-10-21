@@ -6,7 +6,7 @@ const OrderStatus = require('../models/OrderStatus');
 const { GROUPS } = require('../models/OrderStatus');
 const Order = require('../models/Order');
 const { isStatusInOrderTypes } = require('../services/statusDeletionGuard');
-const { requireRole } = require('../middleware/auth');
+const { requireAnyRole } = require('../middleware/auth');
 const TemplatesStore = require('../services/templatesStore');
 const { getCache } = require('../services/ttlCache');
 
@@ -53,7 +53,7 @@ async function validateActionsReferences(actions = []) {
 }
 
 // GET /api/statuses — list grouped statuses
-router.get('/', requireRole('settings.statuses:list'), async (req, res, next) => {
+router.get('/', requireAnyRole(['Admin', 'settings.statuses:list']), async (req, res, next) => {
   try {
     const cache = getCache('statuses');
     const cached = cache.get('list');
@@ -109,7 +109,7 @@ router.get('/', requireRole('settings.statuses:list'), async (req, res, next) =>
 });
 
 // POST /api/statuses — create
-router.post('/', requireRole('settings.statuses:create'), async (req, res, next) => {
+router.post('/', requireAnyRole(['Admin', 'settings.statuses:create']), async (req, res, next) => {
   try {
     const {
       code, name, color, group, order, actions, system, locationId,
@@ -140,7 +140,7 @@ router.post('/', requireRole('settings.statuses:create'), async (req, res, next)
 });
 
 // PUT /api/statuses/:id — update
-router.put('/:id', requireRole('settings.statuses:update'), async (req, res, next) => {
+router.put('/:id', requireAnyRole(['Admin', 'settings.statuses:update']), async (req, res, next) => {
   try {
     const patch = req.body || {};
     const cur = await OrderStatus.findById(req.params.id).lean();
@@ -178,7 +178,7 @@ router.put('/:id', requireRole('settings.statuses:update'), async (req, res, nex
 });
 
 // DELETE /api/statuses/:id — delete
-router.delete('/:id', requireRole('settings.statuses:delete'), async (req, res, next) => {
+router.delete('/:id', requireAnyRole(['Admin', 'settings.statuses:delete']), async (req, res, next) => {
   try {
     const cur = await OrderStatus.findById(req.params.id).lean();
     if (!cur) return next(httpError(404, 'Status not found'));
@@ -210,7 +210,7 @@ router.delete('/:id', requireRole('settings.statuses:delete'), async (req, res, 
 });
 
 // PATCH /api/statuses/reorder — batch reorder [{id,group,order}]
-router.patch('/reorder', requireRole('settings.statuses:reorder'), async (req, res, next) => {
+router.patch('/reorder', requireAnyRole(['Admin', 'settings.statuses:reorder']), async (req, res, next) => {
   try {
     const batch = Array.isArray(req.body) ? req.body : (Array.isArray(req.body?.items) ? req.body.items : null);
     if (!batch) return next(httpError(400, 'Array of items is required'));

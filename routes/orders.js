@@ -10,6 +10,7 @@ const Order = require('../models/Order');
 const { getDevState } = require('../services/statusActionsHandler');
 const OrderStatus = require('../models/OrderStatus');
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
+const { getActiveSchema } = require('../services/fieldSchemaProvider');
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 // In-memory status logs for DEV mode without Mongo
@@ -21,8 +22,49 @@ const httpError = (statusCode, message) => {
   return err;
 };
 
+// Helper: extract value by code from body (supports nested `fields` map)
+function getVal(body, code) {
+  if (!body || !code) return undefined;
+  if (Object.prototype.hasOwnProperty.call(body, code)) return body[code];
+  if (body.fields && Object.prototype.hasOwnProperty.call(body.fields, code)) return body.fields[code];
+  return undefined;
+}
+
+function isEmptyValueByType(val, type) {
+  switch (type) {
+    case 'text': return !(typeof val === 'string' && val.trim().length > 0);
+    case 'number': return !(typeof val === 'number' && Number.isFinite(val));
+    case 'date': return !(val && !Number.isNaN(new Date(val).getTime()));
+    case 'bool': return (typeof val !== 'boolean'); // presence is required; false is allowed but must be boolean
+    case 'list': return !(typeof val === 'string' && val.trim().length > 0);
+    case 'multilist': return !(Array.isArray(val) && val.length > 0);
+    default: return val == null;
+  }
+}
+
+async function validateOrderRequiredFields(req, res, next) {
+  try {
+    const schema = await getActiveSchema('orders', 'Форма заказа');
+    if (!schema || !Array.isArray(schema.fields) || schema.fields.length === 0) return next();
+    const required = schema.fields.filter((f) => f && f.required === true);
+    if (!required.length) return next();
+    const missing = [];
+    for (const f of required) {
+      const val = getVal(req.body, f.code);
+      if (isEmptyValueByType(val, f.type)) {
+        missing.push(f.code);
+      }
+    }
+    if (missing.length) {
+      return res.status(400).json({ error: 'REQUIRED_FIELDS_MISSING', fields: missing });
+    }
+    return next();
+  } catch (e) {
+    return next();
+  }
+}
 // POST /api/orders — create order with OrderType linkage and initial status
-router.post('/', requireRoles('Admin', 'Manager'), async (req, res, next) => {
+router.post('/', requireRoles('Admin', 'Manager'), validateOrderRequiredFields, async (req, res, next) => {
   try {
     const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
     if (!mongoReady) return next(httpError(503, 'MongoDB is required for order creation'));

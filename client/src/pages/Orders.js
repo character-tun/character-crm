@@ -5,9 +5,10 @@ import { DataGrid } from '@mui/x-data-grid';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import OrderTimeline from '../components/OrderTimeline';
 // import OrderTimeline from '../components/OrderTimeline';
- import http from '../services/http';
+import http from '../services/http';
 import { orderTypesService } from '../services/orderTypesService';
 import { getStatuses } from '../services/statusesService';
+import StatusChip from '../components/StatusChip';
 
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
@@ -83,9 +84,9 @@ const defaultOrderTemplate = `<!doctype html>
     h2 { margin: 0 0 12px; }
     .meta { margin: 6px 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th, td { border: 1px solid var(--color-border); padding: 6px 8px; text-align: left; }
     .right { text-align: right; }
-    hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+    hr { border: none; border-top: 1px solid var(--color-border); margin: 12px 0; }
     .muted { opacity: 0.7; }
   </style>
 </head>
@@ -546,7 +547,9 @@ export default function Orders() {
       width: 220,
       valueGetter: (params) => (params.row.types || []).join(', '),
     },
-    { field: 'status', headerName: 'Статус', width: 140 },
+    { field: 'status', headerName: 'Статус', width: 160, renderCell: (p) => (
+      <StatusChip status={statusToKey(p.value)} label={p.value || '-'} size="small" />
+    ) },
     {
       field: 'startDate',
       headerName: 'Дата начала',
@@ -809,4 +812,13 @@ function flattenStatuses(groups) {
   const arr = [];
   (groups || []).forEach((g) => (g.items || []).forEach((s) => arr.push(s)));
   return arr;
+}
+
+function statusToKey(name) {
+  const n = String(name || '').toLowerCase();
+  if (['новый', 'new'].includes(n)) return 'draft';
+  if (['в работе', 'в процессе', 'in progress', 'in-process'].includes(n)) return 'in-progress';
+  if (['готов', 'готово', 'успех', 'done', 'success'].includes(n)) return 'success';
+  if (['отменён', 'отмена', 'fail', 'error', 'cancelled'].includes(n)) return 'fail';
+  return 'draft';
 }

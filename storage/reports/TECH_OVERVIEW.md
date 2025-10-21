@@ -91,7 +91,7 @@
   - Payments real model — TODO
   - Notifications center — TODO
   - SaaS multi‑tenant — TODO
-- Следующие этапы: `3.3 Payments real model`, `3.4 Notifications center`, `3.5 SaaS multi-tenant`.
+- Следующие этапы: `3.3 Field Schemas & Dictionaries (ШАГ 1 — модели)`, `3.4 Notifications center`, `3.5 SaaS multi-tenant`.
 
 ## 12. UI — возможности пользователя (текущее состояние)
 - Авторизация и доступ: вход/выход (DEV — через заголовки `x-user-*`, PROD — через JWT), автоматическое обновление токена; RBAC скрывает недоступные пункты меню и действия.
@@ -176,3 +176,47 @@
 - Пользователь `Admin`:
   - видит пункт меню и страницу «Типы заказов»;
   - имеет доступ к чтению и модификации типов через API и UI.
+
+## 15. Forms — 3.3 Field Schemas & Dictionaries (ШАГ 1: Модели; ШАГ 2: API)
+- Модели:
+  - `server/models/FieldSchema.js`: поля `scope`, `fields[]`, `version`, `isActive`, `name`, `note`, `createdBy`, `createdAt`; индексы `{scope,name,version:-1}`, `{isActive:1}`; `pre('validate')` проверяет `list`/`multilist` → обязательны `options`.
+  - `server/models/Dictionary.js`: поля `code` (уникальный, trim+lower), `values[]`, `updatedAt`; индекс `{code:1, unique:true}`; `pre('save')` трогает `updatedAt`.
+- Тесты:
+  - `tests/models/fields.valid.test.js`, `tests/models/fields.invalid.test.js` — валидные/невалидные кейсы; запуск: `npm test -- tests/models --runInBand`; результат: 2/2 PASSED.
+- API / FieldSchemas:
+  - `GET /api/fields` — список всех версий; сортировка scope/name, версия по убыванию.
+  - `GET /api/fields/:id` — получить схему по id.
+  - `GET /api/fields/:scope/:name/versions` — все версии пары scope+name.
+  - `POST /api/fields` — создать новую версию: автоинкремент `version`, активирует новую (`isActive=true`) и деактивирует остальные версии пары.
+  - `PATCH /api/fields/:id` — обновить `fields` и/или `note` (валидация: для `list`/`multilist` обязательны `options` → `400 FIELD_OPTIONS_REQUIRED`).
+  - `POST /api/fields/:id/activate` — сделать версию активной (остальные той же пары деактивируются).
+  - `POST /api/fields/:id/deactivate` — снять активность у версии.
+  - `DELETE /api/fields/:id` — удаление запрещено для активной версии → `409 DELETE_ACTIVE_FORBIDDEN`.
+  - Ошибки: `400 VALIDATION_ERROR|FIELD_OPTIONS_REQUIRED`, `404 NOT_FOUND`, `409 DELETE_ACTIVE_FORBIDDEN`.
+  - RBAC: доступ `Admin` и `Manager`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` или недоступной Mongo.
+- API / Dicts:
+  - `GET /api/dicts` — список словарей.
+  - `GET /api/dicts/:id` — получить по id.
+  - `GET /api/dicts/by-code/:code` — получить по `code` (lowercase/trim).
+  - `POST /api/dicts` — создать; уникальный `code` → конфликт `409 CODE_EXISTS`.
+  - `PATCH /api/dicts/:id` — изменить `code` и/или `values`; `409 CODE_EXISTS` при конфликте кода.
+  - `DELETE /api/dicts/:id` — удалить.
+  - Ошибки: `400 VALIDATION_ERROR`, `404 NOT_FOUND`, `409 CODE_EXISTS`.
+  - RBAC: доступ `Admin` и `Manager`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` или недоступной Mongo.
+- Swagger / OpenAPI:
+  - Добавлены схемы: `FieldSpec`, `FieldSchema`, `FieldSchemasListResponse`, `FieldSchemaItemResponse`, `FieldSchemaCreateRequest`, `FieldSchemaPatchRequest`, `Dictionary`, `DictionariesListResponse`, `DictionaryItemResponse`, `DictionaryCreateRequest`, `DictionaryPatchRequest`.
+  - Добавлены пути: `/api/fields`, `/api/fields/{id}`, `/api/fields/{scope}/{name}/versions`, `/api/fields/{id}/activate`, `/api/fields/{id}/deactivate`, `/api/dicts`, `/api/dicts/{id}`, `/api/dicts/by-code/{code}`.
+  - Генератор: `scripts/generateSwagger.js`; артефакт: `artifacts/swagger.json`.
+- Статус: Шаг 2 (API) — OK.
+
+### Использование FieldSchema в бизнес-логике
+- Провайдер: `services/fieldSchemaProvider.js` — `getActiveSchema(scope, name, ttlSecs=60)`; кэш TTL (in‑memory) через `services/ttlCache.js`. При недоступном Mongo/модели возвращает `null` без ошибок.
+- Клиенты: `routes/clients.js` — middleware `validateRequiredFields` для `POST /api/clients` и `PUT /api/clients/:id`.
+  - Загружает активную схему пары `scope='clients'`, `name='Форма клиента'`.
+  - Проверяет обязательные поля (`required:true`) по коду; ищет значения в корне тела запроса и в `body.fields`.
+  - Типо‑чувствительная проверка пустоты: `text` (non‑empty string), `number` (finite), `date` (валидная дата), `bool` (обязательно `true|false`), `list` (non‑empty string), `multilist` (non‑empty array).
+  - При нехватке полей: `400 { error: 'REQUIRED_FIELDS_MISSING', fields: [codes...] }`.
+- Заказы: `routes/orders.js` — middleware `validateOrderRequiredFields` для `POST /api/orders` (создание).
+  - Подмешивает активную схему `scope='orders'`, `name='Форма заказа'` и валидирует обязательные поля по тем же правилам.
+- TTL: по умолчанию 60 секунд на пару `scope+name` (ключ `active:<scope>:<name>`). Можно варьировать через параметр `ttlSecs` при вызове.
+- Соответствие UI: `client/src/pages/settings/Forms/FieldsBuilderPage.js` → `storageKey` маппится на пары: `settings_order_fields → {scope:'orders', name:'Форма заказа'}`, `settings_client_fields → {scope:'clients', name:'Форма клиента'}`.

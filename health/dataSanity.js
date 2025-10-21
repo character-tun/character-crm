@@ -14,6 +14,8 @@ const OrderStatusLog = require('../models/OrderStatusLog');
 const NotifyTemplate = require('../models/NotifyTemplate');
 const DocTemplate = require('../models/DocTemplate');
 const OrderType = require('../server/models/OrderType');
+// NEW: include FieldSchema model for health checks
+const FieldSchema = require('../server/models/FieldSchema');
 
 const asObjectId = (s) => {
   try {
@@ -43,6 +45,8 @@ const asObjectId = (s) => {
       ordersCount: 0,
       logsCount: 0,
       orderTypesCount: 0,
+      // NEW: count of FieldSchemas
+      fieldSchemasCount: 0,
       problemsTotal: 0,
     },
     problems: {
@@ -68,6 +72,14 @@ const asObjectId = (s) => {
         duplicateLogs: [], // { orderId, createdAt, count }
         actionDuplicates: [], // { logId, type }
       },
+      // NEW: FieldSchemas health checks
+      fieldSchemas: {
+        multiActiveForPair: [], // { scope, name, ids }
+        noActiveForPair: [], // { scope, name, ids }
+        duplicateVersionNumbers: [], // { scope, name, version, ids }
+        invalidVersionNumbers: [], // { id, version }
+        invalidOptions: [], // { id, index, code, type }
+      },
     },
     info: {
       limitations: [
@@ -86,18 +98,21 @@ const asObjectId = (s) => {
   }
 
   try {
-    // Collect refs
-    const [statuses, orders, logs, orderTypes] = await Promise.all([
+    // Collect refs (added FieldSchema)
+    const [statuses, orders, logs, orderTypes, fieldSchemas] = await Promise.all([
       OrderStatus.find({}).lean(),
       Order.find({}).lean(),
       OrderStatusLog.find({}).lean(),
       OrderType.find({}).lean(),
+      FieldSchema.find({}).lean(),
     ]);
 
     report.summary.statusesCount = statuses.length;
     report.summary.ordersCount = orders.length;
     report.summary.logsCount = logs.length;
     report.summary.orderTypesCount = orderTypes.length;
+    // NEW: set FieldSchemas count
+    report.summary.fieldSchemasCount = fieldSchemas.length;
 
     const allowedGroups = OrderStatus.GROUPS || ['draft', 'in_progress', 'closed_success', 'closed_fail'];
     const statusCodes = new Set((statuses || []).map((s) => s.code).filter(Boolean));
@@ -216,6 +231,53 @@ const asObjectId = (s) => {
       }
     }
 
+    // 5) FieldSchemas checks
+    const byPair = new Map();
+    for (const fs of fieldSchemas) {
+      const scope = (fs.scope || '').toString().trim();
+      const name = (fs.name || '').toString().trim();
+      const key = `${scope}||${name}`;
+      if (!byPair.has(key)) byPair.set(key, []);
+      byPair.get(key).push(fs);
+      // invalid version numbers
+      if (typeof fs.version !== 'number' || !Number.isInteger(fs.version) || fs.version < 1) {
+        report.problems.fieldSchemas.invalidVersionNumbers.push({ id: fs._id, version: fs.version });
+      }
+      // invalid options for list/multilist
+      const arr = Array.isArray(fs.fields) ? fs.fields : [];
+      for (let i = 0; i < arr.length; i += 1) {
+        const f = arr[i] || {};
+        if (f.type === 'list' || f.type === 'multilist') {
+          if (!Array.isArray(f.options) || f.options.length === 0) {
+            report.problems.fieldSchemas.invalidOptions.push({ id: fs._id, index: i, code: f.code, type: f.type });
+          }
+        }
+      }
+    }
+    for (const [key, items] of byPair.entries()) {
+      const [scope, name] = key.split('||');
+      const active = items.filter((x) => x.isActive);
+      if (active.length > 1) {
+        report.problems.fieldSchemas.multiActiveForPair.push({ scope, name, ids: active.map((x) => x._id) });
+      }
+      if (active.length === 0 && items.length > 0) {
+        report.problems.fieldSchemas.noActiveForPair.push({ scope, name, ids: items.map((x) => x._id) });
+      }
+      // duplicate version numbers within pair
+      const byVer = new Map();
+      for (const it of items) {
+        const v = it.version;
+        const arr = byVer.get(v) || [];
+        arr.push(it._id);
+        byVer.set(v, arr);
+      }
+      for (const [v, ids] of byVer.entries()) {
+        if (ids.length > 1) {
+          report.problems.fieldSchemas.duplicateVersionNumbers.push({ scope, name, version: v, ids });
+        }
+      }
+    }
+
     // Aggregate OK flag and total problems
     const counts = [
       report.problems.orderStatus.duplicateCodes.length,
@@ -232,6 +294,12 @@ const asObjectId = (s) => {
       report.problems.logs.invalidStatusCodes.length,
       report.problems.logs.duplicateLogs.length,
       report.problems.logs.actionDuplicates.length,
+      // NEW: include FieldSchemas problems
+      report.problems.fieldSchemas.multiActiveForPair.length,
+      report.problems.fieldSchemas.noActiveForPair.length,
+      report.problems.fieldSchemas.duplicateVersionNumbers.length,
+      report.problems.fieldSchemas.invalidVersionNumbers.length,
+      report.problems.fieldSchemas.invalidOptions.length,
     ];
     const problemsTotal = counts.reduce((a, b) => a + b, 0);
     report.summary.problemsTotal = problemsTotal;

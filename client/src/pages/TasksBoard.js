@@ -40,12 +40,13 @@ function DraggableCard({ task, selected, onSelect, onOpenDetails, dragDisabled, 
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
-    background: selected ? alpha(theme.palette.primary.main, 0.12) : theme.palette.background.paper,
-    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-    borderRadius: 8,
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius)',
     padding: 12,
     marginBottom: 8,
     cursor: dragDisabled ? 'default' : 'grab',
+    backgroundColor: 'var(--color-surfaceAlt)',
+    boxShadow: 'var(--shadow)'
   };
   const priorityColor = {
     'Низкий': 'default',
@@ -54,12 +55,14 @@ function DraggableCard({ task, selected, onSelect, onOpenDetails, dragDisabled, 
     'Критический': 'error',
   }[task.priority] || 'default';
   return (
-    <Paper ref={setNodeRef} style={style} onClick={() => onSelect(task.id)} {...attributes}>
+    <Paper ref={setNodeRef} style={style} onClick={() => onSelect(task.id)} className="kanban-pill" {...attributes}>
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
             <IconButton size="small" {...listeners} onClick={(e)=>e.stopPropagation()} disabled={!!dragDisabled}><DragIndicatorIcon fontSize="small" /></IconButton>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{task.title}</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              {task.title}
+            </Typography>
           </Stack>
           <Chip size="small" label={task.priority} color={priorityColor} />
         </Stack>
@@ -112,14 +115,15 @@ function DraggableCard({ task, selected, onSelect, onOpenDetails, dragDisabled, 
 
 function DroppableColumn({ id, children }) {
   const { isOver, setNodeRef } = useDroppable({ id });
-  const theme = useTheme();
   const style = {
-    backgroundColor: isOver ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
+    backgroundColor: 'var(--color-surface)',
+    border: '1px solid var(--color-border)',
     minHeight: 80,
-    borderRadius: 8,
+    borderRadius: 'var(--radius)',
     padding: 4,
+    ...(isOver && { backgroundImage: 'linear-gradient(180deg, var(--secondary-a18), var(--primary-a14))' }),
   };
-  return <Box ref={setNodeRef} sx={style}>{children}</Box>;
+  return <Box ref={setNodeRef} className="kanban-column" sx={style}>{children}</Box>;
 }
 
 export default function TasksBoard() {
@@ -340,7 +344,9 @@ export default function TasksBoard() {
                         dragDisabled={task.assignee && task.assignee !== currentUser}
                         orderName={ordersMap[task.orderId]?.service}
                         workOrderName={ordersMap[task.workOrderId]?.service}
-
+                        onChangeAssignee={changeAssignee}
+                        onChangeDeadline={changeDeadline}
+                        assignees={assignees}
                       />
                     ))}
                   </SortableContext>
@@ -367,6 +373,34 @@ export function TasksBoardDuplicate() {
   const [newPriority, setNewPriority] = useState('Средний');
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const currentUser = useMemo(() => getCurrentUser(), []);
+
+  const assignees = useMemo(() => {
+    const base = [currentUser, 'manager1', 'worker1'];
+    const set = new Set(base.concat(tasks.map(t => t.assignee).filter(Boolean)));
+    return Array.from(set);
+  }, [tasks, currentUser]);
+
+  const updateTaskOptimistic = async (id, patch, activityEntry) => {
+    const prev = tasks;
+    const next = tasks.map((t) => (t.id === id ? { ...t, ...patch } : t));
+    setTasks(next);
+    try {
+      await tasksService.update(id, { ...patch, activityEntry });
+    } catch (e) {
+      console.error('Не удалось сохранить изменения', e);
+      setTasks(prev);
+    }
+  };
+
+  const changeAssignee = (id, assignee) => {
+    if (!id) return;
+    updateTaskOptimistic(id, { assignee }, { type: 'assign', message: `Назначен: ${assignee}` });
+  };
+
+  const changeDeadline = (id, deadline) => {
+    if (!id) return;
+    updateTaskOptimistic(id, { deadline }, { type: 'deadline', message: `Срок: ${deadline}` });
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -546,9 +580,9 @@ export function TasksBoardDuplicate() {
                         dragDisabled={task.assignee && task.assignee !== currentUser}
                         orderName={ordersMap[task.orderId]?.service}
                         workOrderName={ordersMap[task.workOrderId]?.service}
-                        onChangeAssignee={()=>{}}
-                        onChangeDeadline={()=>{}}
-                        assignees={[]}
+                        onChangeAssignee={changeAssignee}
+                        onChangeDeadline={changeDeadline}
+                        assignees={assignees}
                       />
                     ))}
                   </SortableContext>

@@ -47,7 +47,7 @@ const Company = () => {
   return (
     <Box>
       <SettingsBackBar title="Компания" onSave={handleSave} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack spacing={2}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>

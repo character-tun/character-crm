@@ -61,6 +61,8 @@ const requireAnyRole = (roles) => {
 const RBAC_MAP = {
   'orderTypes.read': ['Admin'],
   'orderTypes.write': ['Admin'],
+  'uiTheme.read': ['Admin', 'Manager'],
+  'uiTheme.write': ['Admin'],
 };
 
 const userHasAnyRole = (user, roles) => {

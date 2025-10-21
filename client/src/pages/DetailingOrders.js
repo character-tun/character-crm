@@ -134,20 +134,20 @@ const DetailingOrders = () => {
       headerName: 'Статус', 
       width: 120,
       renderCell: (params) => {
-        let color;
-        switch(params.value) {
-          case 'Новый': color = '#2196f3'; break;
-          case 'В работе': color = '#ff9800'; break;
-          case 'Готов': color = '#4caf50'; break;
-          case 'Выдан': color = '#9e9e9e'; break;
-          default: color = '#000';
+        let bg;
+        switch (params.value) {
+          case 'Новый': bg = 'var(--status-draft)'; break;
+          case 'В работе': bg = 'var(--status-in-progress)'; break;
+          case 'Готов': bg = 'var(--status-success)'; break;
+          case 'Выдан': bg = 'var(--status-success)'; break;
+          default: bg = 'var(--color-info)';
         }
         return (
           <span style={{ 
-            backgroundColor: color, 
-            color: 'white',
+            backgroundColor: bg, 
+            color: 'var(--color-text)',
             padding: '3px 10px',
-            borderRadius: '16px',
+            borderRadius: 'var(--radius)',
             fontSize: '0.75rem'
           }}>
             {params.value}

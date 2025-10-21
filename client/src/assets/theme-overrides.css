@@ -1,12 +1,19 @@
-:root {
-  /* Variables injected at runtime via #app-theme-vars */
-}
-
+/* Variables injected at runtime via #app-theme-vars */
 html, body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
+  line-height: 1.55;
+}
+
+/* Derived vars for Character Dark */
+[data-theme="Character Dark"] {
+  --appbar-bg: #101520;
+  --appbar-shadow: 0 4px 12px rgba(0,0,0,.35);
+  --primary-a10: rgba(0,229,154,.10);
+  --primary-a14: rgba(0,229,154,.14);
+  --secondary-a18: rgba(74,163,255,.18);
 }
 
 /* Surfaces */
@@ -20,9 +27,10 @@ html, body {
 
 /* AppBar */
 .MuiAppBar-root {
-  background-color: var(--color-surface);
+  background-color: var(--appbar-bg, var(--color-surface));
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--appbar-shadow, none);
 }
 
 /* Sidebar / Drawer */
@@ -33,12 +41,15 @@ html, body {
 }
 [data-theme="Character Dark"] .MuiDrawer-paper {
   backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(16,21,32,.96) 0%, rgba(14,17,22,.96) 100%);
 }
 [data-theme="Light Minimal"] .MuiDrawer-paper {
   backdrop-filter: none;
   background-color: var(--color-surface);
 }
 /* Active stripe for selected item */
+/* Anchor the selected stripe to the list item */
+.MuiListItemButton-root { position: relative; }
 .MuiListItemButton-root.Mui-selected::before {
   content: "";
   position: absolute;
@@ -48,20 +59,48 @@ html, body {
   width: 2px;
   border-radius: 2px;
   background-color: var(--color-primary);
-  box-shadow: 0 0 6px var(--color-primary);
 }
-[data-theme="Light Minimal"] .MuiListItemButton-root.Mui-selected::before {
-  box-shadow: none;
-}
+/* Icons base/active */
+.MuiListItemIcon-root { color: var(--color-textMuted); }
+.MuiListItemButton-root.Mui-selected .MuiListItemIcon-root { color: var(--color-text); }
+.MuiListItemButton-root.Mui-selected .MuiListItemText-primary { color: var(--color-text); filter: brightness(1.05); }
 
 /* Buttons */
 .MuiButton-root {
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: none; /* no glow */
 }
 .MuiButton-root:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+/* solid */
+.MuiButton-contained, .MuiButton-containedPrimary {
+  background-color: var(--color-primary) !important;
+  color: #0C1117;
+}
+.MuiButton-contained:hover, .MuiButton-containedPrimary:hover {
+  filter: brightness(0.92);
+}
+/* outline */
+.MuiButton-outlined {
+  border: 1px solid var(--color-primary);
+  background-color: transparent;
+  color: var(--color-text);
+}
+.MuiButton-outlined:hover {
+  background-color: var(--primary-a10);
+}
+/* ghost mapped to text */
+.MuiButton-text:hover {
+  background-color: var(--color-surfaceAlt);
+}
+.MuiAppBar-root .MuiButton-root {
+  border: 1px solid var(--color-primary);
+}
+.MuiButton-root.Mui-disabled {
+  opacity: 0.6;
+  box-shadow: none;
 }
 
 /* Cards & panels using alt surface */
@@ -73,44 +112,25 @@ html, body {
 .MuiTableHead-root {
   background-color: var(--color-surfaceAlt);
 }
+.MuiTable-root {
+  background-color: var(--color-surface);
+}
+.MuiTable-root tbody tr:nth-of-type(even) {
+  background-color: var(--color-surfaceAlt);
+}
+.MuiTableRow-root:hover {
+  background-color: var(--color-surfaceAlt);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.MuiTableCell-root {
+  border-color: var(--color-border);
+}
 
 /* Inputs */
 .input-alt, .MuiOutlinedInput-root {
   background-color: var(--color-surfaceAlt);
 }
-
-/* Menus */
-.menu-alt {
-  background-color: var(--color-surfaceAlt);
-}
-
-/* Muted text utility */
-.text-muted, .MuiTypography-colorTextSecondary {
-  color: var(--color-textMuted) !important;
-}
-
-.MuiButton-containedPrimary {
-  background-color: var(--color-primary);
-  color: var(--color-text);
-}
-.MuiButton-containedSecondary {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
-}
-.MuiButton-outlined {
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-/* ghost variant mapped to text */
-.MuiButton-text:hover {
-  background-color: var(--color-surfaceAlt);
-}
-.MuiButton-root.Mui-disabled {
-  opacity: 0.6;
-  box-shadow: none;
-}
-
-/* Inputs */
 .MuiOutlinedInput-root {
   background-color: var(--color-surfaceAlt);
   color: var(--color-text);
@@ -147,22 +167,6 @@ html, body {
   background-color: color-mix(in oklab, var(--color-bg) 25%, transparent);
 }
 
-/* Tables */
-.MuiTable-root {
-  background-color: var(--color-surface);
-}
-.MuiTable-root tbody tr:nth-of-type(even) {
-  background-color: var(--color-surfaceAlt);
-}
-.MuiTableRow-root:hover {
-  background-color: var(--color-surfaceAlt);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-.MuiTableCell-root {
-  border-color: var(--color-border);
-}
-
 /* Typography secondary */
 .MuiTypography-root.MuiTypography-colorTextSecondary {
   color: var(--color-textMuted) !important;
@@ -195,17 +199,13 @@ html, body {
 .kanban-pill {
   border-radius: 9999px !important;
   padding: 8px 12px;
+  background-color: var(--color-surfaceAlt);
+  color: var(--color-text);
 }
-[data-theme="Character Dark"] .kanban-pill {
-  background-image: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  color: #0b0d0f;
-}
-[data-theme="Light Minimal"] .kanban-pill {
-  background-color: rgba(59,130,246,0.85); /* fallback for primary with opacity */
-  color: #0b0d0f;
-}
-[data-theme="Character Dark"] .kanban-pill:hover {
-  filter: drop-shadow(0 0 8px var(--color-primary));
+/* subtle gradient only on hover/selected */
+.kanban-pill:hover,
+.kanban-pill.selected {
+  background-image: linear-gradient(180deg, var(--secondary-a18), var(--primary-a14));
 }
 
 .kanban-column {

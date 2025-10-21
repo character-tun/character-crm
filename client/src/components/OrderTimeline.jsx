@@ -56,7 +56,7 @@ export default function OrderTimeline({ logs = [], loading = false, error = '' }
         const note = log?.note || '';
         const actions = log?.actionsEnqueued || [];
         return (
-          <ListItem key={idx} alignItems="flex-start" sx={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <ListItem key={idx} alignItems="flex-start" sx={{ borderBottom: '1px solid var(--color-border)' }}>
             <ListItemText
               primary={
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>

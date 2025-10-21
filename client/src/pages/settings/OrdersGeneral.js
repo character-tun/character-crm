@@ -36,7 +36,7 @@ const OrdersGeneral = () => {
   return (
     <Box>
       <SettingsBackBar title="Заказы: общие настройки" onSave={saveAll} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack spacing={2}>
           <FormControlLabel control={<Switch checked={state.autoCreateInvoice} onChange={handleToggle('autoCreateInvoice')} />} label="Автосоздание счёта при создании заказа" />
           <FormControlLabel control={<Switch checked={state.allowPrepayment} onChange={handleToggle('allowPrepayment')} />} label="Разрешить предоплату" />

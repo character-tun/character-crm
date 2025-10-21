@@ -30,7 +30,7 @@ const ClientsNotifications = () => {
   return (
     <Box>
       <SettingsBackBar title="Уведомления клиентов" onSave={saveAll} />
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #2a2f37' }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack spacing={2}>
           <FormControlLabel control={<Switch checked={state.sms} onChange={handleChange('sms')} />} label="SMS уведомления" />
           <FormControlLabel control={<Switch checked={state.email} onChange={handleChange('email')} />} label="Email уведомления" />

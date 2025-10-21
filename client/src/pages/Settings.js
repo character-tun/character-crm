@@ -19,19 +19,21 @@ const ItemCard = ({ title, subtitle, icon, to }) => {
       onClick={() => navigate(to)}
       sx={{ 
         p: 2, 
-        borderRadius: 2, 
-        background: 'linear-gradient(135deg, #1f242b 0%, #171a20 100%)',
-        border: '1px solid #2a2f37',
+        borderRadius: 'var(--radius)', 
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        color: 'var(--color-text)',
         cursor: 'pointer',
+        boxShadow: 'var(--shadow)',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-        '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 16px rgba(0,0,0,0.35)' }
+        '&:hover': { transform: 'translateY(-2px)', boxShadow: 'var(--shadow)' }
       }}
     >
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 40, height: 40, borderRadius: 1.5,
-          backgroundColor: '#21262d', border: '1px solid #2a2f37'
+          backgroundColor: 'var(--color-surfaceAlt)', border: '1px solid var(--color-border)'
         }}>
           {icon}
         </Box>
@@ -98,7 +100,7 @@ const Settings = () => {
         Выберите раздел для настройки модулей CRM. Страница поддерживает вертикальный скролл для длинных списков.
       </Typography>
 
-      <Box sx={{ maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', pr: 1 }}>
+      <Box sx={{ p: 2, borderRadius: 2 }} style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
         <Stack spacing={4}>
           {sections.map((section) => (
             <Box key={section.group}>
