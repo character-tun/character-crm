@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (root + client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install root deps
+        run: npm ci
+      - name: Lint root (ESLint v8)
+        run: npx eslint . --ext .js --max-warnings=0 --ignore-pattern client/**
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+      - name: Lint client (ESLint v9 flat config)
+        run: npx eslint . --max-warnings=0
+        working-directory: client
+
+  test:
+    name: Test (root + client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install root deps
+        run: npm ci
+      - name: Run server tests (Jest)
+        env:
+          AUTH_DEV_MODE: "1"
+          JWT_SECRET: "dev_secret"
+        run: npm test -- --ci --runInBand
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+      - name: Run client tests (CRA Jest)
+        run: npm test -- --watchAll=false
+        working-directory: client
+
+  build:
+    name: Build client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+      - name: Build client
+        run: npm run build
+        working-directory: client
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-build
+          path: client/build
+
+  audit:
+    name: Security audit (npm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install root deps
+        run: npm ci
+      - name: npm audit (root)
+        run: |
+          npm audit --audit-level=high || true
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+      - name: npm audit (client)
+        run: |
+          npm audit --audit-level=high || true
