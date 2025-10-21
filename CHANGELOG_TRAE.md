@@ -1,3 +1,10 @@
+## 2025-10-21 09:30 (Europe/Warsaw) | UI/Login
+- feat(ui): redesign login page (glassmorphism, dark garage supercars background)
+- Header: «Вход в CRM Character», fields: Email/Пароль, button: Войти
+- Accent color uses `--color-primary`, consistent with theming tokens
+- Background moved to Pexels to avoid ORB blocks in preview
+- Route: `/login`, uses `AuthContext.login` with redirect back
+
 ## 2025-10-21 09:00 (Europe/Warsaw) | UI/Theming
 - feat(ui): theming (CharacterDark + LightMinimal)
 - ThemeContext, CSS variables injection, ThemeSwitcher
@@ -745,3 +752,4 @@ Least covered (server, by lines):
 
 ### Acceptance
 - покрытие достигнуто, тесты пройдены
+2025-10-21T13:31:56+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/assets/theme-overrides.css, client/src/components/Layout.js, client/src/components/ThemeSwitcher.jsx, client/src/components/ThemeSwitcher.tsx, client/src/context/ThemeContext.tsx, client/src/pages/settings/UiTheme.tsx, client/src/theme/CharacterDark.ts, client/src/theme/LightMinimal.ts, client/src/theme/index.ts, client/tsconfig.json | feat(ui): introduce theming system (CharacterDark + LightMinimal)
