@@ -42,6 +42,7 @@ import Login from './pages/Login';
 import UsersSettingsPage from './pages/settings/Users';
 import RolesSettingsPage from './pages/settings/Roles';
 import BootstrapWizard from './pages/BootstrapWizard';
+import BootstrapFirst from './pages/BootstrapFirst';
 import RbacTest from './pages/RbacTest';
 import UiThemePage from './pages/settings/UiTheme';
 // Тема импортируется из отдельного файла theme.js
@@ -54,6 +55,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/bootstrap" element={<BootstrapWizard />} />
+          <Route path="/bootstrap-first" element={<BootstrapFirst />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             {/* удалён: маршрут «/trends» объединён в «Дашборд» */}

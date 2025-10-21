@@ -37,11 +37,12 @@ http.interceptors.response.use((response) => response, async (error) => {
       const refresh = localStorage.getItem('auth_refresh');
       if (refresh) {
         const { data } = await http.post('/auth/refresh', { refresh });
-        if (data?.access) {
-          setAccess(data.access);
+        const newAccess = data?.accessToken || data?.access;
+        if (newAccess) {
+          setAccess(newAccess);
           originalRequest.__isRetry = true;
           originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers['Authorization'] = `Bearer ${data.access}`;
+          originalRequest.headers['Authorization'] = `Bearer ${newAccess}`;
           return http(originalRequest);
         }
       }

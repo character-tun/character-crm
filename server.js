@@ -77,6 +77,7 @@ app.use('/api/roles', require('./routes/roles'));
 app.use('/api/statuses', require('./routes/statuses'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/cash', require('./routes/cash'));
 app.use('/api/notify/templates', require('./routes/notifyTemplates'));
 app.use('/api/notify/dev', require('./routes/notifyDev'));
 app.use('/api/doc-templates', require('./routes/docTemplates'));

@@ -32,10 +32,15 @@ const spec = {
         type: 'object',
         properties: {
           orderId: { type: 'string' },
-          amount: { type: 'number' },
-          currency: { type: 'string' },
+          type: { type: 'string', enum: ['income', 'expense'] },
+          articlePath: { type: 'array', items: { type: 'string' }, minItems: 1 },
+          amount: { type: 'number', minimum: 0, exclusiveMinimum: true },
+          method: { type: 'string' },
+          cashRegisterId: { type: 'string' },
+          note: { type: 'string' },
+          locationId: { type: 'string' },
         },
-        required: ['orderId'],
+        required: ['type', 'articlePath', 'amount', 'cashRegisterId'],
         additionalProperties: true,
       },
       PaymentCreateResponse: {
@@ -263,41 +268,275 @@ const spec = {
         },
         additionalProperties: true,
       },
+
+      // Cash
+      CashRegister: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          code: { type: 'string' },
+          name: { type: 'string' },
+          defaultForLocation: { type: 'boolean' },
+          cashierMode: { type: 'string', enum: ['open', 'strict'] },
+          isSystem: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['code', 'name'],
+        additionalProperties: true,
+      },
+      CashRegistersListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/CashRegister' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      CashRegisterItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/CashRegister' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+
+      // Payments schemas
+      Payment: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          orderId: { type: 'string' },
+          type: { type: 'string', enum: ['income', 'expense', 'refund'] },
+          articlePath: { type: 'array', items: { type: 'string' }, minItems: 1 },
+          amount: { type: 'number', minimum: 0, exclusiveMinimum: true },
+          method: { type: 'string' },
+          cashRegisterId: { type: 'string' },
+          note: { type: 'string' },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          locked: { type: 'boolean' },
+          locationId: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['type', 'articlePath', 'amount', 'cashRegisterId'],
+        additionalProperties: true,
+      },
+      PaymentItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/Payment' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      PaymentsListResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/Payment' } },
+          totals: { type: 'object', properties: {
+            income: { type: 'number' },
+            expense: { type: 'number' },
+            refund: { type: 'number' },
+            balance: { type: 'number' },
+          }, required: ['income','expense','refund','balance'] },
+        },
+        required: ['items', 'totals'],
+        additionalProperties: true,
+      },
+      PaymentRefundRequest: {
+        type: 'object',
+        properties: {
+          orderId: { type: 'string' },
+          articlePath: { type: 'array', items: { type: 'string' }, minItems: 1 },
+          amount: { type: 'number', minimum: 0, exclusiveMinimum: true },
+          method: { type: 'string' },
+          cashRegisterId: { type: 'string' },
+          note: { type: 'string' },
+          locationId: { type: 'string' },
+        },
+        required: ['articlePath', 'amount', 'cashRegisterId'],
+        additionalProperties: true,
+      },
+      PaymentPatchRequest: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', minimum: 0, exclusiveMinimum: true },
+          articlePath: { type: 'array', items: { type: 'string' }, minItems: 1 },
+          method: { type: 'string' },
+          cashRegisterId: { type: 'string' },
+          note: { type: 'string' },
+          locationId: { type: 'string' },
+        },
+        additionalProperties: true,
+      },
+
+      // Auth schemas
+      AuthUser: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          email: { type: 'string' },
+          full_name: { type: 'string' },
+          roles: { type: 'array', items: { type: 'string' } },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+        additionalProperties: true,
+      },
+      AuthRegisterFirstRequest: {
+        type: 'object',
+        properties: {
+          email: { type: 'string' },
+          password: { type: 'string' },
+          name: { type: 'string' },
+        },
+        required: ['email', 'password'],
+        additionalProperties: true,
+      },
+      AuthRegisterFirstResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          user: { $ref: '#/components/schemas/AuthUser' },
+        },
+        required: ['ok', 'user'],
+        additionalProperties: true,
+        example: { ok: true, user: { _id: 'u1', email: 'admin@example.com' } },
+      },
+      AuthLoginRequest: {
+        type: 'object',
+        properties: {
+          email: { type: 'string' },
+          password: { type: 'string' },
+        },
+        required: ['email', 'password'],
+        additionalProperties: true,
+      },
+      AuthLoginResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          accessToken: { type: 'string' },
+          refreshToken: { type: 'string' },
+          access: { type: 'string' },
+          refresh: { type: 'string' },
+        },
+        required: ['ok', 'accessToken', 'refreshToken'],
+        additionalProperties: true,
+        example: {
+          ok: true,
+          accessToken: 'jwt-access-token',
+          refreshToken: 'jwt-refresh-token',
+          access: 'jwt-access-token',
+          refresh: 'jwt-refresh-token',
+        },
+      },
+      AuthRefreshRequest: {
+        type: 'object',
+        properties: {
+          refresh: { type: 'string' },
+          refreshToken: { type: 'string' },
+        },
+        required: ['refresh'],
+        additionalProperties: true,
+      },
+      AuthRefreshResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          accessToken: { type: 'string' },
+          access: { type: 'string' },
+        },
+        required: ['ok', 'accessToken'],
+        additionalProperties: true,
+        example: {
+          ok: true,
+          accessToken: 'jwt-access-token',
+          access: 'jwt-access-token',
+        },
+      },
     },
   },
   security: [{ bearerAuth: [] }],
   paths: {
     '/api/payments': {
-      post: {
-        summary: 'Create payment',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } },
-        },
-        responses: {
-          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
-          '400': { description: 'Bad Request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-        },
+
+
+
+
+
+
+    get: {
+      summary: 'List payments',
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: 'type', in: 'query', schema: { type: 'string', enum: ['income','expense','refund'] } },
+        { name: 'orderId', in: 'query', schema: { type: 'string' } },
+        { name: 'cashRegisterId', in: 'query', schema: { type: 'string' } },
+        { name: 'locationId', in: 'query', schema: { type: 'string' } },
+        { name: 'dateFrom', in: 'query', schema: { type: 'string', format: 'date-time' } },
+        { name: 'dateTo', in: 'query', schema: { type: 'string', format: 'date-time' } },
+        { name: 'articlePath', in: 'query', schema: { type: 'string' }, description: 'Prefix "a/b/c" or contains segment "a"' },
+        { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 500 }, description: 'Default 50' },
+        { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Default 0' },
+      ],
+      responses: {
+        '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentsListResponse' } } } },
+        '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       },
+    },
+    post: {
+      summary: 'Create income or expense payment',
+      security: [{ bearerAuth: [] }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } } },
+      responses: {
+        '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+        '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
+        '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
+        '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      },
+    },
     },
     '/api/payments/refund': {
       post: {
-        summary: 'Create refund',
+        summary: 'Create refund payment',
         security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } },
-        },
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentRefundRequest' } } } },
         responses: {
-          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
-          '400': { description: 'Bad Request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+          '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },
+    },
+    '/api/payments/{id}': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      patch: {
+        summary: 'Edit payment',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentPatchRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+          '400': { description: 'Validation or lock constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, locked: { value: { error: 'PAYMENT_LOCKED' } } } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'NOT_FOUND' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        }
+      }
+    },
+    '/api/payments/{id}/lock': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      post: {
+        summary: 'Lock payment',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+          '400': { description: 'Already locked', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'PAYMENT_LOCKED' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'NOT_FOUND' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        }
+      }
     },
     '/api/notify/templates': {
       get: {
@@ -513,6 +752,57 @@ const spec = {
         },
       },
     },
+    '/api/cash': {
+      get: {
+        summary: 'List cash registers',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1 }, description: 'Max items to return' },
+          { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Offset for pagination' },
+        ],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/CashRegistersListResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+      post: {
+        summary: 'Create cash register',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CashRegister' } } } },
+        responses: {
+          '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/CashRegisterItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+        },
+      },
+    },
+    '/api/cash/{id}': {
+      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      patch: {
+        summary: 'Update cash register',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CashRegister' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/CashRegisterItemResponse' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { systemCode: { value: { error: 'SYSTEM_CODE_PROTECTED' } } } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Conflict (code exists)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
+        },
+      },
+      delete: {
+        summary: 'Delete cash register',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DeleteResponse' } } } },
+          '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '409': { description: 'Conflict: register in use', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_IN_USE' } } } },
+        },
+      },
+    },
+
     '/api/queue/status-actions/metrics': {
       get: {
         summary: 'Get status actions queue metrics',
@@ -788,6 +1078,62 @@ const spec = {
         responses: {
           '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/DictionaryItemResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+
+    // Auth endpoints
+    '/api/auth/register-first': {
+      post: {
+        summary: 'Register first user (Admin)',
+        security: [],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRegisterFirstRequest' } } } },
+        responses: {
+          '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRegisterFirstResponse' } } } },
+          '400': { description: 'Users already exist', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { usersExist: { value: { error: 'USERS_ALREADY_EXIST' } } } } } },
+          '401': { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/auth/bootstrap-admin': {
+      post: {
+        summary: 'Bootstrap first admin (compatible)',
+        security: [],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRegisterFirstRequest' } } } },
+        responses: {
+          '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRegisterFirstResponse' } } } },
+          '400': { description: 'Users already exist', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { usersExist: { value: { error: 'USERS_ALREADY_EXIST' } } } } } },
+          '401': { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/auth/login': {
+      post: {
+        summary: 'Login',
+        security: [],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthLoginRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthLoginResponse' } } } },
+          '401': { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/auth/refresh': {
+      post: {
+        summary: 'Refresh access token',
+        security: [],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRefreshRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthRefreshResponse' } } } },
+          '401': { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },
     },

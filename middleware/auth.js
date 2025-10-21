@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+// Lazy-load UserToken inside functions to avoid mongoose compile during tests
 
 const withUser = (req, res, next) => {
   const auth = req.headers.authorization || '';
@@ -37,6 +38,20 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// RBAC permissions map (resource.action -> allowed roles)
+const RBAC_MAP = {
+  'orderTypes.read': ['Admin', 'Manager'],
+  'orderTypes.write': ['Admin'],
+  'uiTheme.read': ['Admin', 'Manager'],
+  'uiTheme.write': ['Admin'],
+
+  'payments.read': ['Admin', 'Finance'],
+  'payments.write': ['Admin', 'Finance'],
+  'payments.lock': ['Admin', 'Finance'],
+  'cash.read': ['Admin', 'Finance'],
+  'cash.write': ['Admin'],
+};
+
 const requireRoles = (...roles) => (req, res, next) => {
   const u = req.user || {};
   const required = new Set(roles);
@@ -55,14 +70,6 @@ const requireRole = (role) => (req, res, next) => requireRoles(role)(req, res, n
 const requireAnyRole = (roles) => {
   const list = Array.isArray(roles) ? roles : [roles];
   return (req, res, next) => requireRoles(...list)(req, res, next);
-};
-
-// RBAC permissions map (resource.action -> allowed roles)
-const RBAC_MAP = {
-  'orderTypes.read': ['Admin'],
-  'orderTypes.write': ['Admin'],
-  'uiTheme.read': ['Admin', 'Manager'],
-  'uiTheme.write': ['Admin'],
 };
 
 const userHasAnyRole = (user, roles) => {
@@ -87,7 +94,29 @@ const requirePermission = (permission) => (req, res, next) => {
   return next();
 };
 
+const signToken = async (user) => {
+  const payload = { id: user.id, role: user.role };
+  const token = jwt.sign(payload, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '1h' });
+  return token;
+};
+
+const verifyToken = async (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+  } catch (e) {
+    return null;
+  }
+};
+
+// Revoke all refresh tokens for a user (use on password reset)
+const revokeAll = async (userId) => {
+  if (!userId) throw new Error('userId is required');
+  const UserToken = require('../models/UserToken');
+  const res = await UserToken.deleteMany({ user_id: userId });
+  return { ok: true, deletedCount: (res && res.deletedCount) || 0 };
+};
+
 module.exports = {
   withUser, requireAuth, requireRoles, requireRole, requireAnyRole,
-  RBAC_MAP, hasPermission, requirePermission,
+  RBAC_MAP, hasPermission, requirePermission, signToken, verifyToken, revokeAll,
 };

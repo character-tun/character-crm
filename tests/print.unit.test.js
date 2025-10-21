@@ -44,7 +44,7 @@ describe('print adapter unit tests', () => {
         newPage: async () => ({ setContent: async () => {}, pdf: async () => pdfBuffer }),
         close: async () => {},
       }),
-    }));
+    }), { virtual: true });
 
     const TemplatesStore = require('../services/templatesStore');
     const {

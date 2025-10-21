@@ -53,7 +53,12 @@ async function ensureCleanReportsDir() {
   const dir = path.join(__dirname, '..', 'storage', 'reports');
   if (fs.existsSync(dir)) {
     for (const f of fs.readdirSync(dir)) {
-      fs.unlinkSync(path.join(dir, f));
+      const p = path.join(dir, f);
+      const st = fs.statSync(p);
+      if (st.isDirectory()) continue;
+      if (f.startsWith('migrateOrderStatuses-') && f.endsWith('.json')) {
+        fs.unlinkSync(p);
+      }
     }
   } else {
     fs.mkdirSync(dir, { recursive: true });
@@ -95,10 +100,11 @@ describe('scripts/migrateOrderStatuses.js', () => {
     const createdAtB = new Date('2024-01-02T11:00:00.000Z');
     const createdAtC = new Date('2024-01-03T12:00:00.000Z');
 
+    const orderTypeId = new mongoose.Types.ObjectId();
     const [a, b, c] = await Order.create([
-      { status: 'closed_paid', createdAt: createdAtA },
-      { status: 'closed_unpaid', createdAt: createdAtB },
-      { status: 'in_work', createdAt: createdAtC },
+      { orderTypeId, status: 'closed_paid', createdAt: createdAtA },
+      { orderTypeId, status: 'closed_unpaid', createdAt: createdAtB },
+      { orderTypeId, status: 'in_work', createdAt: createdAtC },
     ]);
 
     // First run (no-dry-run)
@@ -143,7 +149,8 @@ describe('scripts/migrateOrderStatuses.js', () => {
     ]);
 
     const createdAtX = new Date('2024-02-01T08:00:00.000Z');
-    const x = await Order.create({ status: 'legacy_closed_ok', createdAt: createdAtX });
+    const orderTypeId = new mongoose.Types.ObjectId();
+    const x = await Order.create({ orderTypeId, status: 'legacy_closed_ok', createdAt: createdAtX });
 
     // Run without mapping
     await runScript(['--no-dry-run'], { MONGO_URI: uri });
@@ -176,7 +183,8 @@ describe('scripts/migrateOrderStatuses.js', () => {
 
   test('Closed-fail sets paymentsLocked=true when closed empty', async () => {
     await OrderStatus.create({ code: 'closed_unpaid', name: 'Закрыт (без оплаты)', group: 'closed_fail', order: 50, system: true, actions: [] });
-    const y = await Order.create({ status: 'closed_unpaid', createdAt: new Date('2024-03-01T09:00:00.000Z') });
+    const orderTypeId = new mongoose.Types.ObjectId();
+    const y = await Order.create({ orderTypeId, status: 'closed_unpaid', createdAt: new Date('2024-03-01T09:00:00.000Z') });
 
     await runScript(['--no-dry-run'], { MONGO_URI: uri });
 

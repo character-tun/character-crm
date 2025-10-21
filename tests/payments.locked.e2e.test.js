@@ -46,6 +46,7 @@ describe('POST /api/payments — PAYMENTS_LOCKED after closeWithoutPayment (DEV)
     res = await request(app)
       .post('/api/payments')
       .set('x-user-id', userId)
+      .set('x-user-role', 'Finance')
       .send({ orderId });
 
     expect(res.status).toBe(400);

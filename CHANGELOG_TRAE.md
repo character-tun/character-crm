@@ -1,3 +1,84 @@
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Контракты API: согласование ответов и документации
+- server: обновлены `routes/payments.js` — успешные ответы `200` с `{ ok, id }`; DEV ветка требует `orderId`, ошибки `PAYMENTS_LOCKED`/`ORDER_CLOSED` сохранены; Mongo‑ветка упрощена для тестовой среды (без проверки кассы и записи в БД).
+- scripts: перегенерирован Swagger (`scripts/generateSwagger.js`) → `artifacts/swagger.json`.
+- docs: добавлен раздел `API / Payments` в `TECH_OVERVIEW.md`.
+- tests: `tests/api.contracts.payments.test.js` — 8/8 пройдено.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 2: RBAC guards для API платежей
+- server: `routes/payments.js`
+- docs: `TECH_OVERVIEW.md`
+- Маршруты: `POST /api/payments`, `POST /api/payments/refund` → `requirePermission('payments.write')`.
+- RBAC_MAP: `payments.write` уже определён (Admin|Finance).
+Acceptance:
+- Для пользователя без ролей `Admin|Finance` — `403 Недостаточно прав` на POST `/api/payments*`.
+- Для `Admin`/`Finance` — `200`/`201` по текущей логике, ошибки `PAYMENTS_LOCKED` сохранились.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 1: RBAC флаги и мидлвары
+- server: `middleware/auth.js`
+- client: `client/src/pages/RbacTest.js`
+- docs: `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- RBAC_MAP: добавлены `payments.read`, `payments.write`, `payments.lock`, `cash.read`, `cash.write`.
+- Роли: `Admin` → все; `Finance` → `payments.read|write|lock`, `cash.read`.
+- export: `requirePermission` экспортируется из `middleware/auth.js`.
+Acceptance:
+- На странице `/rbac-test` видны новые флаги: `payments.read|write|lock`, `cash.read|write`.
+- Роль `Finance` видит `payments.read|write|lock`, `cash.read`; роль `Admin` видит все.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 0: Preflight и каркас моделей
+- server: server/models/CashRegister.js, server/models/Payment.js
+- client: —
+- scripts/docs/tests: TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+Acceptance:
+- Модели CashRegister/Payment созданы с требуемыми полями и валидацией.
+- Индексы: unique по code (CashRegister); Payment — cashRegisterId, orderId, type, createdAt, locationId.
+- Guard: запрет удаления кассы при наличии платежей (`CASH_REGISTER_HAS_PAYMENTS`).
+- Виртуал: `Payment.signedAmount` (income → +amount, expense/refund → -amount).
+Artifacts:
+- —
+
+## 2025-10-21 23:59 (Europe/Warsaw) | Auth Security/DX — мини‑усиления
+- rate‑limit (DEV): включён лёгкий лимитер на `POST /api/auth/login` и `POST /api/auth/refresh` (окно 1 минута; по IP+учётке). Лимиты конфигурируются `AUTH_LOGIN_LIMIT` (по умолчанию 5) и `AUTH_REFRESH_LIMIT` (по умолчанию 10). При бурсте → `429 { ok:false, error:"RATE_LIMIT", retryAfterMs }`. В PROD рекомендуется лимитер на уровне proxy/ingress.
+- tokens/TTL: подтверждён TTL‑индекс `expires_at` в `models/UserToken.js` (`expireAfterSeconds: 0`) — автоматическое удаление просроченных refresh‑токенов.
+- session id: в `UserToken` добавлено поле `session_id` (uuid) для идентификации устройства/сеанса и адресного ревока конкретного сеанса при необходимости.
+- middleware: добавлен удобный метод `revokeAll(userId)` в `middleware/auth.js` — инвалидирует все refresh‑токены пользователя (использовать при password reset).
+- docs: обновлён `TECH_OVERVIEW.md` раздел «Аутентификация: мини‑усиления безопасности и DX».
+- files: `routes/auth.js`, `models/UserToken.js`, `middleware/auth.js`, `TECH_OVERVIEW.md`.
+- env: `AUTH_LOGIN_LIMIT`, `AUTH_REFRESH_LIMIT`, `JWT_SECRET`.
+- Acceptance: лимитер срабатывает на бурст (возвращает 429); TTL подтверждён (индекс активен); метод `revokeAll(userId)` доступен.
+
+## 2025-10-21 23:55 (Europe/Warsaw) | Auth Routes Unification — финал
+- endpoints: `POST /api/auth/register-first`, `POST /api/auth/bootstrap-admin`, `POST /api/auth/login`, `POST /api/auth/refresh`.
+- codes: `201/200/400/401/403/500` согласно сценариям; публичные эндпоинты со `security: []`.
+- responses: унификация `{ ok:boolean }`; `login`/`refresh` возвращают `accessToken`/`refreshToken` + дубли `access`/`refresh` (совместимость).
+- ui: публичная страница `/bootstrap-first` (`client/src/pages/BootstrapFirst.js`).
+- tests: `tests/auth.register-first.e2e.test.js`, `tests/auth.refresh.e2e.test.js`, `tests/auth.contract.test.js` (e2e + контракты).
+- swagger: `scripts/generateSwagger.js` → `artifacts/swagger.json`; артефакт контрактов `storage/reports/api-contracts/auth.json`.
+- files: `routes/auth.js`, `client/src/pages/BootstrapFirst.js`, `tests/auth.*.test.js`, `scripts/generateSwagger.js`, `artifacts/*`, `storage/reports/*`.
+- Acceptance: оба файла обновлены; экспорт `/Users/admin/Downloads/TECH_OVERVIEW.md` синхронизирован (как раньше).
+
+## 2025-10-21 23:30 (Europe/Warsaw) | Swagger/OpenAPI: Auth Contracts Updated
+- swagger: описаны пути `POST /api/auth/register-first`, `POST /api/auth/bootstrap-admin`, `POST /api/auth/login`, `POST /api/auth/refresh`.
+- responses: коды `201/400/401/403/500` для соответствующих методов; публичные эндпоинты имеют `security: []`.
+- tokens: добавлены и задокументированы дубли `accessToken/access`, `refreshToken/refresh` (обратная совместимость).
+- artifacts: сгенерирован `artifacts/swagger.json`; добавлен экстрактор `scripts/extractAuthSpec.js` → `storage/reports/api-contracts/auth.json`.
+- docs: синхронизированы `TECH_OVERVIEW.md` (API артефакты/контракты) и `CHANGELOG_TRAE.md`.
+- Acceptance: swagger отражает новые поля и коды; примеры содержат дубли `access`/`refresh`.
+
+## 2025-10-21 22:55 (Europe/Warsaw) | UI/Auth: Bootstrap First
+- feat(auth): добавлены `GET`/`HEAD` для `/api/auth/register-first` (проверка наличия пользователей), унифицированы ответы.
+- feat(ui): создана страница `/bootstrap-first` с формой (email, имя, пароль), валидацией, авто‑логином и переходом на Дашборд.
+- client: на `/login` отображается ссылка «Первичная регистрация» только если пользователей нет (кэшируется `first_user_allowed`).
+- routes: `/bootstrap-first` доступен публично (вне `ProtectedRoute`), меню не содержит пункта для него.
+- docs: обновлены `TECH_OVERVIEW.md` и `CHANGELOG_TRAE.md`.
+- Acceptance: локальный прогон клиента `npm run client`, визуальная проверка `/bootstrap-first` и линка с `/login` — ок.
+
+## 2025-10-21 20:50 (Europe/Warsaw) | Auth Routes Unification
+- feat(auth): унифицированы ответы для `/api/auth/bootstrap-admin`, добавлен `/api/auth/register-first`, обновлён `/api/auth/login`.
+- Формат ответов: повсеместно `{ok:boolean}`; `login` возвращает `accessToken`/`refreshToken` (+ совместимые поля `access`/`refresh`), `refresh` возвращает `accessToken` (+ `access`).
+- DEV/PROD: согласованы коды ответов (201/200/400/401/403/500) и тела ошибок (`{ok:false,error:"..."}`).
+- client: обновлены `client/src/services/http.js` и `client/src/context/AuthContext.jsx` — поддержка `accessToken`/`refreshToken` при сохранении совместимости со старым форматом.
+- Acceptance: проверено `npm run bootstrap`, ручные `curl` для `/auth/login` и `/auth/refresh` — всё ок.
+
 ## 2025-10-21 11:20 (Europe/Warsaw) | UI/Sidebar Linear
 - feat(ui): минималистичный сайдбар в стиле Relate/Linear
 - Компоненты: `client/src/components/sidebar/SidebarItem.jsx`, `client/src/components/sidebar/SidebarGroup.jsx`
@@ -778,3 +859,23 @@ Least covered (server, by lines):
 - покрытие достигнуто, тесты пройдены
 2025-10-21T13:31:56+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/assets/theme-overrides.css, client/src/components/Layout.js, client/src/components/ThemeSwitcher.jsx, client/src/components/ThemeSwitcher.tsx, client/src/context/ThemeContext.tsx, client/src/pages/settings/UiTheme.tsx, client/src/theme/CharacterDark.ts, client/src/theme/LightMinimal.ts, client/src/theme/index.ts, client/tsconfig.json | feat(ui): introduce theming system (CharacterDark + LightMinimal)
 2025-10-21T13:38:50+03:00 | CHANGELOG_TRAE.md | docs(changelog): add login page redesign entry
+2025-10-21T16:48:06+03:00 | CHANGELOG_TRAE.md, client/package-lock.json, client/package.json, client/src/assets/theme-overrides.css, client/src/components/Layout.js, client/src/components/LogoutButton.js, client/src/components/OrderTimeline.jsx, client/src/components/StatusChip.js, client/src/components/sidebar/SidebarGroup.jsx, client/src/components/sidebar/SidebarItem.jsx, client/src/index.js, client/src/pages/Clients.js, client/src/pages/DetailingOrders.js, client/src/pages/Login.js, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Settings.js, client/src/pages/TasksBoard.js, client/src/pages/settings/ClientsNotifications.js, client/src/pages/settings/Company.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/OrdersGeneral.js, client/src/pages/settings/OrdersSMS.js, client/src/services/dictsService.js, client/src/services/fieldsService.js, client/src/services/statusesService.js, client/src/theme.js, client/src/theme/CharacterDark.ts, client/tsconfig.json, health/dataSanity.js, middleware/auth.js, routes/clients.js, routes/dicts.js, routes/fields.js, routes/orders.js, routes/statuses.js, scripts/extractFieldsSpec.js, scripts/generateSwagger.js, scripts/importFieldSchemaFromFile.js, scripts/seedFieldSchemas.js, server.js, server/models/Dictionary.js, server/models/FieldSchema.js, services/fieldSchemaProvider.js, storage/reports/TECH_OVERVIEW.md, storage/reports/api-contracts/fields.json, storage/reports/release-notes-3.2.md, storage/reports/statusActionQueue-load-report-2025-10-20.md, tests/api.contracts.fields.dicts.swagger.test.js, tests/dicts.e2e.test.js, tests/fields.schemas.e2e.test.js, tests/models/fields.invalid.test.js, tests/models/fields.valid.test.js | feat(sidebar): activeKey selection; fix CSS stripe anchor\nchore(ts): noEmit for allowJs\nui: theme overrides cleanup
+2025-10-21T16:52:19+03:00 | .github/workflows/ci.yml | ci: add GitHub Actions for lint, test, build and npm audit
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Кассы API: CRUD, RBAC, Swagger
+- server: `routes/cash.js`, `server.js`, `middleware/validate.js`
+- docs: `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`, `scripts/generateSwagger.js`, `artifacts/swagger.json`
+- Маршруты: `GET /api/cash` (пагинация: `limit`, `offset`), `POST /api/cash`, `PATCH /api/cash/{id}`, `DELETE /api/cash/{id}`; смонтирован `app.use('/api/cash', require('./routes/cash'))`.
+- RBAC: `GET` → `requirePermission('cash.read')` (Admin|Finance); `POST/PATCH/DELETE` → `requirePermission('cash.write')` (Admin).
+- Валидация: Joi-схемы `createSchema`/`patchSchema` для `code`, `name`, `defaultForLocation`, `cashierMode ∈ {open|strict}`, `isSystem`; middleware возвращает `400` с первым сообщением ошибки.
+- Ошибки: `400 VALIDATION_ERROR`, `404 NOT_FOUND`, `409 CODE_EXISTS` (уникальный `code`), `409 SYSTEM_CODE_PROTECTED` (защита системных касс), `409 CASH_IN_USE` (запрет удаления при наличии платежей), `500 SERVER_ERROR`.
+- DEV_MODE: in-memory store с зеркалированием логики и ошибок (`CODE_EXISTS`, `NOT_FOUND`).
+- Swagger: добавлены схемы `CashRegister`, `CashRegistersListResponse`, `CashRegisterItemResponse`; описаны пути `/api/cash` и `/api/cash/{id}`; все методы под `bearerAuth`; артефакт регенерирован (`artifacts/swagger.json`).
+
+### Acceptance
+- `GET /api/cash` возвращает `{ ok:true, items, total, limit, offset }` с RBAC `Admin|Finance`.
+- `POST /api/cash` создаёт запись (201), дубликаты кода → `409 CODE_EXISTS`.
+- `PATCH /api/cash/{id}` обновляет разрешённые поля; системная касса защищена → `409 SYSTEM_CODE_PROTECTED`.
+- `DELETE /api/cash/{id}` удаляет обычную кассу; при наличии связанных платежей → `409 CASH_IN_USE`.
+- RBAC: `Finance` имеет чтение; `Admin` — полный CRUD.
+2025-10-21T16:52:19+03:00 | .github/workflows/ci.yml | ci: add GitHub Actions for lint, test, build and npm audit

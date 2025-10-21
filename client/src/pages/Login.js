@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import http from '../services/http';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -9,6 +10,32 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [firstAllowed, setFirstAllowed] = useState(false);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('first_user_allowed');
+    if (cached === '1') {
+      setFirstAllowed(true);
+      return;
+    }
+    if (cached === '0') {
+      setFirstAllowed(false);
+      return;
+    }
+    // Если нет кэша — проверить API
+    http.get('/auth/register-first')
+      .then(({ data }) => {
+        const allowed = !data?.usersExist;
+        localStorage.setItem('first_user_allowed', allowed ? '1' : '0');
+        setFirstAllowed(allowed);
+      })
+      .catch((e) => {
+        const code = e?.response?.data?.error || '';
+        const exists = code === 'USERS_ALREADY_EXIST';
+        localStorage.setItem('first_user_allowed', exists ? '0' : '1');
+        setFirstAllowed(!exists);
+      });
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -59,6 +86,13 @@ export default function LoginPage() {
         }}
       >
         <h2 style={{ margin: 0, fontWeight: 600 }}>Вход в CRM Character</h2>
+        {firstAllowed && (
+          <div style={{ marginTop: 6 }}>
+            <Link to="/bootstrap-first" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>
+              Первичная регистрация
+            </Link>
+          </div>
+        )}
         {error && <div style={{ color: '#ff6b6b' }}>Ошибка: {error}</div>}
 
         <label style={{ fontSize: 14, opacity: 0.85 }}>Email</label>

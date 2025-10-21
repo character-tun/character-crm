@@ -33,14 +33,14 @@ describe('e2e PROD-like: notify sends email and print saves file', () => {
     jest.resetModules();
     // Mock nodemailer and puppeteer BEFORE requiring modules
     const sendMail = jest.fn().mockResolvedValue({ messageId: 'msg-1' });
-    jest.doMock('nodemailer', () => ({ createTransport: () => ({ sendMail }) }));
+    jest.doMock('nodemailer', () => ({ createTransport: () => ({ sendMail }) }), { virtual: true });
     const pdfBuffer = Buffer.from('PDF');
     jest.doMock('puppeteer', () => ({
       launch: async () => ({
         newPage: async () => ({ setContent: async () => {}, pdf: async () => pdfBuffer }),
         close: async () => {},
       }),
-    }));
+    }), { virtual: true });
   });
 
   test('create templates, change status, verify email sent and file downloadable', async () => {

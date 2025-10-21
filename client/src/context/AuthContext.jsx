@@ -20,9 +20,10 @@ export function AuthProvider({ children }) {
     }
     if (refreshToken && !getAccess()) {
       apiRefresh(refreshToken)
-        .then(({ access }) => {
-          setAccess(access);
-          setAccessState(access);
+        .then(({ accessToken, access }) => {
+          const token = accessToken || access;
+          setAccess(token);
+          setAccessState(token);
         })
         .catch(() => {
           // keep unauthenticated
@@ -33,23 +34,26 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!access;
 
   const login = async (email, password) => {
-    const { access, refresh, user } = await apiLogin({ email, password });
-    setAccess(access);
-    setAccessState(access);
+    const { accessToken, access, refreshToken, refresh, user } = await apiLogin({ email, password });
+    const token = accessToken || access;
+    const ref = refreshToken || refresh;
+    setAccess(token);
+    setAccessState(token);
     setUser(user);
     setUserState(user);
-    localStorage.setItem('auth_refresh', refresh);
+    localStorage.setItem('auth_refresh', ref);
     localStorage.setItem('current_user', JSON.stringify({ id: user.id, email: user.email, roles: user.roles, role: user.role }));
-    return { access, refresh, user };
+    return { access: token, refresh: ref, user };
   };
 
   const refreshAccess = async () => {
     const refreshToken = localStorage.getItem('auth_refresh');
     if (!refreshToken) throw new Error('No refresh token');
-    const { access } = await apiRefresh(refreshToken);
-    setAccess(access);
-    setAccessState(access);
-    return access;
+    const { accessToken, access } = await apiRefresh(refreshToken);
+    const token = accessToken || access;
+    setAccess(token);
+    setAccessState(token);
+    return token;
   };
 
   const logout = async () => {

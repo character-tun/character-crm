@@ -12,7 +12,11 @@
     "build": "cd client && npm run build",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm run install-client && npm run build",
     "test": "jest",
-    "seed:orderTypes": "node scripts/seedOrderTypes.js"
+    "seed:orderTypes": "node scripts/seedOrderTypes.js",
+    "setup:db": "bash scripts/setup-dev-db.sh",
+    "bootstrap": "bash scripts/bootstrap-demo.sh",
+    "server:bg": "node server.js > /tmp/trae-server.log 2>&1 & echo $! > /tmp/trae.pid",
+    "server:stop": "kill $(cat /tmp/trae.pid) || true"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

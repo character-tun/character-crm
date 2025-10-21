@@ -41,6 +41,11 @@ export default function RbacTest() {
   const canInventory = hasAnyRole(['Admin','Production']);
   const canSettings = hasAnyRole(['Admin','Manager']);
   const isManagerOrAdmin = hasAnyRole(['Admin','Manager']);
+  const canPaymentsRead = hasAnyRole(['Admin','Finance']);
+  const canPaymentsWrite = hasAnyRole(['Admin','Finance']);
+  const canPaymentsLock = hasAnyRole(['Admin','Finance']);
+  const canCashRead = hasAnyRole(['Admin','Finance']);
+  const canCashWrite = hasAnyRole(['Admin']);
 
   return (
     <Box>
@@ -72,6 +77,11 @@ export default function RbacTest() {
         <ListItem><ListItemText primary={`Задачи: создавать — доступно всем; просматривать ${isManagerOrAdmin ? 'все задачи' : 'только свои'}; перемещать/обновлять — ${isManagerOrAdmin ? 'все' : 'только свои'}`} /></ListItem>
         <ListItem><ListItemText primary={`Клиенты: создавать/редактировать/удалять — ${canClientsCRUD ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Платежи: доступ к разделу — ${canPayments ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Платежи (payments.read): ${canPaymentsRead ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Платежи (payments.write): ${canPaymentsWrite ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Платежи (payments.lock): ${canPaymentsLock ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Кассы (cash.read): ${canCashRead ? 'разрешено' : 'нет доступа'}`} /></ListItem>
+        <ListItem><ListItemText primary={`Кассы (cash.write): ${canCashWrite ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Маркетинг: доступ к разделу — ${canMarketing ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Услуги: доступ к разделу — ${canServices ? 'разрешено' : 'нет доступа'}`} /></ListItem>
         <ListItem><ListItemText primary={`Производство и склад: доступ — ${canProduction && canInventory ? 'разрешено' : 'нет доступа'}`} /></ListItem>

@@ -47,7 +47,7 @@ describe('notify adapter unit tests', () => {
     process.env.SMTP_TO = 'to@test';
 
     const sendMail = jest.fn().mockResolvedValue({ messageId: 'mid-1' });
-    jest.doMock('nodemailer', () => ({ createTransport: () => ({ sendMail }) }));
+    jest.doMock('nodemailer', () => ({ createTransport: () => ({ sendMail }) }), { virtual: true });
 
     const TemplatesStore = require('../services/templatesStore');
     const { handleStatusActions, __devReset, getOutbox } = require('../services/statusActionsHandler');

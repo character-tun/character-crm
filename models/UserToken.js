@@ -7,6 +7,7 @@ const UserTokenSchema = new mongoose.Schema({
   refresh_token: { type: String, required: true, unique: true },
   user_agent: { type: String },
   ip: { type: String },
+  session_id: { type: String, default: uuidv4 },
   expires_at: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now },
 });

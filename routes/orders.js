@@ -8,7 +8,7 @@ const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
 const Order = require('../models/Order');
 const { getDevState } = require('../services/statusActionsHandler');
-const OrderStatus = require('../models/OrderStatus');
+let OrderStatus; try { OrderStatus = require('../models/OrderStatus'); } catch (e) { /* optional in DEV */ }
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 const { getActiveSchema } = require('../services/fieldSchemaProvider');
 
@@ -212,4 +212,16 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
   }
 });
 
+// GET /api/orders/:id — вернуть заказ по ID
+router.get('/:id', async (req, res, next) => {
+  try {
+    if (!Order) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
+    const { id } = req.params;
+    const item = await Order.findById(id).lean();
+    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
+    return res.json({ ok: true, item });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;

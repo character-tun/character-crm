@@ -16,7 +16,22 @@
 - `storage/reports/` — отчеты по контрактам/миграциям.
 
 ## Основные модули
-- Аутентификация и RBAC: `middleware/auth.js` — `requireAuth` и `withUser` (DEV fallback: `AUTH_DEV_MODE=1` → подставляет `req.user`).
+- Аутентификация и RBAC: `middleware/auth.js` — `requireAuth`, `withUser`, `requirePermission` (DEV fallback: `AUTH_DEV_MODE=1` → подставляет `req.user`).
+  - RBAC карта (`RBAC_MAP`):
+    - `orderTypes.read` → `Admin`
+    - `orderTypes.write` → `Admin`
+    - `uiTheme.read` → `Admin|Manager`
+    - `uiTheme.write` → `Admin`
+    - `payments.read` → `Admin|Finance`
+    - `payments.write` → `Admin|Finance`
+    - `payments.lock` → `Admin|Finance`
+    - `cash.read` → `Admin|Finance`
+    - `cash.write` → `Admin`
+  - Роли:
+    - `Admin` → доступ ко всем флагам выше
+    - `Finance` → `payments.read|write|lock`, `cash.read`
+  - Унификация Auth: ответы `{ ok:boolean }`; `login`/`refresh` возвращают `accessToken`/`refreshToken` и дубли `access`/`refresh` для совместимости.
+  - UI: публичная страница `/bootstrap-first` (Первичная регистрация) с авто‑логином и редиректом на Дашборд.
 - Валидация полей (FieldSpec): серверные валидаторы типов: `text`, `number`, `date`, `bool`, `list`, `multilist` (для `list/multilist` — `options` обязательны).
 - FieldSchema: версионирование схем по паре `scope + name`, единственная активная версия, запрет удаления активной, активация/деактивация.
 - Dicts: простые словари с уникальным `code`, значениями `values[]`, индексами и защитами.
@@ -62,6 +77,9 @@
 ## Data Sanity Checks
 - Валидация входных данных в моделях и контроллерах.
 - Логирование ошибок и 4xx/5xx ответов.
+- Централизованная валидация запросов: `middleware/validate.js` (Joi) и общие схемы для Payments/Cash.
+- Унифицированный формат ошибок: `{ ok: false, error, details? }` через глобальный хэндлер `middleware/error.js`.
+- DEV‑ветка для Payments (create/refund): минимально требуется `orderId`; Mongo‑ветка возвращает stub `id` и проверяет ограничения по состоянию заказа.
 
 ### Health: FieldSchemas
 - Единственная активная версия на пару `scope + name`; >1 → `problems.fieldSchemas.multiActiveForPair`.
@@ -89,6 +107,7 @@
 - Экстракция контрактов:
   - OrderType: `node scripts/extractOrderTypeSpec.js` — пишет `storage/reports/api-contracts/ordertype.json`.
   - Fields: `node scripts/extractFieldsSpec.js` — пишет `storage/reports/api-contracts/fields.json`.
+  - Auth: `node scripts/extractAuthSpec.js` — пишет `storage/reports/api-contracts/auth.json`.
 
 Правила и ожидания:
 - Артефакты всегда должны соответствовать актуальному состоянию API.
@@ -134,10 +153,28 @@
   - Ошибки: `400 VALIDATION_ERROR`, `404 NOT_FOUND`, `409 CODE_EXISTS`.
   - RBAC: доступ `Admin` и `Manager`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` или недоступной Mongo.
 - Swagger / OpenAPI:
-  - Добавлены схемы: `FieldSpec`, `FieldSchema`, `FieldSchemasListResponse`, `FieldSchemaItemResponse`, `FieldSchemaCreateRequest`, `FieldSchemaPatchRequest`, `Dictionary`, `DictionariesListResponse`, `DictionaryItemResponse`, `DictionaryCreateRequest`, `DictionaryPatchRequest`.
-  - Добавлены пути: `/api/fields`, `/api/fields/{id}`, `/api/fields/{scope}/{name}/versions`, `/api/fields/{id}/activate`, `/api/fields/{id}/deactivate`, `/api/dicts`, `/api/dicts/{id}`, `/api/dicts/by-code/{code}`.
+  - Добавлены схемы: `FieldSpec`, `FieldSchema`, `FieldSchemasListResponse`, `FieldSchemaItemResponse`, `FieldSchemaCreateRequest`, `FieldSchemaPatchRequest`, `Dictionary`, `DictionariesListResponse`, `DictionaryItemResponse`, `DictionaryCreateRequest`, `DictionaryPatchRequest`, `CashRegister`, `CashRegistersListResponse`, `CashRegisterItemResponse`.
+  - Добавлены пути: `/api/fields`, `/api/fields/{id}`, `/api/fields/{scope}/{name}/versions`, `/api/fields/{id}/activate`, `/api/fields/{id}/deactivate`, `/api/dicts`, `/api/dicts/{id}`, `/api/dicts/by-code/{code}`, `/api/cash`, `/api/cash/{id}`.
   - Генератор: `scripts/generateSwagger.js`; артефакт: `artifacts/swagger.json`.
 - Статус: Шаг 2 (API) — OK.
+
+- API / Cash:
+  - `GET /api/cash` — список касс; параметры `limit` (1..500, по умолчанию 50) и `offset` (>=0); сортировка по `code`.
+  - `POST /api/cash` — создать кассу; обязательные поля `code`, `name`; нормализация `code` (trim+lower); конфликт кода → `409 CODE_EXISTS`.
+  - `PATCH /api/cash/:id` — частичное обновление; запрет смены `code` для системной кассы (`isSystem=true`) → `409 SYSTEM_CODE_PROTECTED`; `409 CODE_EXISTS` при дублировании; `400 VALIDATION_ERROR`; `404 NOT_FOUND`.
+  - `DELETE /api/cash/:id` — удалить; при наличии платежей → `409 CASH_IN_USE`; `404 NOT_FOUND`.
+  - RBAC: `cash.read` → `Admin|Finance`; `cash.write` → `Admin`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` и недоступной Mongo (в DEV удаление без проверки платежей).
+
+- API / Payments:
+  - `GET /api/payments` — список платежей; параметры `limit` (1..500, по умолчанию 50) и `offset` (>=0); фильтры: `orderId`, `type` (`income|expense|refund`); сортировка по `createdAt` (desc).
+  - `POST /api/payments` — создать платёж; обязательное поле `orderId`; доп. поля по бизнес‑логике: `amount`, `currency`, `method`, `cashRegisterId`, `note`, `locationId`, `articlePath`; ответ `200` → `{ ok, id }`.
+  - `POST /api/payments/refund` — создать возврат; обязательное поле `orderId`; ответ `200` → `{ ok, id }`.
+  - `PATCH /api/payments/:id` — частичное обновление; запрет при `locked=true` без флага `payments.lock`; ошибки `400 VALIDATION_ERROR`, `403 PAYMENT_LOCKED`, `403 PAYMENTS_LOCKED`, `403 ORDER_CLOSED`, `404 NOT_FOUND`.
+  - `POST /api/payments/:id/lock` — заблокировать платёж; ответ `{ ok: true }`.
+  - Ошибки домена: `PAYMENTS_LOCKED` — платёжные операции недоступны; `ORDER_CLOSED` — заказ закрыт; `VALIDATION_ERROR`; `NOT_FOUND`; DEV fallback: без проверки кассы (`CASH_NOT_FOUND` только в полной Mongo‑ветке).
+  - RBAC: `payments.read` → `Admin|Finance`; `payments.write` → `Admin|Finance`; `payments.lock` → `Admin|Finance`.
+  - Security: `bearerAuth`.
+  - DEV fallback: при `AUTH_DEV_MODE=1` и недоступной Mongo — in‑memory; минимальная валидация: требуется `orderId`; ответы и ошибки соответствуют контрактным тестам.
 
 ### Использование FieldSchema в бизнес-логике
 - `services/fieldSchemaProvider.js` — экспортирует `getActiveSchema(scope, name, ttlSecs=60)` с TTL-кэшем (in-memory) по ключу `active:<scope>:<name>`. Источник данных:
@@ -176,3 +213,35 @@
   - Поддерживаются режимы `primary`/`secondary`/`custom` (цвет хранится в `ui.accent` и `ui.accentHex`). При смене акцента обновляется `--color-primary`.
 - RBAC:
   - Страница «Оформление» — `/settings/ui-theme`, доступна `Admin` и `Manager`. Переключатель темы в AppBar доступен только `Admin`.
+
+## Аутентификация: первичная регистрация
+- Серверные эндпоинты:
+  - `GET /api/auth/register-first` — проверка наличия пользователей; `{ ok:true, usersExist:false }` или `400 USERS_ALREADY_EXIST`.
+  - `HEAD /api/auth/register-first` — статус без тела: `200` если регистрация возможна, `400` если пользователи уже есть.
+  - `POST /api/auth/register-first` — создать первого администратора (email, пароль, имя); роль `Admin` гарантируется.
+  - `POST /api/auth/bootstrap-admin` — совместимый с `register-first`; `201 Created`, `400 USERS_ALREADY_EXIST`; публичный (`security: []`).
+  - `POST /api/auth/login` — `{ ok:true, accessToken, refreshToken, access, refresh }`.
+  - `POST /api/auth/refresh` — `{ ok:true, accessToken, access }`.
+- Swagger:
+  - Коды ответов отражены: `201/400/401/403/500`.
+  - Публичные эндпоинты `/api/auth/*` помечены `security: []` (глобальный `bearerAuth` переопределяется).
+  - Обратная совместимость: дублируются поля `accessToken/access`, `refreshToken/refresh` в примерах и схемах.
+- Клиент:
+  - Страница `/bootstrap-first` публична, без авторизации; авто‑логин и переход на Дашборд после успешной регистрации.
+  - На `/login` ссылка «Первичная регистрация» показывается, только если пользователей ещё нет (кэш `localStorage:first_user_allowed`).
+  - Нотификации через `Snackbar`/`Alert` (стили в `client/src/assets/theme-overrides.css`).
+- Безопасность:
+  - Глобальный гард `/api/*` пропускает `/api/auth/*` и `/api/public/*`.
+  - Пункт меню для `/bootstrap-first` не добавляется; доступ только по прямой ссылке.
+- DEV режим:
+
+### Аутентификация: мини-усиления безопасности и DX
+- Rate-limit (DEV): по IP/учётке.
+  - `login`: окно `60s`, лимит `AUTH_LOGIN_LIMIT` (по умолчанию `5`).
+  - `refresh`: окно `60s`, лимит `AUTH_REFRESH_LIMIT` (по умолчанию `10`).
+  - Ответ при бурсте: `429 { ok:false, error:'RATE_LIMIT', retryAfterMs }`.
+- PROD: рекомендуем лимитировать через прокси/ingress (Nginx/Cloud LB). Встроенный лимитер — in‑memory, не для горизонтального скейлинга.
+- TTL на refresh-токенах: `models/UserToken.js` содержит TTL‑индекс `expires_at` (`expireAfterSeconds:0`), просроченные записи удаляются MongoDB автоматически.
+- Идентификатор сессии: `session_id` (uuid) добавлен в `UserToken` для точечной ревокации конкретной сессии.
+- Массовая ревокация: `middleware/auth.js` экспортирует `revokeAll(userId)` — удаляет все refresh‑токены пользователя; используйте при сбросе пароля.
+- ENV: `AUTH_LOGIN_LIMIT`, `AUTH_REFRESH_LIMIT` для настройки лимитов в DEV.
