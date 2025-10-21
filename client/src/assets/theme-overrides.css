@@ -1,0 +1,242 @@
+:root {
+  /* Variables injected at runtime via #app-theme-vars */
+}
+
+html, body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
+
+/* Surfaces */
+.MuiPaper-root {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* AppBar */
+.MuiAppBar-root {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Sidebar / Drawer */
+.MuiDrawer-paper {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border);
+}
+[data-theme="Character Dark"] .MuiDrawer-paper {
+  backdrop-filter: blur(6px);
+}
+[data-theme="Light Minimal"] .MuiDrawer-paper {
+  backdrop-filter: none;
+  background-color: var(--color-surface);
+}
+/* Active stripe for selected item */
+.MuiListItemButton-root.Mui-selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 2px;
+  border-radius: 2px;
+  background-color: var(--color-primary);
+  box-shadow: 0 0 6px var(--color-primary);
+}
+[data-theme="Light Minimal"] .MuiListItemButton-root.Mui-selected::before {
+  box-shadow: none;
+}
+
+/* Buttons */
+.MuiButton-root {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.MuiButton-root:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Cards & panels using alt surface */
+.card-alt, .panel-alt {
+  background-color: var(--color-surfaceAlt);
+}
+
+/* Tables */
+.MuiTableHead-root {
+  background-color: var(--color-surfaceAlt);
+}
+
+/* Inputs */
+.input-alt, .MuiOutlinedInput-root {
+  background-color: var(--color-surfaceAlt);
+}
+
+/* Menus */
+.menu-alt {
+  background-color: var(--color-surfaceAlt);
+}
+
+/* Muted text utility */
+.text-muted, .MuiTypography-colorTextSecondary {
+  color: var(--color-textMuted) !important;
+}
+
+.MuiButton-containedPrimary {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+}
+.MuiButton-containedSecondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+.MuiButton-outlined {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+/* ghost variant mapped to text */
+.MuiButton-text:hover {
+  background-color: var(--color-surfaceAlt);
+}
+.MuiButton-root.Mui-disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* Inputs */
+.MuiOutlinedInput-root {
+  background-color: var(--color-surfaceAlt);
+  color: var(--color-text);
+}
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border);
+}
+.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+.MuiOutlinedInput-root:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Dialogs */
+.MuiDialog-paper {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.MuiDialog-paper:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Dialog backdrop per theme */
+[data-theme="Character Dark"] .MuiBackdrop-root {
+  background-color: color-mix(in oklab, var(--color-bg) 45%, transparent);
+}
+[data-theme="Light Minimal"] .MuiBackdrop-root {
+  background-color: color-mix(in oklab, var(--color-bg) 25%, transparent);
+}
+
+/* Tables */
+.MuiTable-root {
+  background-color: var(--color-surface);
+}
+.MuiTable-root tbody tr:nth-of-type(even) {
+  background-color: var(--color-surfaceAlt);
+}
+.MuiTableRow-root:hover {
+  background-color: var(--color-surfaceAlt);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.MuiTableCell-root {
+  border-color: var(--color-border);
+}
+
+/* Typography secondary */
+.MuiTypography-root.MuiTypography-colorTextSecondary {
+  color: var(--color-textMuted) !important;
+}
+
+/* Chips, status indicators */
+.MuiChip-root {
+  border-radius: var(--radius);
+}
+.chip-status-draft { background-color: var(--status-draft); }
+.chip-status-progress { background-color: var(--status-in-progress); }
+.chip-status-success { background-color: var(--status-success); }
+.chip-status-fail { background-color: var(--status-fail); }
+/* Unified StatusChip classes */
+.status-chip { font-weight: 600; border-radius: var(--radius); }
+.status-chip--draft { background-color: var(--status-draft); color: var(--color-text); }
+.status-chip--in-progress { background-color: var(--status-in-progress); color: var(--color-text); }
+.status-chip--success { background-color: var(--status-success); color: var(--color-text); }
+.status-chip--fail { background-color: var(--status-fail); color: var(--color-text); }
+/* outlined style */
+.status-chip--outlined { background: transparent; border: 1px solid currentColor; }
+
+/* Toasts (Alert + Snackbar) */
+.MuiAlert-standardSuccess { background-color: var(--status-success); color: var(--color-text); }
+.MuiAlert-standardError { background-color: var(--status-fail); color: var(--color-text); }
+.MuiAlert-standardInfo { background-color: var(--color-info); color: var(--color-text); }
+.MuiSnackbarContent-root { border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* Kanban pills and connectors */
+.kanban-pill {
+  border-radius: 9999px !important;
+  padding: 8px 12px;
+}
+[data-theme="Character Dark"] .kanban-pill {
+  background-image: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  color: #0b0d0f;
+}
+[data-theme="Light Minimal"] .kanban-pill {
+  background-color: rgba(59,130,246,0.85); /* fallback for primary with opacity */
+  color: #0b0d0f;
+}
+[data-theme="Character Dark"] .kanban-pill:hover {
+  filter: drop-shadow(0 0 8px var(--color-primary));
+}
+
+.kanban-column {
+  position: relative;
+}
+.kanban-column::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+  opacity: 0.6;
+}
+
+/* Utility classes based on theme tokens */
+.u-bg { background-color: var(--color-bg); }
+.u-surface { background-color: var(--color-surface); }
+.u-surfaceAlt { background-color: var(--color-surfaceAlt); }
+.u-text { color: var(--color-text); }
+.u-textMuted { color: var(--color-textMuted); }
+.u-border { border-color: var(--color-border); }
+.u-primary { color: var(--color-primary); }
+.u-secondary { color: var(--color-secondary); }
+.u-success { color: var(--color-success); }
+.u-danger { color: var(--color-danger); }
+.u-warning { color: var(--color-warning); }
+.u-info { color: var(--color-info); }
+.u-rounded { border-radius: var(--radius); }
+.u-shadow { box-shadow: var(--shadow); }
+.u-focusRing:focus-visible { box-shadow: var(--focus-ring); }
+.u-fontBase { font-family: var(--font-family); font-size: var(--font-size-base); }
+.u-fontHeading { font-family: var(--font-family); font-size: var(--font-size-heading); font-weight: var(--font-weight-bold); }

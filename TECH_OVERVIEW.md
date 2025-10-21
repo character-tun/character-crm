@@ -1,178 +1,178 @@
-# TECH_OVERVIEW — Character CRM / TRAE
+# Character CRM — Technical Overview
 
-> Последний пуш
-- Дата/время: 2025-10-20 18:02 (локальное)
-- Ветвь: main (подготовка)
-- Ключевые файлы (≤10): server.js; services/orderStatusService.js; services/statusActionsHandler.js; services/templatesStore.js; services/queueMetrics.js; scripts/migrateOrderStatuses.js; scripts/generateSwagger.js; tests/rbac.e2e.test.js; tests/queue.statusActions.metrics.e2e.test.js; CHANGELOG_TRAE.md
-- Preflight: .gitignore обновлён; .env удалён из индекса; очищены client/coverage, coverage, artifacts, node_modules, .DS_Store
-- Tests: failed
-- Commit: f3e6b11
-- Push: origin/main @ f3e6b11 (https://github.com/character-tun/character-crm/tree/main)
+## Архитектура и цели
+- Monorepo без workspace: серверный код (Express + Mongo/Mongoose), клиент (React), вспомогательные скрипты, артефакты Swagger, отчеты.
+- Цели: прозрачные контракты API, строгая валидация моделей и схем полей (FieldSchema), минимальный фреймворк-овербайт, воспроизводимые тесты и артефакты.
 
-## 1. Архитектура и стек
-- Архитектура: `server` (Node.js/Express/MongoDB/Queues) + `client` (React). Один репозиторий, общие тесты и утилиты.
-- Стек: `Node.js`, `Express`, `MongoDB (Mongoose)`, `BullMQ` (с Redis; мем-режим в DEV), `React`, `Jest`, `Supertest`, `Zod/Joi`, `Helmet`, `CORS`, `dotenv`.
-- Режимы: `DEV` (упрощённые ветки, in-memory fallback при `AUTH_DEV_MODE=1`) и `PROD` (Mongo/Redis, реальная печать/уведомления).
-- Очередь: `queues/statusActionQueue.js` — обработка авто-действий статусов (BullMQ или мем-очередь), ретраи/идемпотентность, метрики.
-- Кэш: in-memory TTL для `GET /api/statuses` и `GET /api/doc-templates` (`services/ttlCache.js`, `CACHE_TTL_SECS`).
-- Разделение ролей: `server` (API, модели, сервисы, очереди), `client` (UI), `tests` (unit/e2e), `scripts` (генераторы, миграции, диагностика), `storage/reports` (артефакты).
+## Структура проекта
+- `server.js` — точка входа Express; монтирует middleware аутентификации, маршруты API, и обработчик ошибок.
+- `routes/` — REST API маршруты (клиенты, заказы, статусы, платежи, поля/схемы, словари и т.д.).
+- `models/` — Mongoose модели и валидаторы.
+- `services/` — бизнес-сервисы (кэш активных схем, провайдеры и т.д.).
+- `scripts/` — скрипты генерации артефактов (Swagger, отчеты), миграции.
+- `client/` — React клиент, сервисы API, страницы настроек и управления.
+- `tests/` — Jest тесты: модели, e2e роутов, контрактные Swagger-проверки.
+- `artifacts/` — сгенерированные файлы (OpenAPI `swagger.json` и др.).
+- `storage/reports/` — отчеты по контрактам/миграциям.
 
-## 2. Структура проекта
-- `server.js` — основное приложение Express: маршруты, глобальные guard’ы, error handler.
-- `routes/` — REST‑маршруты: `statuses`, `orders`, `payments`, `docTemplates`, `notifyTemplates`, `auth`, `public`, и т.п.
-- `models/` — Mongoose‑модели: `Order`, `OrderStatus`, `OrderStatusLog`, `DocTemplate`, `NotifyTemplate`, `User`, `Role`, `UserRole`, `UserToken`, и др.
-- `services/` — бизнес‑логика: `statusActionsHandler` (auto‑actions), `orderStatusService`, `templatesStore` (DEV in‑memory), `statusDeletionGuard`, `ttlCache`, `configValidator`, `fileStore`.
-- `queues/` — очередь действий статусов: `statusActionQueue.js` (BullMQ/мем, метрики/повторы).
-- `middleware/` — `auth.js` (RBAC/withUser/requireRole), `error.js` (унифицированные ошибки), `validate.js`.
-- `scripts/` — `generateSwagger.js`, `generateApiContractsReport.js`, `migrateOrderStatuses.js`, `perfDiagnostics.js`, `seed*.js`, `changelog.js`.
-- `tests/` — unit/e2e/контракты/миграции/очередь/RBAC/валидация сред; покрытие и отчёты.
-- `storage/reports/` — артефакты: ESLint/Static Analysis/Perf/Load/Contracts/Migration.
-- `health/` — `dataSanity.js` (проверка консистентности данных).
-- `validation/` — схемы клиента (например, `clientSchema.js`).
-- `client/` — React‑приложение: страницы, контексты, компоненты, темы, сервисы API.
-- `package.json` — скрипты: `start`, `server` (nodemon), `client` (CRA dev), `dev` (concurrently), `build`, `test` (jest). Клиент: `start`, `build`, `test`.
+## Основные модули
+- Аутентификация и RBAC: `middleware/auth.js` — `requireAuth` и `withUser` (DEV fallback: `AUTH_DEV_MODE=1` → подставляет `req.user`).
+- Валидация полей (FieldSpec): серверные валидаторы типов: `text`, `number`, `date`, `bool`, `list`, `multilist` (для `list/multilist` — `options` обязательны).
+- FieldSchema: версионирование схем по паре `scope + name`, единственная активная версия, запрет удаления активной, активация/деактивация.
+- Dicts: простые словари с уникальным `code`, значениями `values[]`, индексами и защитами.
 
-## 3. Основные модули и логика
-- Auth/RBAC: `middleware/auth.js` — `withUser` (из заголовков или JWT), `requireAuth`, `requireRole/requireAnyRole`. DEV‑режим допускает упрощённые роли и инлайн‑пользователя.
-- Пользователи и роли: модели `User`, `Role`, `UserRole`, `UserToken` — хранение пользователей, ролей, связей и токенов (детали в моделях).
-- Статусы заказов: `OrderStatus`/`Order` — группы (`GROUPS`: draft/in_progress/closed_*), порядок, авто‑действия (настройки на статусах).
-- Очередь статусов: `statusActionQueue` — запуск auto‑actions (`closeWithoutPayment`, `notify`, `print`, `payrollAccrual`). Мем‑очередь в DEV, BullMQ в PROD. Метрики, ретраи, идемпотентность.
-- Payments guard: защита закрытия с учётом оплат; соответствующие контракты и е2е покрытие.
-- Templates: `DocTemplate`/`NotifyTemplate` — CRUD, RBAC, проверки связей на удаление (guard против использования в статусах). DEV‑ветка — in‑memory `TemplatesStore`.
-- OrderTypes: модель `OrderType` (типы заказов) — стартовый статус, разрешённые статусы, схема полей, шаблоны документов; валидаторы: `startStatusId ∈ allowedStatuses`, `code → lowercase/trim`; статус — OK.
-- Миграции и утилиты: `migrateOrderStatuses.js` (CSV/JSON отчёты), `health/dataSanity.js`, `scripts/perfDiagnostics.js`, `services/configValidator.js`.
-- CLIENT: страницы (Login, Settings, Users, Roles, Payments, OrderStatuses, Queues, BootstrapWizard, RBAC Test), `AuthContext`, `ProtectedRoute`, API‑сервисы.
+## Тестирование
+- Unit: валидаторы моделей/схем.
+- e2e: DEV-ветки роутов (in-memory сторадж), RBAC (роль `Admin|Manager`), валидация ошибок.
+- Контракты: Swagger `artifacts/swagger.json` сверяется тестами.
 
-## 4. Тестирование
-- Jest/Supertest: unit и e2e, плюс контрактные тесты API.
-- Покрытие: server HTML/JSON (`coverage/`), client (`client/coverage/`). Динамические пороги: рост на +5pp до цели 70%.
-- Категории: `services`, `routes`, `migrations`, `env validator`, `queue behavior`, `rbac e2e`, `contracts`.
-- Артефакты: `storage/reports/*.json|*.md` (ESLint, статический анализ, perf, load, contracts, миграции).
+## Конфигурация
+- ENV: `AUTH_DEV_MODE=1` (включает DEV-ветки и in-memory), `MONGO_URI` (в прод-режиме), `PORT`.
 
-## 5. Конфигурация и ENV
-- Основные переменные: `MONGO_URL|MONGO_URI`, `REDIS_URL|REDIS_HOST|REDIS_PORT`, `AUTH_DEV_MODE`, `JWT_SECRET`, `SMTP_*`, `NOTIFY_DRY_RUN`, `PRINT_DRY_RUN`, `CACHE_TTL_SECS`, `CORS_ORIGIN`.
-- DEV vs PROD: DEV — упрощённые ветки, мем‑очередь/ин‑мем шаблоны, быстрые проверки; PROD — реальные интеграции, Mongo/Redis, печать/уведомления.
-- Валидация: `services/configValidator.js` — проверка ENV и безопасных дефолтов.
+## Безопасность
+- Запрет методов TRACE/TRACK.
+- Глобальный `requireAuth` для `/api/*`, кроме `/api/auth/*` и `/api/public/*`.
+- Swagger security: глобальный `security: [{ bearerAuth: [] }]` + на методах.
 
-## 6. Безопасность
-- `Helmet`, `CORS`, блок HTTP методов `TRACE`/`TRACK`.
-- RBAC: `requireAuth` глобально, `requireRole` на маршрутах, тонкая настройка прав.
-- Валидации входных данных: `POST/PATCH` проверяются схемами/правилами, строгие ошибки 400/409.
-- Логи и маскирование: исключаем чувствительные поля из логов/ответов; единый error handler.
+## Производительность
+- Легкие маршруты, отсутствие тяжелых ORM-абстракций.
+- Кэш активных FieldSchema с TTL (in-memory).
 
-## 7. Производительность
-- Индексы: `Orders(status,statusChangedAt)`, `OrderStatus(group,order)`, `OrderStatusLog(orderId,createdAt)`.
-- Отчёты: `scripts/perfDiagnostics.js` (p50/p95), рекомендации по кэшированию TTL, батчам, очередям.
-- Мини‑нагрузка: 200× `PATCH /api/orders/:id/status` (DEV‑ветка), проверка дедлоков/метрик.
+## Скрипты
+- `npm test` — запуски Jest.
+- `node scripts/generateSwagger.js` — генерация OpenAPI в `artifacts/swagger.json`.
+- `node scripts/extractOrderTypeSpec.js` — выделение подмножества OpenAPI для `/api/order-types` в `storage/reports/api-contracts/ordertype.json`.
 
-## 8. Скрипты и инструменты
-- Генераторы/сервисы: `generateSwagger`, `generateApiContractsReport`, `seed*`, `migrateOrderStatuses`, `perfDiagnostics`, `changelog`.
-- Формат артефактов: Markdown/JSON в `storage/reports/`.
+## Test Runs
+- Модели/валидаторы: `tests/models/fields.valid.test.js`, `tests/models/fields.invalid.test.js`.
+- e2e: `tests/fields.schemas.e2e.test.js`, `tests/dicts.e2e.test.js`.
+- Контракты Swagger: `tests/api.contracts.fields.dicts.swagger.test.js`.
 
-## 9. Тест‑ран и пороги
-- Команды: `npm test -- --coverage --runInBand`, `CI=true npm run test -- --coverage --watchAll=false`.
-- Пороги: динамический gate — минимум текущий+5pp до целевого `70%`.
-- CI‑gate: блокирует, если покрытие ниже динамической планки.
+## Changelog
+- См. `CHANGELOG_TRAE.md` для детальной хронологии изменений.
 
-## 10. CHANGELOG и артефакты
-- `CHANGELOG_TRAE.md` — записи по задачам/дате/разделам (Linting, Static Analysis, Perf, Queues, Routes и т.п.).
-- Основные отчёты: `api-rbac-inventory`, `static-analysis`, `perf-report`, `statusActionQueue-load-report`, `api-contracts`, `dataSanity`, `env-validator`.
+## Статус проекта
+- Базовые сущности, RBAC и контракты API сгенерированы.
+- UI для управления схемами полей и словарями доступен в разделе Настройки.
 
-## 11. Состояние проекта (на дату генерации)
-- Модули → Статус:
-  - Auth/RBAC — OK
-  - Statuses API/Auto‑actions — OK
-  - Doc/Notify Templates CRUD/guards — OK
-  - Queue (BullMQ/мем, метрики) — OK
-  - TTL‑кэш (statuses/doc‑templates) — OK
-  - Orders/Payments — In progress
-  - Client pages (Settings/Users/Roles/Payments/Statuses/Queues) — In progress
-  - OrderTypes — OK
-  - Payments real model — TODO
-  - Notifications center — TODO
-  - SaaS multi‑tenant — TODO
-- Следующие этапы: `3.3 Payments real model`, `3.4 Notifications center`, `3.5 SaaS multi-tenant`.
+## CI / VC
+- Проверки линтеров и тестов перед мерджем.
+- Генерация Swagger-артефакта и отчётов по контрактам.
 
-## 12. UI — возможности пользователя (текущее состояние)
-- Авторизация и доступ: вход/выход (DEV — через заголовки `x-user-*`, PROD — через JWT), автоматическое обновление токена; RBAC скрывает недоступные пункты меню и действия.
-- Задачи: доска и список задач; просмотр, создание, редактирование, удаление; перемещение между колонками и изменение порядка; детальная карточка задачи.
-- Заказы: просмотр и фильтрация по типам/клиенту; ведение работ, платежей и задач; вычисление сумм/оплаты/прибыли; тип заказа определяет стартовый и допустимые статусы; печатные формы по шаблонам, связанным с OrderType.
-- Платежи: создание приходов/расходов, редактирование/удаление; сводные итоги (приход/расход/сальдо); фильтр по клиенту/заказу; экспорт в CSV; печать квитанции по шаблону.
-- Клиенты: список с атрибутами и тегами; быстрые переходы к связанным заказам и платежам.
-- Услуги: древовидные категории и каталог; CRUD услуг (цена, себестоимость, гарантия, вознаграждение).
-- Настройки: пользователи и роли (CRUD); документы (настройка шаблонов); платежные статьи и методы; типы заказов (CRUD: стартовый статус, разрешённые статусы, связанные шаблоны документов; доступ только Admin); поля заказа; типы и поля клиента; справочники.
-- Инвентарь: заказы поставок и платежи поставщикам (прототип); поставщики; агрегированные итоги по задолженности.
-- Проверка прав (RBAC Test): интерактивная страница, показывающая доступные разделы и действия для текущих ролей.
-- DEV‑режим и ограничения: часть страниц хранит данные в `localStorage` (прототипирование); серверные интеграции подключаются постепенно (Orders/Payments — в разработке); реалистичная печать/уведомления — в PROD, в DEV — dry‑run.
-## 13. CI/VC-процессы
-- Preflight (gitignore, секреты, мусор) — OK: .gitignore → нормализован `node_modules/` (было `node_modules`), добавлены `coverage/`, `client/coverage/`, `artifacts/`; из индекса удалены `.env`, `client/coverage`, `coverage`, `artifacts`, `node_modules`, `.DS_Store`. Tests: failed.
-- Коммиты: conventional commits; автообновление CHANGELOG; артефакты и отчёты — `storage/reports/`.
+## Data Sanity Checks
+- Валидация входных данных в моделях и контроллерах.
+- Логирование ошибок и 4xx/5xx ответов.
 
-### Health — Data Sanity (update)
-- Added checks for `OrderTypes` and `Orders ↔ OrderTypes` integrity.
-- New rules:
-  - Orders: every `orderTypeId` must exist in `OrderType` collection → otherwise record in `problems.orders.unknownOrderTypeId`.
-  - OrderTypes: if `startStatusId` is set, it must be present in `allowedStatuses` → `problems.orderTypes.invalidStartStatus`.
-  - System OrderTypes: `code` is immutable by policy; heuristic check — `code` must be from reserved set (default: `['default']`) → `problems.orderTypes.systemCodeUnexpected` when violated.
-- Report shape additions:
-  - `summary.orderTypesCount`, `summary.problemsTotal`, top-level `ok` flag.
-  - `problems.orderTypes.{invalidStartStatus, systemCodeUnexpected}`, `problems.orders.unknownOrderTypeId`.
-- Run:
-  - `node health/dataSanity.js` (uses `MONGO_URI|MONGO_URL`).
-- Notes:
-  - If Mongo isn’t reachable, `mongoConnected=false` and report still prints (no crash). `ok` reflects aggregated result only when checks run; with no DB it remains `false`.
+### Health: FieldSchemas
+- Единственная активная версия на пару `scope + name`; >1 → `problems.fieldSchemas.multiActiveForPair`.
+- Наличие активной версии; 0 → `problems.fieldSchemas.noActiveForPair`.
+- Уникальные номера версий внутри пары; дубли → `problems.fieldSchemas.duplicateVersionNumbers`.
+- Номера версий — целые `>= 1`; нарушения → `problems.fieldSchemas.invalidVersionNumbers`.
+- Для типов `list`/`multilist` обязательны непустые `options[]`; нарушения → `problems.fieldSchemas.invalidOptions`.
+- Запуск отчёта: `node health/dataSanity.js` → JSON (`ok`, `summary.fieldSchemasCount`, `problems.fieldSchemas.*`).
 
-## Migration — OrderType backfill (2025-10)
-- Script: `scripts/migrations/2025-10-OrderType-backfill.js`
-- Goal: ensure backward compatibility for existing orders.
-- Steps:
-  - Ensure system `OrderType` with `code='default'` exists (create minimal if missing).
-  - For orders with missing `orderTypeId`, set it to `default`'s id.
-  - If order `status` is missing and type has `startStatusId`, set `status` from the type.
-- Idempotent: repeated runs yield `0` updates once the dataset is consistent.
-- Logging:
-  - Counts: `orders updated (orderTypeId)`, `orders updated (status)`; whether default type was created.
-  - Prints structured JSON summary (includes `ok`, `results`, `when`, `durationMs`).
-- Run:
-  - `node scripts/migrations/2025-10-OrderType-backfill.js` (uses `MONGO_URI|MONGO_URL`).
-- Notes:
-  - If `default.startStatusId` is not set, status backfill is skipped (explicitly logged).
-- `node scripts/migrations/2025-10-OrderType-backfill.js` (uses `MONGO_URI|MONGO_URL`).
-- Notes:
-  - If `default.startStatusId` is not set, status backfill is skipped (explicitly logged).
+### Seeder: FieldSchemas
+- Файл: `scripts/seedFieldSchemas.js`.
+- Инициализирует пары: `orders/«Форма заказа»`, `clients/«Форма клиента»` базовыми полями.
+- Если пары нет — создаёт `v1` (активная). Если активных 0 или >1 — нормализует: активной остаётся самая свежая версия, остальные деактивируются.
+- Не перезаписывает существующие версии/поля, только инициализирует и исправляет активность.
+- Запуск: `node scripts/seedFieldSchemas.js` (использует `MONGO_URI|MONGO_URL`).
 
-### API Contracts — OrderTypes (OpenAPI)
-- Artifact: `storage/reports/api-contracts/ordertype.json`
-- Source generator: `scripts/generateSwagger.js` (paths `/api/order-types`, `/api/order-types/{id}`; schemas `OrderType`, `OrderTypeItemResponse`, `OrderTypesListResponse`, `ErrorResponse`, `DeleteResponse`)
-- Extraction script: `scripts/extractOrderTypeSpec.js` (выделяет подмножество контрактов OrderTypes из общего Swagger)
-- Status: Completed
-- Affected: `routes/orderTypes.js`, `scripts/generateSwagger.js`
-- Error codes covered:
-  - `400` — `ORDERTYPE_INVALID_START_STATUS`, `VALIDATION_ERROR`
-  - `403` — Forbidden (RBAC)
-  - `404` — Not Found (get by id)
-  - `409` — `CODE_EXISTS` (POST/PATCH), `SYSTEM_TYPE`, `ORDERTYPE_IN_USE` (DELETE)
-  - `500` — Server Error
-- Request example (POST/PATCH):
-  - `{"code":"default","name":"Default","startStatusId":"st_new","allowedStatuses":["st_new","st_in_progress"],"docTemplateIds":["doc_invoice","doc_contract"],"isSystem":true}`
+## Миграции
+- Скрипты миграций и импорта справочников и схем полей.
 
-## 14. RBAC — OrderTypes permissions (2025-10)
-- Middleware: `middleware/auth.js` добавлены permission‑флаги `orderTypes.read` и `orderTypes.write` с маппингом на роль `Admin` (`RBAC_MAP`).
-- API защита: `/api/order-types*` переведены на `requirePermission()`
-  - `GET /api/order-types`, `GET /api/order-types/:id` → `orderTypes.read`.
-  - `POST /api/order-types`, `PATCH /api/order-types/:id`, `DELETE /api/order-types/:id` → `orderTypes.write`.
-- UI ограничения:
-  - Меню «Настройки → Типы заказов» доступно только `Admin` (см. `client/src/components/Layout.js`).
-  - Маршрут `settings/forms/order-types` защищён `ProtectedRoute roles={["Admin"]}` (см. `client/src/App.js`).
-  - Страница «RBAC тест» показывает флаги: `orderTypes.read` / `orderTypes.write` и видимость маршрута (см. `client/src/pages/RbacTest.js`).
-- DEV‑режим: при `AUTH_DEV_MODE=1` и отсутствии Mongo — in‑memory список типов; RBAC применяется на уровне роутов.
-- Ошибки доступа: при отсутствии прав сервер отвечает `403` и `{ msg: 'Недостаточно прав' }`.
+## API артефакты и контракты
 
-### Acceptance
-- Пользователь с ролью `Manager` или без ролей:
-  - не видит пункт меню «Типы заказов»;
-  - не открывает страницу по прямой ссылке (маршрут защищён);
-  - запросы `GET/POST/PATCH/DELETE /api/order-types*` возвращают `403` и `{ msg: 'Недостаточно прав' }`.
-- Пользователь `Admin`:
-  - видит пункт меню и страницу «Типы заказов»;
-  - имеет доступ к чтению и модификации типов через API и UI.
+В проекте поддерживаются артефакты OpenAPI (Swagger), а также выделенные контракты для отдельных доменов.
+
+- Генерация полного OpenAPI: `node scripts/generateSwagger.js` — пишет `artifacts/swagger.json`.
+- Экстракция контрактов:
+  - OrderType: `node scripts/extractOrderTypeSpec.js` — пишет `storage/reports/api-contracts/ordertype.json`.
+  - Fields: `node scripts/extractFieldsSpec.js` — пишет `storage/reports/api-contracts/fields.json`.
+
+Правила и ожидания:
+- Артефакты всегда должны соответствовать актуальному состоянию API.
+- Перед публикацией контрактов, выполните генерацию полного `swagger.json`, затем — экстракцию нужных доменов.
+- Для удаления сущностей используем унифицированный ответ `DeleteResponse` со схемой `{ ok: boolean }`.
+
+Проверка:
+- Автотесты для полей проверяют наличие схем и путей: `tests/api.contracts.fields.dicts.swagger.test.js`.
+- В случае модификаций API необходимо обновить генератор и повторно выпустить артефакты.
+
+## Client: Services & UI (FieldSchemas + Dicts)
+- Services:
+  - `client/src/services/fieldsService.js`: методы `list`, `get`, `listVersions(scope,name)`, `create`, `importSchema`, `patch`, `activate`, `deactivate`, `remove`.
+  - `client/src/services/dictsService.js`: методы `list`, `get`, `getByCode(code)`, `create`, `update`, `remove`.
+- UI:
+  - Полевая страница `client/src/pages/settings/FieldsBuilderPage.js` — импорт схем из локального хранилища, список версий (карточки), «Активировать» версию, ошибки/успехи, скрытие действий без ролей.
+  - Справочники — базовые CRUD-страницы.
+
+## FieldSchemas / Dicts — сервер
+- Схемы:
+  - `server/models/FieldSchema.js`: хранит версии, `scope`, `name`, `fields[]`, `note`, `version`, `isActive`, `createdBy`, `createdAt`.
+  - `server/models/Dictionary.js`: поля `code` (уникальный, trim+lower), `values[]`, `updatedAt`; индекс `{code:1, unique:true}`; `pre('save')` трогает `updatedAt`.
+- Тесты:
+  - `tests/models/fields.valid.test.js`, `tests/models/fields.invalid.test.js` — валидные/невалидные кейсы; запуск: `npm test -- tests/models --runInBand`; результат: 2/2 PASSED.
+- API / FieldSchemas:
+  - `GET /api/fields` — список всех версий; сортировка scope/name, версия по убыванию.
+  - `GET /api/fields/:id` — получить схему по id.
+  - `GET /api/fields/:scope/:name/versions` — все версии пары scope+name.
+  - `POST /api/fields` — создать новую версию: автоинкремент `version`, активирует новую (`isActive=true`) и деактивирует остальные версии пары.
+  - `PATCH /api/fields/:id` — обновить `fields` и/или `note` (валидация: для `list`/`multilist` обязательны `options` → `400 FIELD_OPTIONS_REQUIRED`).
+  - `POST /api/fields/:id/activate` — сделать версию активной (остальные той же пары деактивируются).
+  - `POST /api/fields/:id/deactivate` — снять активность у версии.
+  - `DELETE /api/fields/:id` — удаление запрещено для активной версии → `409 DELETE_ACTIVE_FORBIDDEN`.
+  - Ошибки: `400 VALIDATION_ERROR|FIELD_OPTIONS_REQUIRED`, `404 NOT_FOUND`, `409 DELETE_ACTIVE_FORBIDDEN`.
+  - RBAC: доступ `Admin` и `Manager`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` или недоступной Mongo.
+- API / Dicts:
+  - `GET /api/dicts` — список словарей.
+  - `GET /api/dicts/:id` — получить по id.
+  - `GET /api/dicts/by-code/:code` — получить по `code` (lowercase/trim).
+  - `POST /api/dicts` — создать; уникальный `code` → конфликт `409 CODE_EXISTS`.
+  - `PATCH /api/dicts/:id` — изменить `code` и/или `values`; `409 CODE_EXISTS` при конфликте кода.
+  - `DELETE /api/dicts/:id` — удалить.
+  - Ошибки: `400 VALIDATION_ERROR`, `404 NOT_FOUND`, `409 CODE_EXISTS`.
+  - RBAC: доступ `Admin` и `Manager`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` или недоступной Mongo.
+- Swagger / OpenAPI:
+  - Добавлены схемы: `FieldSpec`, `FieldSchema`, `FieldSchemasListResponse`, `FieldSchemaItemResponse`, `FieldSchemaCreateRequest`, `FieldSchemaPatchRequest`, `Dictionary`, `DictionariesListResponse`, `DictionaryItemResponse`, `DictionaryCreateRequest`, `DictionaryPatchRequest`.
+  - Добавлены пути: `/api/fields`, `/api/fields/{id}`, `/api/fields/{scope}/{name}/versions`, `/api/fields/{id}/activate`, `/api/fields/{id}/deactivate`, `/api/dicts`, `/api/dicts/{id}`, `/api/dicts/by-code/{code}`.
+  - Генератор: `scripts/generateSwagger.js`; артефакт: `artifacts/swagger.json`.
+- Статус: Шаг 2 (API) — OK.
+
+### Использование FieldSchema в бизнес-логике
+- `services/fieldSchemaProvider.js` — экспортирует `getActiveSchema(scope, name, ttlSecs=60)` с TTL-кэшем (in-memory) по ключу `active:<scope>:<name>`. Источник данных:
+  - DEV (`AUTH_DEV_MODE=1`): in‑memory из `routes/fields.js`.
+  - PROD: Mongo через `FieldSchemaModel`, индексы `{scope:1,name:1,version:-1}`.
+- Заказ (Orders): `routes/orders.js` использует `validateOrderRequiredFields()` для `POST /api/orders` — находит активную схему `orders/«Форма заказа»`, валидирует обязательные поля (свойства `required`) внутри `body` и `body.fields`. Ошибка → `400 { error: 'REQUIRED_FIELDS_MISSING', missing: [...] }`.
+- Клиент (Clients): `routes/clients.js` использует `validateRequiredFields()` для `POST /api/clients` и `PUT /api/clients/:id` — проверяет активную схему `clients/«Форма клиента»` для обязательных полей.
+- TTL: по умолчанию 60 секунд на пару `scope+name` (ключ `active:<scope>:<name>`). Можно варьировать через параметр `ttlSecs` при вызове.
+- Соответствие UI: `client/src/pages/settings/FieldsBuilderPage.js` → `storageKey` маппится на пары: `settings_order_fields → {scope:'orders', name:'Форма заказа'}`, `settings_client_fields → {scope:'clients', name:'Форма клиента'}`.
+
+### Покрытие тестами API Fields/Dicts
+- e2e: `tests/fields.schemas.e2e.test.js` — создание версий, список версий, GET по id, PATCH (note/валидация), activate/deactivate, запрет удаления активной версии (409), валидация list/multilist (`FIELD_OPTIONS_REQUIRED`).
+- e2e: `tests/dicts.e2e.test.js` — список, создание, конфликт на дубль кода (409), GET по id и по коду, обновление, удаление.
+- Swagger: `tests/api.contracts.fields.dicts.swagger.test.js` — проверка наличия схем (`FieldSchema`, `FieldSpec`, `Dictionary`, *Create/*Patch) и путей (`/api/fields*`, `/api/dicts*`), методы/ответы (200/403/409), security (`bearerAuth`).
+- Режим: DEV (`AUTH_DEV_MODE=1`), in‑memory ветки роутов, без Mongo.
+- Acceptance: покрытие достигнуто, тесты пройдены.
+
+## UI/Theming
+- Файлы и роли:
+  - `client/src/context/ThemeContext.tsx` — провайдер UI-темы, `useUiTheme`, хранение `ui.theme`/`ui.accent`/`ui.accentHex` в `localStorage`, режим `Auto` (по `prefers-color-scheme`).
+  - `client/src/theme/index.ts` — тип `Theme`, маппинг `themeToCssVars()` → CSS‑переменные, `applyThemeVars()` — инъекция стиля `#app-theme-vars` в `<head>` и атрибут `data-theme` на `<html>`.
+  - `client/src/theme/CharacterDark.ts`, `client/src/theme/LightMinimal.ts` — пресеты тем.
+  - `client/src/assets/theme-overrides.css` — переопределения MUI на базе CSS‑токенов + утилиты (классы).
+  - `client/src/components/ThemeSwitcher.{tsx,jsx}` — переключатель темы в AppBar.
+  - `client/src/components/Layout.js` — интеграция `ThemeSwitcher` в AppBar и пункт меню «Оформление» (`/settings/ui-theme`).
+- Список токенов CSS:
+  - Цвета: `--color-primary`, `--color-secondary`, `--color-bg`, `--color-surface`, `--color-surfaceAlt`, `--color-text`, `--color-textMuted`, `--color-border`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`.
+  - Статусы: `--status-draft`, `--status-in-progress`, `--status-success`, `--status-fail`.
+  - Типографика/радиусы/фокус: `--font-family`, `--font-size-base`, `--font-size-heading`, `--font-weight-bold`, `--radius`, `--shadow`, `--focus-ring`.
+- Добавление новой темы:
+  1) Создайте файл, например `client/src/theme/MyTheme.ts`, и экспортируйте `const MyTheme: Theme = { name, colors, font, radius, shadow, focusRing }`.
+  2) Зарегистрируйте тему в `ThemeContext.tsx`: `import { MyTheme } from '../theme/MyTheme';` и добавьте в `THEMES`: `{ 'My Theme': MyTheme }`.
+  3) Добавьте отображаемое имя в `availableThemes` (при необходимости). Режим `Auto` сам резолвит Dark/Light.
+  4) Никаких правок CSS не требуется: `applyThemeVars()` инжектит переменные, а `theme-overrides.css` применяет их к UI.
+- Акценты (accent):
+  - Поддерживаются режимы `primary`/`secondary`/`custom` (цвет хранится в `ui.accent` и `ui.accentHex`). При смене акцента обновляется `--color-primary`.
+- RBAC:
+  - Страница «Оформление» — `/settings/ui-theme`, доступна `Admin` и `Manager`. Переключатель темы в AppBar доступен только `Admin`.

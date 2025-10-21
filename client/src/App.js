@@ -43,6 +43,7 @@ import UsersSettingsPage from './pages/settings/Users';
 import RolesSettingsPage from './pages/settings/Roles';
 import BootstrapWizard from './pages/BootstrapWizard';
 import RbacTest from './pages/RbacTest';
+import UiThemePage from './pages/settings/UiTheme';
 // Тема импортируется из отдельного файла theme.js
 
 function App() {
@@ -91,6 +92,7 @@ function App() {
             <Route path="settings/forms/client-types" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Типы клиентов" storageKey="settings_client_types" initialItems={["VIP","Постоянный","Новый"]} /></ProtectedRoute>} />
             <Route path="settings/forms/client-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля клиента" storageKey="settings_client_fields" /></ProtectedRoute>} />
             <Route path="settings/forms/directories" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Справочники" storageKey="settings_directories" initialItems={["Единицы измерения","Марки авто","Модели авто"]} /></ProtectedRoute>} />
+            <Route path="settings/ui-theme" element={<ProtectedRoute roles={["Admin","Manager"]}><UiThemePage /></ProtectedRoute>} />
             <Route path="knowledge" element={<div><h2>База знаний</h2><p>Страница в разработке</p></div>} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="rbac-test" element={<ProtectedRoute><RbacTest /></ProtectedRoute>} />

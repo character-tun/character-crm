@@ -40,6 +40,10 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../assets/logo.svg';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from './ThemeSwitcher';
+import Tooltip from '@mui/material/Tooltip';
+import { ThemeProvider } from '../context/ThemeContext';
+
 
 const drawerWidth = 240;
 
@@ -52,7 +56,8 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
       duration: theme.transitions.duration.leavingScreen,
     }),
     marginLeft: 0,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: 'var(--color-bg)',
+    color: 'var(--color-text)',
     minHeight: '100vh',
     ...(open && {
       transition: theme.transitions.create('margin', {
@@ -66,21 +71,23 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
 
 const AppBarStyled = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+})(() => ({
   display: 'block',
+  backgroundColor: 'var(--color-surface)',
+  color: 'var(--color-text)',
+  borderBottom: '1px solid var(--color-border)'
 }));
 
-const StyledDrawer = styled(Drawer)(({ theme }) => ({
+const StyledDrawer = styled(Drawer)(() => ({
   width: drawerWidth,
   flexShrink: 0,
   '& .MuiDrawer-paper': {
     width: drawerWidth,
     boxSizing: 'border-box',
-    background: theme.palette.mode === 'dark'
-      ? 'linear-gradient(180deg, #0f172a 0%, #0b1220 100%)'
-      : theme.palette.background.paper,
-    color: theme.palette.text.primary,
-    borderRight: `1px solid ${theme.palette.divider}`,
+    background: 'var(--color-surface)',
+    color: 'var(--color-text)',
+    borderRight: '1px solid var(--color-border)',
+    backdropFilter: 'blur(6px)',
   },
 }));
 
@@ -90,8 +97,8 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   padding: theme.spacing(2, 2),
   ...theme.mixins.toolbar,
   justifyContent: 'space-between',
-  backgroundColor: theme.palette.background.paper,
-  color: theme.palette.text.primary,
+  backgroundColor: 'var(--color-surface)',
+  color: 'var(--color-text)',
   height: '70px',
 }));
 
@@ -99,15 +106,27 @@ const StyledListItem = styled(ListItem)(({ theme, selected }) => ({
   margin: '4px 0',
   padding: '0 8px',
   '& .MuiListItemButton-root': {
+    position: 'relative',
     borderRadius: '8px',
     padding: '8px 16px',
     '&:hover': {
-      backgroundColor: 'rgba(59, 130, 246, 0.08)',
+      backgroundColor: 'var(--color-surfaceAlt)',
     },
     ...(selected && {
-      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+      backgroundColor: 'var(--color-surfaceAlt)',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        left: 0,
+        top: '12%',
+        bottom: '12%',
+        width: '2px',
+        borderRadius: '2px',
+        backgroundColor: 'var(--color-primary)',
+        boxShadow: '0 0 6px var(--color-primary)',
+      },
       '&:hover': {
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        backgroundColor: 'var(--color-surfaceAlt)',
       },
     }),
   },
@@ -117,7 +136,7 @@ const StyledListItem = styled(ListItem)(({ theme, selected }) => ({
   },
   '& .MuiListItemText-primary': {
     fontSize: '14px',
-    fontWeight: selected ? '500' : '400',
+    fontWeight: selected ? '700' : '400',
     color: selected ? theme.palette.text.primary : theme.palette.text.secondary,
   },
 }));
@@ -150,6 +169,7 @@ export default function Layout() {
     '/settings': ['Admin','Manager'],
     '/settings/order-statuses': ['Admin','settings.statuses:*','settings.statuses:list'],
     '/settings/forms/order-types': ['Admin'],
+    '/settings/ui-theme': ['Admin','Manager'],
   };
 
   const isAllowed = (path) => {
@@ -196,6 +216,7 @@ export default function Layout() {
     { text: 'Настройки', icon: <SettingsIcon />, path: '/settings', subItems: [
       { text: 'Статусы заказов', path: '/settings/order-statuses' },
       { text: 'Типы заказов', path: '/settings/forms/order-types' },
+      { text: 'Оформление', path: '/settings/ui-theme' },
     ] },
     { text: 'База знаний', icon: <SchoolIcon />, path: '/knowledge' },
   ];
@@ -208,38 +229,44 @@ export default function Layout() {
     }));
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <AppBarStyled position="static" color="default" elevation={0}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.main }}>
-              Character CRM
-            </Typography>
-          </Box>
-          <Box>
-            <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
-              <Avatar sx={{ width: 32, height: 32 }}>
-                {(user?.email || user?.name || 'U').slice(0,1).toUpperCase()}
-              </Avatar>
-            </IconButton>
-            <Menu anchorEl={profileAnchor} open={!!profileAnchor} onClose={() => setProfileAnchor(null)}>
-              <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>Профиль</MenuItem>
-              <MenuItem onClick={async () => { setProfileAnchor(null); await logout(); navigate('/login'); }}>Выйти</MenuItem>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBarStyled>
-
-      <Box sx={{ display: 'flex' }}>
-        <StyledDrawer
-          variant="permanent"
-          anchor="left"
-        >
-          <DrawerHeader>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <ThemeProvider>
+      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <AppBarStyled position="static" color="default" elevation={0}>
+          <Toolbar sx={{ justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.main }}>
+                Character CRM
+              </Typography>
+            </Box>
+            <Box>
+              <Tooltip title="Сменить тему">
+                <Box sx={{ mr: 1 }}>
+                  <ThemeSwitcher disabled={!hasAnyRole(['Admin'])} />
+                </Box>
+              </Tooltip>
+              <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
+                <Avatar sx={{ width: 32, height: 32 }}>
+                  {(user?.email || user?.name || 'U').slice(0,1).toUpperCase()}
+                </Avatar>
+              </IconButton>
+              <Menu anchorEl={profileAnchor} open={!!profileAnchor} onClose={() => setProfileAnchor(null)}>
+                <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>Профиль</MenuItem>
+                <MenuItem onClick={async () => { setProfileAnchor(null); await logout(); navigate('/login'); }}>Выйти</MenuItem>
+              </Menu>
+            </Box>
+          </Toolbar>
+        </AppBarStyled>
+
+        <Box sx={{ display: 'flex' }}>
+          <StyledDrawer
+            variant="permanent"
+            anchor="left"
+          >
+            <DrawerHeader>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.primary.main }}>
                 Character CRM
               </Typography>
             </Box>
@@ -302,6 +329,7 @@ export default function Layout() {
           </Box>
         </Main>
       </Box>
-    </Box>
+      </Box>
+    </ThemeProvider>
   );
 }

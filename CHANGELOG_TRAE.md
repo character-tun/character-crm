@@ -1,3 +1,23 @@
+## 2025-10-21 09:00 (Europe/Warsaw) | UI/Theming
+- feat(ui): theming (CharacterDark + LightMinimal)
+- ThemeContext, CSS variables injection, ThemeSwitcher
+- Settings→UiTheme page with RBAC
+- Refactor core components to theme tokens
+
+## 2025-10-20 21:15 (Europe/Warsaw) | Swagger & Artifacts: Fields
+- files: scripts/generateSwagger.js, scripts/extractFieldsSpec.js, artifacts/swagger.json, storage/reports/api-contracts/fields.json, TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- generator: добавлена схема `DeleteResponse`, регенерирован OpenAPI (`artifacts/swagger.json`)
+- artifacts: добавлен экстрактор Fields и выпущен контракт `storage/reports/api-contracts/fields.json`
+- run: `node scripts/generateSwagger.js`; `node scripts/extractFieldsSpec.js`
+- Acceptance: контракты Swagger актуальны
+
+## 2025-10-20 20:30 (Europe/Warsaw) | Health & Seed: FieldSchemas
+- files: health/dataSanity.js, scripts/seedFieldSchemas.js, TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- health: добавлены проверки FieldSchemas — единственная активная версия на пару scope+name; отсутствие активной; дубликаты версий внутри пары; невалидные номера версий; обязательные options[] для list/multilist
+- seed: добавлен `scripts/seedFieldSchemas.js` — создаёт дефолтные пары (orders/«Форма заказа», clients/«Форма клиента»), нормализует активность (активной остаётся самая свежая), не перезаписывает существующие версии
+- run: `node health/dataSanity.js`; `node scripts/seedFieldSchemas.js` (использует `MONGO_URI|MONGO_URL`)
+- Acceptance: health-чек и сидеры добавлены, все ок
+
 ## 2025-10-20 18:02 (локальное время) | Push to main
 - server: server.js, server-demo.js, services/*, validation/clientSchema.js
 - client: —
@@ -669,3 +689,59 @@ Least covered (server, by lines):
 
 ### Acceptance
 - Приложение открывается по http://localhost:3007/; страница настроек доступна по `/settings/forms/order-types` (Admin).
+2025-10-20T23:48:11+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/components/Layout.js, client/src/pages/Orders.js, client/src/pages/RbacTest.js, client/src/pages/settings/OrderTypes.js, client/src/services/docTemplatesService.js, client/src/services/orderTypesService.js, health/dataSanity.js, middleware/auth.js, models/Order.js, package.json, routes/orderTypes.js, routes/orders.js, scripts/extractOrderTypeSpec.js, scripts/generateSwagger.js, scripts/migrations/2025-10-OrderType-backfill.js, scripts/seedOrderTypes.js, server.js, server/models/OrderType.js, services/orderStatusService.js, storage/reports/TECH_OVERVIEW.md, storage/reports/api-contracts/ordertype.json, storage/reports/migrateOrderStatuses-1760972468458.csv, storage/reports/migrateOrderStatuses-1760972468458.json, storage/reports/statusActionQueue-load-report-2025-10-20.md, tests/orderTypes.contract.test.js, tests/orderTypes.e2e.test.js | docs(3.2): finalize OrderTypes; update TECH_OVERVIEW and CHANGELOG; export TECH_OVERVIEW copy
+- Mark OrderTypes as OK; remove from roadmap
+- Clarify UI capabilities and effects on orders/printing
+- Add 3.2 section and final Warsaw-timestamped entry to CHANGELOG
+- Add storage/reports/TECH_OVERVIEW.md export
+- Include API/route/UI/RBAC files and tests
+
+2025-10-20T22:59:00+02:00 (Europe/Warsaw) | server/models/FieldSchema.js, server/models/Dictionary.js, tests/models/fields.valid.test.js, tests/models/fields.invalid.test.js, TECH_OVERVIEW.md, storage/reports/TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- feat(forms/models): FieldSchema & Dictionary — Mongoose модели, индексы, валидации
+- server/models/FieldSchema.js: поля scope/name/version/isActive/note/createdBy/createdAt и fields[]; индексы {scope,name,version:-1}, {isActive:1}; pre('validate') для list/multilist → обязательны options.
+- server/models/Dictionary.js: code (unique, trim+lower), values[], updatedAt; индекс {code:1, unique:true}; pre('save') — touch updatedAt; pre('validate') — normalize code.
+- tests: tests/models/fields.valid.test.js, tests/models/fields.invalid.test.js — позитивные/негативные кейсы; запуск `npm test -- tests/models --runInBand` — 2/2 suites, 6/6 tests PASSED.
+- docs: TECH_OVERVIEW.md обновлён (раздел 3.3); экспорт синхронизирован: storage/reports/TECH_OVERVIEW.md.
+
+### Acceptance
+- модели созданы, валидации и тесты пройдены
+
+## 2025-10-20 23:26 (Europe/Warsaw)
+- Server: добавлены маршруты FieldSchemas и Dictionaries; монтированы в `server.js`.
+- Files: `routes/fields.js`, `routes/dicts.js`, `server.js`.
+- Scripts: обновлён `scripts/generateSwagger.js` — компоненты и пути для `/api/fields*` и `/api/dicts*`; артефакт `artifacts/swagger.json`.
+- Docs: обновлён раздел "API / FieldSchemas / Dicts" в `TECH_OVERVIEW.md`.
+- RBAC: доступ `Admin`, `Manager`; запрет удаления активной версии; унифицированные ошибки.
+- Acceptance: «API добавлено, RBAC и Swagger готовы».
+
+2025-10-20T20:40:00+02:00 (Europe/Warsaw) | client/src/pages/settings/FieldsBuilderPage.js | feat(settings/forms): кнопка «Импорт из браузера» — миграция полей из localStorage в FieldSchema через POST /api/fields/schemas; валидация списков; уведомления об ошибке/успехе
+2025-10-20T20:40:00+02:00 (Europe/Warsaw) | scripts/importFieldSchemaFromFile.js | feat(cli): импортёр FieldSchema из JSON (маппинг типов, валидация options, авто-версионирование/активация, MONGO_URL|MONGO_URI)
+2025-10-20T20:40:00+02:00 (Europe/Warsaw) | TECH_OVERVIEW.md | docs: добавлена секция «Migration — FieldSchemas import (UI + CLI)»: описание потока, ключей localStorage и требований валидации; DEV in-memory fallback
+
+2025-10-20T23:59:30+02:00 (Europe/Warsaw) | client/src/services/dictsService.js, client/src/services/fieldsService.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/context/AuthContext.jsx, client/src/components/ProtectedRoute.jsx, TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- feat(client/services): добавлен `dictsService` (list/get/getByCode/create/update/remove) и подтверждён `fieldsService` (listVersions/importSchema/activate/deactivate).
+- refactor(ui/settings): FieldsBuilderPage переведён на `fieldsService`; добавлен список версий и «Активировать»; действия скрыты и недоступны без ролей `Admin|Manager`.
+- docs: TECH_OVERVIEW.md — добавлен раздел «Client: Services & UI (FieldSchemas + Dicts)»; обновлён CHANGELOG.
+
+### Acceptance
+- Роль `Admin|Manager`: страница `/settings/forms/order-fields` → при наличии локальных полей «Импорт из браузера» создаёт новую версию через `POST /api/fields/schemas`; раздел «Версии» показывает список из `GET /api/fields/:scope/:name/versions`; кнопка «Активировать» вызывает `POST /api/fields/:id/activate` и делает версию активной.
+- Роли без прав не видят кнопок «Импорт»/«Активировать», попытки прямых запросов получают `403` (серверный RBAC в `routes/fields.js`).
+- DEV (`AUTH_DEV_MODE=1`): функциональность работает на in-memory сторадже; API и RBAC идентичны.
+
+2025-10-20T23:59:59+02:00 (Europe/Warsaw) | services/fieldSchemaProvider.js, routes/clients.js, routes/orders.js, TECH_OVERVIEW.md, CHANGELOG_TRAE.md | feat(forms/server): активные схемы + TTL кэш + валидация обязательных полей
+- services: добавлен провайдер `getActiveSchema(scope,name,ttl=60)` с in‑memory TTL кэшем (`services/ttlCache.js`).
+- orders: middleware `validateOrderRequiredFields` для `POST /api/orders` — подмешивает активную схему `orders/«Форма заказа»`, проверяет `required:true` поля в `body` и `body.fields`, возвращает `400 { error:'REQUIRED_FIELDS_MISSING', fields:[...] }` при нехватке.
+- clients: middleware `validateRequiredFields` для `POST /api/clients` и `PUT /api/clients/:id` — аналогичные правила для `clients/«Форма клиента»`.
+- docs: обновлён раздел «Использование FieldSchema в бизнес‑логике» в `TECH_OVERVIEW.md`.
+
+### Acceptance
+- активные схемы подмешиваются, валидация работает
+
+2025-10-20T22:15:00+02:00 (Europe/Warsaw) | tests/fields.schemas.e2e.test.js, tests/dicts.e2e.test.js, tests/api.contracts.fields.dicts.swagger.test.js, TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+- tests(e2e): добавлены покрывающие сценарии для FieldSchemas (версии, активация/деактивация, PATCH, запрет удаления активной версии, валидация list/multilist → 400 `FIELD_OPTIONS_REQUIRED`).
+- tests(e2e): добавлены CRUD‑сценарии для Dictionaries (конфликт кода → 409, get by id/code, update, delete).
+- tests(swagger): контрактные проверки артефакта `artifacts/swagger.json` — наличие компонент (`FieldSchema`, `FieldSpec`, `Dictionary`, *Create/*Patch) и путей (`/api/fields*`, `/api/dicts*`), методы/ответы и `bearerAuth` в security.
+- docs: TECH_OVERVIEW.md — раздел «Покрытие тестами API Fields/Dicts». CHANGELOG обновлён.
+
+### Acceptance
+- покрытие достигнуто, тесты пройдены
