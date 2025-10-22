@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
-import MuiAppBar from '@mui/material/AppBar';
+import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
@@ -37,21 +37,19 @@ import { useAuth } from '../context/AuthContext';
 import DescriptionIcon from '@mui/icons-material/Description';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import logo from '../assets/logo.svg';
-import SidebarGroup from './sidebar/SidebarGroup';
+import Sidebar from '../layout/Sidebar';
+import useMediaQuery from '@mui/material/useMediaQuery';
 // lucide icons for Linear-style sidebar
 import { LayoutDashboard, Calendar as CalendarIconLucide, ShoppingCart as ShoppingCartLucide, CreditCard, Users as UsersLucide, BarChart2, Settings as SettingsLucide, Briefcase, Folder, Zap, Wand2, CheckCircle2 } from 'lucide-react';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import { useThemeMode } from '../context/ThemeModeContext';
 
 const drawerWidth = 280;
+const WIDTH_LG = 260;
+const WIDTH_MD_MINI = 80;
 
-const AppBarStyled = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(() => ({
-  display: 'block',
-  backgroundColor: 'var(--appbar-bg)',
-  color: 'var(--color-text)',
-  borderBottom: '1px solid var(--color-border)',
-  boxShadow: 'var(--appbar-shadow)'
-}));
+// AppBarStyled removed; using standard AppBar position="sticky"
 
 const StyledDrawer = styled(Drawer)(() => ({
   width: drawerWidth,
@@ -133,9 +131,18 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, hasAnyRole } = useAuth();
+  const { mode, toggle } = useThemeMode();
   const [profileAnchor, setProfileAnchor] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [activeKey, setActiveKey] = useState(null);
+
+  const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
+  const isSmDown = useMediaQuery(theme.breakpoints.down('md'));
+  const isMdOnly = !isLgUp && !isSmDown;
+  const sidebarOffset = isLgUp ? WIDTH_LG : isMdOnly ? WIDTH_MD_MINI : 0;
+  // динамическая высота AppBar: 56px на xs/sm, 64px на md+
+  const isSmToolbar = useMediaQuery(theme.breakpoints.down('sm'));
+  const appBarHeight = isSmToolbar ? 56 : 64;
 
   const isAllowed = (path) => {
     const allowed = RBAC_MENU[path];
@@ -214,13 +221,13 @@ export default function Layout({ children }) {
   return (
     <ThemeProvider>
       <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-        <AppBarStyled position="static" color="default" elevation={0}>
+        <AppBar position="sticky" color="default" elevation={0}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton onClick={() => setCollapsed((v) => !v)} sx={{ mr: 1 }}>
+              <IconButton onClick={() => setCollapsed((v) => !v)} sx={{ mr: 1, display: { xs: 'inline-flex', sm: 'inline-flex', md: 'none', lg: 'none' } }}>
                 <MenuIcon />
               </IconButton>
-              <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
+              <Box component="img" src={logo} alt="logo" sx={{ height: (t) => t.spacing(3), width: (t) => t.spacing(3), mr: 1, filter: 'brightness(1.2)' }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
                 Character CRM
               </Typography>
@@ -230,6 +237,11 @@ export default function Layout({ children }) {
                 <Box sx={{ mr: 1 }}>
                   <ThemeSwitcher disabled={!hasAnyRole(['Admin'])} />
                 </Box>
+              </Tooltip>
+              <Tooltip title={mode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}>
+                <IconButton aria-label="Переключить режим темы" onClick={toggle} sx={{ mr: 1 }}>
+                  {mode === 'dark' ? <DarkModeIcon /> : <LightModeIcon />}
+                </IconButton>
               </Tooltip>
               <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
                 <Avatar sx={{ width: 32, height: 32 }}>
@@ -241,40 +253,22 @@ export default function Layout({ children }) {
               </Menu>
             </Box>
           </Toolbar>
-        </AppBarStyled>
+        </AppBar>
 
-        <Drawer
-          variant="permanent"
-          anchor="left"
-          sx={{ '& .MuiDrawer-paper': { width: collapsed ? 72 : drawerWidth, boxSizing: 'border-box', backgroundColor: 'var(--color-surface)' } }}
-        >
-          <DrawerHeader>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24, mr: 1, filter: 'brightness(1.2)' }} />
-              {!collapsed && (
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                  Character CRM
-                </Typography>
-              )}
-            </Box>
-          </DrawerHeader>
-          <List sx={{ padding: '8px 8px' }}>
-            {sectionsRaw.map((section) => (
-              <Box key={section.label} sx={{ mb: 2 }}>
-                {!collapsed && (
-                  <Typography variant="caption" sx={{ px: 2, py: 1, color: 'var(--color-textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    {section.label}
-                  </Typography>
-                )}
-                <SidebarGroup items={section.items} depth={0} collapsed={collapsed} activeKey={activeKey} setActiveKey={setActiveKey} />
-              </Box>
-            ))}
-          </List>
-        </Drawer>
-        <Box sx={{ p: 2, ml: `${collapsed ? 72 : drawerWidth}px` }}>
-          <Outlet />
-        </Box>
+        {/* Старый кастомный Drawer удалён — используем новый Sidebar компонент */}
+        {/* Новый простой сайдбар на MUI Drawer + List */}
+        <Sidebar
+          mobileOpen={collapsed}
+          onClose={() => setCollapsed(false)}
+          hasRole={(role) => hasAnyRole([role])}
+        />
+
+        <Box sx={{ p: (t) => t.spacing(2), ml: sidebarOffset, width: { xs: '100%', md: `calc(100% - ${sidebarOffset}px)` }, minHeight: `calc(100dvh - ${appBarHeight}px)`, overflow: 'auto', display: 'flex', flexDirection: 'column', transition: 'margin-left 200ms ease, width 200ms ease' }}>
+           <Outlet />
+         </Box>
       </Box>
     </ThemeProvider>
   );
 }
+
+// breakpoint hooks moved inside Layout component

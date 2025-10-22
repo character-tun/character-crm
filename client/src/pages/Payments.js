@@ -416,7 +416,10 @@ export default function PaymentsPage() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={10}>
+        </Grid>
+
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={12}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Button variant="outlined" onClick={() => setArticleDialogOpen(true)}>Статьи</Button>
               {selectedArticles.length > 0 ? (
