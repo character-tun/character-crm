@@ -1,3 +1,23 @@
+## 2025-10-22 16:50 (Europe/Warsaw) | Phase 2 Final — Stock + Shop + Staff E2E
+- files: tests/stock.shop.staff.e2e.prodlike.test.js, CHANGELOG_TRAE.md, TECH_OVERVIEW.md
+- changes: добавлен PROD-like e2e-тест полного цикла: поступление товара (DEV API) → продажа (DEV Payments) → списание по заказу (Mongo-моки моделей) → начисление сотруднику (Mongo-моки PayrollAccrual). Тест выполняет `handleStatusActions` с действиями `stockIssue` и `payrollAccrual`, валидирует остатки, движения, начисление и аудит-лог.
+- Acceptance:
+  - Поступление через `/api/stock/movements` (receipt) создаёт остаток 3.
+  - Выполняется экшен `stockIssue`: остаток уменьшается на 1; движение `issue` создано.
+  - Выполняется экшен `payrollAccrual` на 10% от `grandTotal` (200 → 20).
+  - Аудит-лог `OrderStatusLog` содержит запись `STATUS_ACTION_PAYROLL`.
+  - Запуск `npm test` проходит новый тест.
+
+## 2025-10-22 15:20 (Europe/Warsaw) | Warehouse MVP — Складской API, действия, контракты
+- files: routes/stock.js, services/statusActionsHandler.js, services/orderStatusService.js, routes/statuses.js, scripts/generateSwagger.js, contracts/apiContracts.js, tests/api.contracts.stock.test.js, artifacts/swagger.json
+- changes: добавлены эндпоинты `/api/stock/items` и `/api/stock/movements` с RBAC `requirePermission('warehouse.read'|'warehouse.write')`; DEV‑ветка — in‑memory хранилища. Действие `stockIssue` на группах `closed_success` — списывает остатки по товарам заказа и создаёт движения. Swagger расширен моделями/путями склада. Добавлены Joi‑контракты для Items/Movements. Написаны DEV‑тесты receipt/issue/adjust и RBAC.
+- Acceptance:
+  - GET/POST `/api/stock/items` доступны роли `Admin`; ответы соответствуют контрактам.
+  - POST `/api/stock/movements` поддерживает `receipt|issue|adjust`, обновляет баланс.
+  - Статус `closed_success` автоматически включает `stockIssue` (DEV и Mongo ветки).
+  - Swagger содержит модели/пути склада; `artifacts/swagger.json` обновлён.
+  - Тесты `tests/api.contracts.stock.test.js` проходят.
+
 ## 2025-10-22 14:40 (Europe/Warsaw) | UI/Orders — Быстрый платёж: метод/касса, автоостаток
 - files: client/src/pages/Orders.js, TECH_OVERVIEW.md
 - changes: модалка быстрого платежа/возврата теперь включает поля `method` и `cashRegisterId`; при открытии автоподставляется «Остаток к оплате» на основе API‑платежей. Загружаются кассы через `cashService.list`. Пэйлоад отправки содержит `method` и `cashRegisterId`.
@@ -91,6 +111,17 @@
 - docs: добавлен раздел `API / Payments` в `TECH_OVERVIEW.md`.
 - tests: `tests/api.contracts.payments.test.js` — 8/8 пройдено.
 
+## 2025-10-22 14:00 (Europe/Warsaw) | 3.4 Payments — Этап 3: Status Actions — chargeInit
+- server: `services/statusActionsHandler.js`
+- tests: `tests/statusActions.chargeInit.dev.test.js`, `tests/statusActions.chargeInit.mongo.test.js`
+- DEV: при `AUTH_DEV_MODE=1` создаёт платеж по явному `amount`, уважает `paymentsLocked`/`closed`, проставляет `articlePath: ['Продажи','Касса']`.
+- Mongo: при `AUTH_DEV_MODE=0` и готовом Mongo вычисляет остаток (aggregate по `Payment`), подбирает кассу, создаёт `Payment` и запись `OrderStatusLog`, пропускает если уже оплачено, бросает `PAYMENTS_LOCKED` при блокировке.
+Acceptance:
+- DEV: создаёт платеж с указанной суммой при незаблокированном и не закрытом заказе.
+- Mongo: автосоздаёт платеж на остаток; логирует статус; пропускает полностью оплаченные заказы.
+Artifacts:
+- Unit‑тесты для DEV/Mongo; прогон по паттерну `-t chargeInit`.
+
 ## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 2: RBAC guards для API платежей
 - server: `routes/payments.js`
 - docs: `TECH_OVERVIEW.md`
@@ -178,3 +209,4 @@ Artifacts:
 2025-10-22T23:34:33+03:00 | client/src/components/Layout.js, client/src/pages/Payments.js | UI: корректировка ширины контента с учётом сайдбара; стабилизация сетки фильтров на странице Платежи для md; вынесение чипов статей в отдельную строку; плавные переходы. Визуально проверено на sm/md/lg.
 2025-10-23T01:01:45+03:00 | client/src/pages/Orders.js, routes/orders.js, scripts/orderSwaggerSpec.js | feat(orders): add timeline API, Swagger path, and UI wiring
 2025-10-23T01:04:32+03:00 | CHANGELOG_TRAE.md, MVP_EPIC_PLAN.md, README.md, TECH_OVERVIEW.md, client/.env.local, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/Chart.js, client/src/components/ProtectedRoute.jsx, client/src/context/AuthContext.jsx, client/src/context/ThemeModeContext.tsx, client/src/custom.d.ts, client/src/index.js, client/src/layout/Sidebar.tsx, client/src/layout/sidebarConfig.ts, client/src/layout/useActiveMatch.ts, client/src/pages/Calendar.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Login.js, client/src/services/clientsService.js, client/src/services/format.js, client/src/services/itemsService.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, client/src/theme/tokens.ts, client/src/theme/useChartColors.ts, docs/ui-theme-rollback.md, middleware/auth.js, middleware/validate.js, mnt/data/CHANGELOG_TRAE.md, mnt/data/TECH_OVERVIEW.md, models/Order.js, routes/clients.js, routes/items.js, scripts/generateSwagger.js, server.js, server/models/Item.js, storage/docs/TECH_OVERVIEW.md, storage/reports/ui-preflight.md, storage/reports/ui-smoke-after-theme.md | feat(ui): implement MUI theme with light/dark mode toggle
+2025-10-23T02:09:13+03:00 | CHANGELOG_TRAE.md | feat(ui): implement MUI theme with light/dark mode toggle

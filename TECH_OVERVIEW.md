@@ -68,6 +68,23 @@
 - Payments — закрытие без оплаты: `tests/payments.locked.e2e.test.js` (`closeWithoutPayment` ⇒ `PAYMENTS_LOCKED` на create).
 - Cash — контракты: `tests/api.contracts.cash.test.js` (list/get/create, валидные ответы).
 
+## 2.0 Stock + Shop + Staff
+- Связанный цикл: Склад → Магазин → Сотрудники.
+- Stock:
+  - API: `/api/stock/items`, `/api/stock/movements` (receipt/issue/adjust), RBAC `warehouse.read|write`.
+  - DEV: in-memory стораджи; Mongo: модели `StockItem`/`StockMovement` с атомарным `qtyOnHand`.
+  - Status Actions: `stockIssue` для группы `closed_success` — списывает остатки заказа, создаёт движения со `source={ kind:'order', id:orderId }`.
+- Shop:
+  - API: Payments (`/api/payments`, `/api/payments/refund`), RBAC `payments.read|write|lock`.
+  - UI: быстрый платёж/возврат, реестр платежей, Totals, Cashflow.
+  - Status Actions: `chargeInit` (DEV/Mongo) — инициирует оплату по остатку.
+- Staff:
+  - Payroll Accrual: экшен `payrollAccrual` — начисляет % от `grandTotal` заказа; сохраняет `PayrollAccrual` и пишет аудит (`OrderStatusLog`).
+- E2E (PROD-like):
+  - Тест `tests/stock.shop.staff.e2e.prodlike.test.js` моделирует цикл: receipt → sale → stockIssue → payrollAccrual; проверяет остатки, движения, начисление и аудит.
+- Queue:
+  - Очередь статус-экшенов (`queues/statusActionQueue.js`): DEV — in-memory, Prod — BullMQ/Redis; метрики — `/api/queue/status-actions/metrics`.
+
 ## Changelog
 - См. `CHANGELOG_TRAE.md` для детальной хронологии изменений.
 
@@ -159,6 +176,17 @@
   - Справочники — базовые CRUD-страницы.
   - Базовая MUI-тема (без переключателей), единые радиусы/рамки/типографика.
   - App wrapped with ThemeProvider + CssBaseline.
+
+## Server: Warehouse / Stock
+- Endpoints: `/api/stock/items` (GET, POST), `/api/stock/movements` (GET, POST).
+- RBAC: `warehouse.read` / `warehouse.write` (роли: `Admin`, `Production`).
+- DEV_MODE: in‑memory стораджи; Mongo‑ветка использует модели `StockItem`/`StockMovement` при наличии.
+- Поведение:
+  - POST `/api/stock/movements` создаёт `receipt|issue|adjust`; `receipt` сохраняет положительное `qty`, `issue` — отрицательное; обновляет `StockItem.qtyOnHand`.
+  - POST `/api/stock/items` — создаёт запись склада, если её нет (DEV: идемпотентно по `itemId`).
+- Status Actions: `stockIssue` автоматически ставится в очередь для статусов группы `closed_success`; списывает склад по позициям заказа и создаёт движения со `source={ kind:'order', id:orderId }`.
+- Swagger/Contracts: `scripts/generateSwagger.js` — модели/пути склада; Joi‑контракты в `contracts/apiContracts.js`.
+- Tests: `tests/api.contracts.stock.test.js` — DEV‑ветка, проверки RBAC и флоу `receipt → issue → adjust`.
 
 ## Client: Payments UI
 - Страница `client/src/pages/Payments.js` — реестр платежей, работающий поверх API.

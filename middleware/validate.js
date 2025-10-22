@@ -69,6 +69,26 @@ const itemPatchSchema = Joi.object({
   note: Joi.string().trim(),
 }).min(1).unknown(true);
 
+// Schemas: stock
+const stockItemCreateSchema = Joi.object({
+  itemId: Joi.string().trim().required(),
+  qtyOnHand: Joi.number().optional(),
+  unit: Joi.string().trim().optional(),
+  minQty: Joi.number().min(0).optional(),
+  maxQty: Joi.number().min(0).optional(),
+}).unknown(true);
+
+const stockMovementCreateSchema = Joi.object({
+  itemId: Joi.string().trim().required(),
+  type: Joi.string().valid('receipt', 'issue', 'adjust').required(),
+  qty: Joi.number().not(0).required(),
+  note: Joi.string().trim().optional(),
+  source: Joi.object({
+    kind: Joi.string().valid('order', 'manual', 'supplier', 'system').optional(),
+    id: Joi.string().optional(),
+  }).optional(),
+}).unknown(true);
+
 module.exports = {
   validate,
   schemas: {
@@ -79,5 +99,7 @@ module.exports = {
     cashPatchSchema,
     itemCreateSchema,
     itemPatchSchema,
+    stockItemCreateSchema,
+    stockMovementCreateSchema,
   },
 };

@@ -93,6 +93,9 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/fields', require('./routes/fields'));
 app.use('/api/dicts', require('./routes/dicts'));
 
+// Warehouse stock routes
+app.use('/api/stock', require('./routes/stock'));
+
 // Error handler
 app.use(errorHandler);
 

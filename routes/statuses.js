@@ -73,7 +73,7 @@ router.get('/', requireAnyRole(['Admin', 'settings.statuses:list']), async (req,
           _id: randomUUID(), code: 'in_work', name: 'В работе', color: '#2563EB', group: 'in_progress', order: 0, actions: [], system: false,
         },
         {
-          _id: randomUUID(), code: 'done', name: 'Завершён', color: '#16A34A', group: 'closed_success', order: 0, actions: [], system: true,
+          _id: randomUUID(), code: 'done', name: 'Завершён', color: '#16A34A', group: 'closed_success', order: 0, actions: ['stockIssue'], system: true,
         },
         {
           _id: randomUUID(), code: 'cancelled', name: 'Отменён', color: '#DC2626', group: 'closed_fail', order: 0, actions: [], system: true,

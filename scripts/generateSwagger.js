@@ -377,6 +377,93 @@ const spec = {
         required: ['items'],
         additionalProperties: true,
       },
+
+      // Stock schemas
+      StockItem: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          itemId: { type: 'string' },
+          qtyOnHand: { type: 'number' },
+          unit: { type: 'string' },
+          minQty: { type: 'number' },
+          maxQty: { type: 'number' },
+          locked: { type: 'boolean' },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        additionalProperties: true,
+      },
+      StockItemCreateRequest: {
+        type: 'object',
+        properties: {
+          itemId: { type: 'string' },
+          qtyOnHand: { type: 'number' },
+          unit: { type: 'string' },
+          minQty: { type: 'number', minimum: 0 },
+          maxQty: { type: 'number', minimum: 0 },
+        },
+        required: ['itemId'],
+        additionalProperties: true,
+      },
+      StockItemCreateResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          id: { type: 'string' },
+        },
+        required: ['ok', 'id'],
+        additionalProperties: true,
+      },
+      StockItemsListResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/StockItem' } },
+        },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      StockMovement: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          stockItemId: { type: 'string' },
+          itemId: { type: 'string' },
+          type: { type: 'string', enum: ['receipt','issue','adjust'] },
+          qty: { type: 'number' },
+          note: { type: 'string' },
+          source: { type: 'object', additionalProperties: true },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+        additionalProperties: true,
+      },
+      StockMovementCreateRequest: {
+        type: 'object',
+        properties: {
+          itemId: { type: 'string' },
+          type: { type: 'string', enum: ['receipt','issue','adjust'] },
+          qty: { type: 'number' },
+          note: { type: 'string' },
+          source: { type: 'object', properties: { kind: { type: 'string', enum: ['order','manual','supplier','system'] }, id: { type: 'string' } }, additionalProperties: true },
+        },
+        required: ['itemId','type','qty'],
+        additionalProperties: true,
+      },
+      StockMovementItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/StockMovement' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      StockMovementsListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/StockMovement' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
     },
   },
   security: [{ bearerAuth: [] }],
@@ -1070,6 +1157,63 @@ const spec = {
 const orderSpec = require('./orderSwaggerSpec');
 Object.assign(spec.components.schemas, orderSpec.schemas);
 Object.assign(spec.paths, orderSpec.paths);
+
+// Add stock paths programmatically to avoid large inline edits
+spec.paths['/api/stock/items'] = {
+  get: {
+    summary: 'List stock items',
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      { name: 'q', in: 'query', schema: { type: 'string' } },
+      { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200 }, description: 'Default 50' },
+      { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Default 0' },
+    ],
+    responses: {
+      '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/StockItemsListResponse' } } } },
+      '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+    },
+  },
+  post: {
+    summary: 'Create stock item',
+    security: [{ bearerAuth: [] }],
+    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StockItemCreateRequest' } } } },
+    responses: {
+      '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/StockItemCreateResponse' } } } },
+      '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+    },
+  },
+};
+
+spec.paths['/api/stock/movements'] = {
+  get: {
+    summary: 'List stock movements',
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200 }, description: 'Default 50' },
+      { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Default 0' },
+    ],
+    responses: {
+      '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/StockMovementsListResponse' } } } },
+      '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+    },
+  },
+  post: {
+    summary: 'Create stock movement',
+    security: [{ bearerAuth: [] }],
+    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StockMovementCreateRequest' } } } },
+    responses: {
+      '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/StockMovementItemResponse' } } } },
+      '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+    },
+  },
+};
+
 const outDir = path.join(__dirname, '..', 'artifacts');
 ensureDir(outDir);
 const outPath = path.join(outDir, 'swagger.json');

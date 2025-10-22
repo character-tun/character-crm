@@ -58,6 +58,9 @@ const RBAC_MAP = {
   // Catalog (items)
   'catalog.read': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
   'catalog.write': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
+  // Warehouse (stock)
+  'warehouse.read': ['Admin', 'Production'],
+  'warehouse.write': ['Admin', 'Production'],
 };
 
 const requireRoles = (...roles) => (req, res, next) => {

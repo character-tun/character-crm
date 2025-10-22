@@ -82,6 +82,11 @@ async function changeOrderStatus({ orderId, newStatusCode, userId, note, roles =
 
   await order.save();
 
+  // Compute actions with fallback: add stockIssue for closed_success if missing
+  const baseActions = Array.isArray(status.actions) ? status.actions : [];
+  const shouldAddStockIssue = status.group === 'closed_success' && !baseActions.some((a) => (typeof a === 'string' ? a === 'stockIssue' : a && a.type === 'stockIssue'));
+  const actionsToEnqueue = shouldAddStockIssue ? [...baseActions, 'stockIssue'] : baseActions;
+
   // Create status change log
   const log = await OrderStatusLog.create({
     orderId: new mongoose.Types.ObjectId(orderId),
@@ -89,7 +94,7 @@ async function changeOrderStatus({ orderId, newStatusCode, userId, note, roles =
     to,
     userId: new mongoose.Types.ObjectId(userId),
     note: note || '',
-    actionsEnqueued: Array.isArray(status.actions) ? status.actions : [],
+    actionsEnqueued: actionsToEnqueue,
   });
 
   // Enqueue auto-actions (do not break status change on enqueue error)
@@ -97,7 +102,7 @@ async function changeOrderStatus({ orderId, newStatusCode, userId, note, roles =
     await enqueueStatusActions({
       orderId,
       statusCode: status.code,
-      actions: Array.isArray(status.actions) ? status.actions : [],
+      actions: actionsToEnqueue,
       logId: log._id.toString(),
       userId,
     });

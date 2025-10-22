@@ -154,6 +154,38 @@ const docTemplatesListResponseSchema = Joi.object({ ok: Joi.boolean().valid(true
 const docTemplateCreateRequestSchema = Joi.object({ code: Joi.string().required(), name: Joi.string().required(), bodyHtml: Joi.string().required(), variables: Joi.array().items(Joi.string()).optional() });
 const docTemplateItemResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), item: docTemplateSchema.required() });
 
+// Stock
+const stockItemSchema = Joi.object({
+  _id: idSchema.optional(),
+  itemId: Joi.string().required(),
+  qtyOnHand: Joi.number().required(),
+  unit: Joi.string().allow('').optional(),
+  minQty: Joi.number().min(0).optional(),
+  maxQty: Joi.number().min(0).optional(),
+  locked: Joi.boolean().optional(),
+  createdBy: Joi.alternatives().try(Joi.string(), Joi.object()).optional(),
+  createdAt: Joi.date().optional(),
+  updatedAt: Joi.date().optional(),
+});
+const stockItemsListResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), items: Joi.array().items(stockItemSchema).required() });
+const stockItemCreateRequestSchema = Joi.object({ itemId: Joi.string().required(), qtyOnHand: Joi.number().optional(), unit: Joi.string().optional(), minQty: Joi.number().min(0).optional(), maxQty: Joi.number().min(0).optional() });
+const stockItemCreateResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), id: Joi.string().required() });
+
+const stockMovementSchema = Joi.object({
+  _id: idSchema.optional(),
+  stockItemId: Joi.string().optional(),
+  itemId: Joi.string().required(),
+  type: Joi.string().valid('receipt','issue','adjust').required(),
+  qty: Joi.number().required(),
+  note: Joi.string().allow('').optional(),
+  source: Joi.object().optional(),
+  createdBy: Joi.alternatives().try(Joi.string(), Joi.object()).optional(),
+  createdAt: Joi.date().optional(),
+});
+const stockMovementsListResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), items: Joi.array().items(stockMovementSchema).required() });
+const stockMovementCreateRequestSchema = Joi.object({ itemId: Joi.string().required(), type: Joi.string().valid('receipt','issue','adjust').required(), qty: Joi.number().required(), note: Joi.string().optional(), source: Joi.object({ kind: Joi.string().valid('order','manual','supplier','system').optional(), id: Joi.string().optional() }).optional() });
+const stockMovementItemResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), item: stockMovementSchema.required() });
+
 module.exports = {
   // Enums
   ACTION_TYPES, CHANNELS, GROUPS,
@@ -190,4 +222,13 @@ module.exports = {
   docTemplatesListResponseSchema,
   docTemplateCreateRequestSchema,
   docTemplateItemResponseSchema,
+  // Stock
+  stockItemSchema,
+  stockItemsListResponseSchema,
+  stockItemCreateRequestSchema,
+  stockItemCreateResponseSchema,
+  stockMovementSchema,
+  stockMovementsListResponseSchema,
+  stockMovementCreateRequestSchema,
+  stockMovementItemResponseSchema,
 };
