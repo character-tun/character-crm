@@ -16,6 +16,9 @@ const DocTemplate = require('../models/DocTemplate');
 const OrderType = require('../server/models/OrderType');
 // NEW: include FieldSchema model for health checks
 const FieldSchema = require('../server/models/FieldSchema');
+// NEW: include Payment and CashRegister models
+const Payment = require('../server/models/Payment');
+const CashRegister = require('../server/models/CashRegister');
 
 const asObjectId = (s) => {
   try {
@@ -47,6 +50,8 @@ const asObjectId = (s) => {
       orderTypesCount: 0,
       // NEW: count of FieldSchemas
       fieldSchemasCount: 0,
+      // NEW: count of payments
+      paymentsCount: 0,
       problemsTotal: 0,
     },
     problems: {
@@ -80,10 +85,21 @@ const asObjectId = (s) => {
         invalidVersionNumbers: [], // { id, version }
         invalidOptions: [], // { id, index, code, type }
       },
+      // NEW: Payments health checks
+      payments: {
+        unknownOrderId: [], // paymentIds
+        unknownCashRegisterId: [], // paymentIds
+        invalidType: [], // { id, type }
+        nonPositiveAmount: [], // { id, amount }
+        emptyArticlePath: [], // paymentIds
+        lockedWithoutLockedAt: [], // paymentIds
+        missingCreatedAt: [], // paymentIds
+        orderClosedSuccessHasUnlockedPayments: [], // { orderId, paymentIds }
+        orderPaymentsLockedHasUnlockedPayments: [], // { orderId, paymentIds }
+      },
     },
     info: {
       limitations: [
-        'Нет модели Payments в БД: проверка незавершённых платежей при closed.success=true пропущена.',
         'Иммутабельность code системных типов проверяется эвристикой: код должен принадлежать зарезервированному набору (по умолчанию [\'default\']).',
       ],
       reservedSystemCodes: ['default'],
@@ -98,13 +114,15 @@ const asObjectId = (s) => {
   }
 
   try {
-    // Collect refs (added FieldSchema)
-    const [statuses, orders, logs, orderTypes, fieldSchemas] = await Promise.all([
+    // Collect refs (added FieldSchema and Payments)
+    const [statuses, orders, logs, orderTypes, fieldSchemas, payments, cashRegisters] = await Promise.all([
       OrderStatus.find({}).lean(),
       Order.find({}).lean(),
       OrderStatusLog.find({}).lean(),
       OrderType.find({}).lean(),
       FieldSchema.find({}).lean(),
+      Payment.find({}).lean(),
+      CashRegister.find({}).lean(),
     ]);
 
     report.summary.statusesCount = statuses.length;
@@ -113,10 +131,14 @@ const asObjectId = (s) => {
     report.summary.orderTypesCount = orderTypes.length;
     // NEW: set FieldSchemas count
     report.summary.fieldSchemasCount = fieldSchemas.length;
+    // NEW: set Payments count
+    report.summary.paymentsCount = payments.length;
 
     const allowedGroups = OrderStatus.GROUPS || ['draft', 'in_progress', 'closed_success', 'closed_fail'];
     const statusCodes = new Set((statuses || []).map((s) => s.code).filter(Boolean));
     const orderTypeIds = new Set((orderTypes || []).map((t) => String(t._id)));
+    const orderIdsSet = new Set((orders || []).map((o) => String(o._id)));
+    const cashRegisterIdsSet = new Set((cashRegisters || []).map((c) => String(c._id)));
 
     // 1) OrderStatus checks
     const codeMap = new Map();
@@ -278,6 +300,48 @@ const asObjectId = (s) => {
       }
     }
 
+    // 6) Payments checks
+    const paymentsByOrder = new Map();
+    for (const p of payments) {
+      const id = p._id || p.id;
+      // orderId and cashRegisterId existence
+      const oid = p.orderId ? String(p.orderId) : null;
+      if (!oid || !orderIdsSet.has(oid)) report.problems.payments.unknownOrderId.push(id);
+      const crid = p.cashRegisterId ? String(p.cashRegisterId) : null;
+      if (!crid || !cashRegisterIdsSet.has(crid)) report.problems.payments.unknownCashRegisterId.push(id);
+      // type validity
+      if (!['income', 'expense', 'refund'].includes(p.type)) report.problems.payments.invalidType.push({ id, type: p.type });
+      // amount > 0
+      if (!(Number(p.amount) > 0)) report.problems.payments.nonPositiveAmount.push({ id, amount: p.amount });
+      // articlePath not empty
+      if (!Array.isArray(p.articlePath) || p.articlePath.length < 1) report.problems.payments.emptyArticlePath.push(id);
+      // locked must have lockedAt
+      if (p.locked === true && !p.lockedAt) report.problems.payments.lockedWithoutLockedAt.push(id);
+      // createdAt must exist
+      if (!p.createdAt) report.problems.payments.missingCreatedAt.push(id);
+      // index by order
+      if (oid) {
+        if (!paymentsByOrder.has(oid)) paymentsByOrder.set(oid, []);
+        paymentsByOrder.get(oid).push(p);
+      }
+    }
+
+    for (const o of orders) {
+      const oid = String(o._id);
+      const arr = paymentsByOrder.get(oid) || [];
+      // rule: closed.success === true => all payments must be locked
+      const closedSuccess = !!(o.closed && o.closed.success === true);
+      if (closedSuccess) {
+        const unlocked = arr.filter((x) => x.locked !== true).map((x) => x._id);
+        if (unlocked.length > 0) report.problems.payments.orderClosedSuccessHasUnlockedPayments.push({ orderId: oid, paymentIds: unlocked });
+      }
+      // rule: paymentsLocked === true => all payments must be locked
+      if (o.paymentsLocked === true) {
+        const unlocked = arr.filter((x) => x.locked !== true).map((x) => x._id);
+        if (unlocked.length > 0) report.problems.payments.orderPaymentsLockedHasUnlockedPayments.push({ orderId: oid, paymentIds: unlocked });
+      }
+    }
+
     // Aggregate OK flag and total problems
     const counts = [
       report.problems.orderStatus.duplicateCodes.length,
@@ -300,6 +364,16 @@ const asObjectId = (s) => {
       report.problems.fieldSchemas.duplicateVersionNumbers.length,
       report.problems.fieldSchemas.invalidVersionNumbers.length,
       report.problems.fieldSchemas.invalidOptions.length,
+      // NEW: include Payments problems
+      report.problems.payments.unknownOrderId.length,
+      report.problems.payments.unknownCashRegisterId.length,
+      report.problems.payments.invalidType.length,
+      report.problems.payments.nonPositiveAmount.length,
+      report.problems.payments.emptyArticlePath.length,
+      report.problems.payments.lockedWithoutLockedAt.length,
+      report.problems.payments.missingCreatedAt.length,
+      report.problems.payments.orderClosedSuccessHasUnlockedPayments.length,
+      report.problems.payments.orderPaymentsLockedHasUnlockedPayments.length,
     ];
     const problemsTotal = counts.reduce((a, b) => a + b, 0);
     report.summary.problemsTotal = problemsTotal;

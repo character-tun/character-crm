@@ -60,6 +60,14 @@ npm run client      # http://localhost:3000 (UI)
 - `node scripts/generateSwagger.js` — обновить Swagger артефакт
 - `node scripts/migrateOrderStatuses.js` — миграции статусов (CSV/JSON отчёты в `storage/reports/`)
 - `node health/dataSanity.js` — проверка инвариантов данных (Mongo)
+- `node scripts/seedCashRegisters.js` — создать системную кассу `code=main`
+- `node scripts/migrations/2025-10-payments-backfill.js` — нормализация `articlePath`, заполнение `locationId` (env `DEFAULT_LOCATION_ID`)
+
+### Сиды/миграции (запуск)
+- Сид кассы: `node scripts/seedCashRegisters.js`
+- Миграция платежей: `node scripts/migrations/2025-10-payments-backfill.js`
+- Для заполнения `locationId` установите `DEFAULT_LOCATION_ID` в `.env` или переменных окружения.
+- Оба скрипта идемпотентны: повторные прогоны безопасны.
 
 ## Тестирование и покрытие
 - Запуск: `npm test` или `CI=true npm test -- --coverage --watchAll=false`

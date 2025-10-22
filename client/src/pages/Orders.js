@@ -9,6 +9,8 @@ import http from '../services/http';
 import { orderTypesService } from '../services/orderTypesService';
 import { getStatuses } from '../services/statusesService';
 import StatusChip from '../components/StatusChip';
+import { paymentsService } from '../services/paymentsService';
+import { fieldsService } from '../services/fieldsService';
 
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
@@ -24,6 +26,9 @@ const SERVICES = [
 
 const PERFORMERS = ['vblazhenov', 'manager1', 'worker1'];
 const ORDER_STATUSES = ['Новый', 'В работе', 'Готов', 'Отменён'];
+// Добавлены дефолтные статьи для платежей/рефандов
+const DEFAULT_ARTICLE_INCOME = ['Продажи', 'Касса'];
+const DEFAULT_ARTICLE_REFUND = ['Возвраты'];
 
 const initialOrders = [
   {
@@ -116,6 +121,69 @@ export default function Orders() {
   const [editOpen, setEditOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
 
+
+  // Загрузка платежей заказа через API
+  const loadOrderPayments = async () => {
+    if (!currentOrder?.id) return;
+    setPaymentsLoading(true);
+    setPaymentsError('');
+    try {
+      const params = { orderId: currentOrder.id, limit: 500 };
+      const data = await paymentsService.list(params);
+      const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+      setOrderPayments(items);
+    } catch (e) {
+      setPaymentsError(e?.response?.data?.error || e.message || 'Ошибка загрузки платежей');
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+  // Открытие/закрытие и сабмит модалки быстрого платежа/рефанда
+  const openPaymentModal = (mode = 'income') => {
+    setPMode(mode);
+    setPAmount('');
+    setPModalOpen(true);
+  };
+  const closePaymentModal = () => setPModalOpen(false);
+  const submitPaymentModal = async () => {
+    if (!currentOrder?.id) return;
+    const amountNum = Number(pAmount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      setPaymentsError('Введите корректную сумму');
+      return;
+    }
+    try {
+      const payload = {
+        orderId: currentOrder.id,
+        amount: amountNum,
+        articlePath: pMode === 'refund' ? DEFAULT_ARTICLE_REFUND : DEFAULT_ARTICLE_INCOME,
+      };
+      if (pMode === 'refund') {
+        await paymentsService.refund(payload);
+      } else {
+        await paymentsService.create(payload);
+      }
+      setPModalOpen(false);
+      await loadOrderPayments();
+    } catch (e) {
+      setPaymentsError(e?.response?.data?.error || e.message || 'Ошибка операции');
+    }
+  };
+
+  useEffect(() => {
+    if (editOpen && currentOrder?.id) {
+      loadOrderPayments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editOpen, currentOrder?.id]);
+
+  const navigate = useNavigate();
+  const typeMap = { parts: 'Детали', detailing: 'Детейлинг', bodywork: 'Кузовной ремонт' };
+  const [orderTypeItems, setOrderTypeItems] = useState([]);
+  const [statusGroups, setStatusGroups] = useState([]);
+  const statuses = useMemo(() => flattenStatuses(statusGroups), [statusGroups]);
+  const [orderFields, setOrderFields] = useState([]);
+
   useEffect(() => {
     try {
       localStorage.setItem('orders', JSON.stringify(orders));
@@ -130,87 +198,91 @@ export default function Orders() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
   const [lastStatus, setLastStatus] = useState('');
-
-  // Рефы из API: статусы, типы, схемы полей (best-effort)
-  const [statusesGroups, setStatusesGroups] = useState([]);
-  const statuses = useMemo(() => flattenStatuses(statusesGroups), [statusesGroups]);
-  const allowedStatusNames = useMemo(() => {
-    const arr = (statuses || []).map((s) => s.name).filter(Boolean);
-    return arr.length ? arr : ORDER_STATUSES;
-  }, [statuses]);
-  const [orderTypeItems, setOrderTypeItems] = useState([]);
-  const [fieldSchemas, setFieldSchemas] = useState([]);
+  // Виджет «Платежи заказа»: состояние
+  const [orderPayments, setOrderPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState('');
+  const [pModalOpen, setPModalOpen] = useState(false);
+  const [pMode, setPMode] = useState('income'); // income|refund
+  const [pAmount, setPAmount] = useState('');
 
   useEffect(() => {
-    let mounted = true;
-    const loadRefs = async () => {
+    // Load order types and statuses from API
+    (async () => {
       try {
-        const [stRes, typesRes] = await Promise.all([
-          getStatuses().then(r => Array.isArray(r?.data) ? r.data : []),
-          orderTypesService.list().then(r => Array.isArray(r?.items) ? r.items : []),
-        ]);
-        if (mounted) {
-          setStatusesGroups(stRes);
-          setOrderTypeItems(typesRes);
-        }
+        const data = await orderTypesService.list();
+        const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        setOrderTypeItems(items);
       } catch (e) {
-        // фолбэк — используем локальные настройки ниже
+        console.warn('Не удалось загрузить типы заказов', e);
       }
       try {
-        const r = await http.get('/field-schemas');
-        const list = Array.isArray(r?.data?.items) ? r.data.items : (Array.isArray(r?.data) ? r.data : []);
-        if (mounted) setFieldSchemas(list || []);
+        const res = await getStatuses();
+        const payload = res?.data || res;
+        const groups = Array.isArray(payload?.items) ? payload.items : [];
+        setStatusGroups(groups);
       } catch (e) {
-        if (mounted) setFieldSchemas([]);
+        console.warn('Не удалось загрузить статусы', e);
       }
-    };
-    loadRefs();
-    return () => { mounted = false; };
+    })();
   }, []);
-  const [orderFields, setOrderFields] = useState([]);
 
-  const typeMap = {
-    parts: 'Детали',
-    detailing: 'Детейлинг',
-    bodywork: 'Кузовной ремонт',
-  };
+  useEffect(() => {
+    // Load dynamic fields schema based on selected order type
+    (async () => {
+      const id = currentOrder?.orderTypeId;
+      if (!id) {
+        setOrderFields([]);
+        return;
+      }
+      try {
+        const t = orderTypeItems.find((it) => String(it._id) === String(id));
+        const schemaId = t?.fieldsSchemaId || t?.schemaId || t?.fieldSchemaId;
+        if (!schemaId) {
+          setOrderFields([]);
+          return;
+        }
+        const r = await fieldsService.get(schemaId);
+        const item = r?.item || r;
+        const fields = Array.isArray(item?.fields) ? item.fields : [];
+        setOrderFields(fields);
+      } catch (e) {
+        console.warn('Не удалось загрузить схему полей заказа', e);
+        setOrderFields([]);
+      }
+    })();
+  }, [currentOrder?.orderTypeId, orderTypeItems]);
 
-  const location = useLocation();
-  const navigate = useNavigate();
+  const allowedStatusNames = useMemo(() => {
+    const apiNames = statuses.map((s) => s.name).filter(Boolean);
+    if (!currentOrder?.orderTypeId) return apiNames.length ? apiNames : ORDER_STATUSES;
+    const t = orderTypeItems.find((it) => String(it._id) === String(currentOrder.orderTypeId));
+    const allowedIds = (t?.allowedStatuses || []).map((sid) => (typeof sid === 'object' ? sid?._id : sid));
+    const names = statuses.filter((s) => allowedIds.includes(s._id)).map((s) => s.name).filter(Boolean);
+    return names.length ? names : apiNames.length ? apiNames : ORDER_STATUSES;
+  }, [statuses, orderTypeItems, currentOrder?.orderTypeId]);
 
   const filteredOrders = useMemo(() => {
-    const filterType = typeMap[type];
-    let res = orders;
-    if (filterType) res = res.filter((o) => (o.types || []).includes(filterType));
-    const sp = new URLSearchParams(location.search);
-    const clientQ = (sp.get('client') || '').trim().toLowerCase();
-    if (clientQ) res = res.filter((o) => (o.client || '').toLowerCase().includes(clientQ));
-    return res;
-  }, [orders, type, location.search]);
+    const label = typeMap[type];
+    if (!label) return orders;
+    return (orders || []).filter((o) => (o.types || []).includes(label));
+  }, [orders, type]);
 
-  const openEditor = (row) => {
-    setCurrentOrder({
-      ...row,
-      items: row.items || [],
-      payments: row.payments || [],
-      tasks: row.tasks || [],
-    });
-    // начальная история для демонстрации
-    setHistory([
-      { text: `Добавлен платёж на ${formatCurrency(row.paid || 0)}`, ts: new Date() },
-      { text: `Изменён статус на "${row.status}"`, ts: new Date() },
-    ]);
-    setLastStatus(row.status || '');
-    loadStatusLogs(row.id);
+  // Открытие редактора
+  const openEditor = (order) => {
+    const totals = computeOrderTotals(order);
+    setCurrentOrder({ ...order, ...totals });
     setEditOpen(true);
+    setLastStatus(order?.status || '');
+    if (order?.id) {
+      loadStatusLogs(order.id);
+    }
   };
 
+  const handleEditClick = (row) => openEditor(row);
   const handleRowDoubleClick = (params) => openEditor(params.row);
-  const handleRowClick = (params) => openEditor(params.row);
+  const handleRowClick = () => {};
 
-  const handleEditClick = (order) => {
-    openEditor(order);
-  };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
@@ -218,20 +290,20 @@ export default function Orders() {
   };
 
   const handleEditSave = () => {
+    if (!currentOrder) return;
+    const totals = computeOrderTotals(currentOrder);
     setOrders((prev) => {
-      const updated = {
-        ...currentOrder,
-        amount: Number(currentOrder.amount),
-        paid: Number(currentOrder.paid),
-        profit: Number(currentOrder.profit),
-      };
-      const exists = prev.some((o) => o.id === currentOrder.id);
-      return exists ? prev.map((o) => (o.id === currentOrder.id ? updated : o)) : [updated, ...prev];
+      const idx = prev.findIndex((o) => o.id === currentOrder.id);
+      if (idx >= 0) {
+        const next = prev.slice();
+        next[idx] = { ...currentOrder, ...totals };
+        return next;
+      }
+      return [{ ...currentOrder, ...totals }, ...prev];
     });
-    setHistory((prev) => ([{ text: 'Сохранены изменения заказа', ts: new Date() }, ...pendingHistory, ...prev]));
-    setPendingHistory([]);
     setEditOpen(false);
-    setCurrentOrder(null);
+    setHistory([]);
+    setPendingHistory([]);
   };
 
   const addComment = () => {
@@ -386,13 +458,16 @@ export default function Orders() {
       <th>Название</th><th>Исполнитель</th><th>Кол-во</th><th>Гарантия</th><th>Цена</th><th>Скидка</th><th>Итого</th>
     </tr></thead><tbody>${itemsRows}</tbody></table>`;
 
-    const paymentsRows = (currentOrder.payments || []).map((p) => {
+    // Печать платежей — используем API-данные orderPayments
+    const paymentsRows = (orderPayments || []).map((p) => {
+      const when = p.createdAt ? new Date(p.createdAt).toLocaleString('ru-RU') : (p.date ? new Date(p.date).toLocaleString('ru-RU') : '-');
+      const article = Array.isArray(p.articlePath) ? p.articlePath.join(' / ') : (p.article || '-');
       return `<tr>
-        <td>${p.article || '-'}</td>
+        <td>${article}</td>
         <td>${p.method || '-'}</td>
         <td>${p.receipt || '-'}</td>
         <td>${p.employee || '-'}</td>
-        <td>${p.date || '-'}</td>
+        <td>${when}</td>
         <td class="right">${Number(p.amount || 0).toLocaleString('ru-RU')}</td>
       </tr>`;
     }).join('');
@@ -709,21 +784,45 @@ export default function Orders() {
                   </Paper>
 
                   {/* Payments */}
-                  <Typography variant="h6" gutterBottom>Платежи</Typography>
+                  <Typography variant="h6" gutterBottom>Платежи заказа</Typography>
                   <Paper sx={{ mb: 3, p: 2 }}>
-                    <Stack spacing={1}>
-                      {(currentOrder.payments || []).map((p, idx) => (
-                        <Stack key={idx} direction="row" spacing={2} alignItems="center">
-                          <Chip label={new Date(p.date).toLocaleString('ru-RU')} />
-                          <TextField label="Сумма" type="number" size="small" value={p.amount} onChange={(e)=>updatePayment(idx, Number(e.target.value))} />
-                          <Button variant="outlined" size="small" onClick={()=>removePayment(idx)}>Удалить</Button>
+                    <Stack spacing={2}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Button variant="contained" size="small" onClick={() => openPaymentModal('income')} disabled={!currentOrder?.id || paymentsLoading}>Быстрый платёж</Button>
+                        <Button variant="outlined" size="small" onClick={() => openPaymentModal('refund')} disabled={!currentOrder?.id || paymentsLoading}>Быстрый возврат</Button>
+                        <Button variant="text" size="small" onClick={() => navigate(`/payments?orderId=${currentOrder?.id || ''}`)}>Открыть реестр платежей</Button>
+                        <Button variant="text" size="small" onClick={loadOrderPayments} disabled={!currentOrder?.id || paymentsLoading}>Обновить</Button>
+                      </Stack>
+                      {paymentsError && <Typography color="error">{paymentsError}</Typography>}
+                      {paymentsLoading && <Typography variant="body2">Загрузка платежей...</Typography>}
+                      {!paymentsLoading && (orderPayments || []).length === 0 && <Typography variant="body2">Нет платежей</Typography>}
+                      {!paymentsLoading && (orderPayments || []).map((p, idx) => (
+                        <Stack key={p._id || p.id || idx} direction="row" spacing={2} alignItems="center">
+                          <Chip label={(p.type || 'income').toUpperCase()} />
+                          <Chip label={p.createdAt ? new Date(p.createdAt).toLocaleString('ru-RU') : (p.date ? new Date(p.date).toLocaleString('ru-RU') : '-')} />
+                          <Typography>Сумма: {formatCurrency(p.amount)}</Typography>
+                          {Array.isArray(p.articlePath) ? <Typography>Статья: {p.articlePath.join(' / ')}</Typography> : (p.article ? <Typography>Статья: {p.article}</Typography> : null)}
+                          {p.note ? <Typography>Примечание: {p.note}</Typography> : null}
                         </Stack>
                       ))}
-                      <Box>
-                        <Button variant="outlined" size="small" onClick={addPayment}>Добавить платёж</Button>
-                      </Box>
                     </Stack>
                   </Paper>
+                  <Dialog open={pModalOpen} onClose={closePaymentModal} maxWidth="xs" fullWidth>
+                    <DialogTitle>{pMode === 'refund' ? 'Быстрый возврат' : 'Быстрый платёж'}</DialogTitle>
+                    <DialogContent>
+                      <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField label="Сумма" type="number" value={pAmount} onChange={(e) => setPAmount(e.target.value)} fullWidth />
+                        <Typography variant="body2">Заказ: {currentOrder?.id || '-'}</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                          Статья: {(pMode === 'refund' ? DEFAULT_ARTICLE_REFUND : DEFAULT_ARTICLE_INCOME).join(' / ')}
+                        </Typography>
+                      </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                      <Button onClick={closePaymentModal}>Отмена</Button>
+                      <Button onClick={submitPaymentModal} variant="contained">Сохранить</Button>
+                    </DialogActions>
+                  </Dialog>
 
                   {/* Timeline */}
                   <Typography variant="h6" gutterBottom>Сроки</Typography>

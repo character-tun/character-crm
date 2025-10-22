@@ -12,6 +12,7 @@ const PaymentSchema = new Schema({
   note: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   locked: { type: Boolean, default: false },
+  lockedAt: { type: Date },
   locationId: { type: Schema.Types.ObjectId, ref: 'Location' },
 }, { timestamps: true });
 
@@ -41,5 +42,11 @@ PaymentSchema.index({ orderId: 1 });
 PaymentSchema.index({ type: 1 });
 PaymentSchema.index({ createdAt: 1 });
 PaymentSchema.index({ locationId: 1 });
+// Recommended for filtering by locked and fast lookups by articlePath
+PaymentSchema.index({ locked: 1 });
+PaymentSchema.index({ lockedAt: 1 });
+PaymentSchema.index({ articlePath: 1 });
+// Optional: optimize order-specific timelines
+PaymentSchema.index({ orderId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Payment', PaymentSchema);

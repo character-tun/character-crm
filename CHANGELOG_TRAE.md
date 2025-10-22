@@ -1,3 +1,37 @@
+## 2025-10-22 11:35 (Europe/Warsaw) | 3.4 Payments (MVP) — финал: Swagger, контракты, TECH_OVERVIEW
+- scripts: обновлён `scripts/generateSwagger.js` (PaymentCreateRequest → только `orderId`; PaymentCreateResponse → `{ ok, id }`; PaymentRefundRequest → только `orderId`; `Payment` добавлен `lockedAt: date-time`; ответы `POST /api/payments*` унифицированы `200 { ok, id }`).
+- artifacts: перегенерирован `artifacts/swagger.json`.
+- docs: обновлён `TECH_OVERVIEW.md` (модули, API/Swagger Payments, UI/Payments — фильтры и RBAC, пустые состояния, «Tests / Test Runs»).
+- tests: прогон контрактов и e2e — `tests/api.contracts.payments.test.js`, `tests/payments.rbac.e2e.test.js`, `tests/payments.lock.rules.e2e.test.js`, `tests/payments.locked.e2e.test.js`, `tests/api.contracts.cash.test.js` — пройдены.
+- Acceptance: контракт `{ ok, id }` и требование `orderId` согласованы между API/Swagger/доками; RBAC и блокировки работают по описанию.
+
+## 2025-10-22 11:05 (Europe/Warsaw) | Health & Indexes — Этап 11: Payments
+- health: `health/dataSanity.js` — добавлен блок `payments`: проверки связности (`orderId`/`cashRegisterId`), инвариантов (`type`, `amount`, `articlePath`, `createdAt`), блокировок (`locked` ⇒ `lockedAt`), и правил для заказов (`closed.success=true` и `paymentsLocked=true` ⇒ все платежи `locked`). Сводка дополнена `summary.paymentsCount`.
+- models: `server/models/Payment.js` — добавлено поле `lockedAt: Date`; индексы: `{ locked:1 }`, `{ lockedAt:1 }`, `{ articlePath:1 }`, `{ orderId:1, createdAt:-1 }` (плюс существующие).
+- routes: `routes/payments.js` — эндпоинт `POST /api/payments/:id/lock` теперь проставляет `lockedAt` (в DEV‑ветке и Mongo‑ветке).
+- docs: обновлён `TECH_OVERVIEW.md` (раздел «Health: Payments» и рекомендации по индексам).
+- Acceptance: `node health/dataSanity.js` печатает JSON и не падает при отсутствии Mongo; блокировка платежа проставляет `lockedAt`.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | Seeds & Migrations — Кассы и Backfill платежей
+- scripts: добавлены `scripts/seedCashRegisters.js` (создаёт системную кассу `code=main`) и `scripts/migrations/2025-10-payments-backfill.js` (нормализует `articlePath`, заполняет `locationId` при наличии `DEFAULT_LOCATION_ID`).
+- docs: обновлены `README.md` (запуск сидов/миграций), `TECH_OVERVIEW.md` (раздел про сид/миграцию Payments/Cash), `CHANGELOG_TRAE.md` (эта запись).
+- run: `node scripts/seedCashRegisters.js`; `node scripts/migrations/2025-10-payments-backfill.js`.
+- env: `DEFAULT_LOCATION_ID` — используется для backfill `locationId` (если требуется локационная модель).
+- Acceptance: повторный запуск идемпотентен; касса `main` существует.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | UI/Orders — Виджет «Платежи заказа»
+- client: `client/src/pages/Orders.js` — добавлен API‑виджет «Платежи заказа»: автозагрузка по `orderId`, кнопки «Быстрый платёж/возврат», переход в реестр платежей.
+- print: печать заказа использует API‑данные `orderPayments` (таблица с датой, статьёй, методом, суммой).
+- defaults: выровнены дефолтные статьи — доход `['Продажи','Касса']`, возврат `['Возвраты']`.
+- docs: обновлены `TECH_OVERVIEW.md` (UI «Заказы», API «Payments» — фильтр `orderId`) и `CHANGELOG_TRAE.md`.
+- Acceptance: при открытии редактора заказа виджет подтягивает платежи; «Быстрый платёж/возврат» создаёт запись через API; печать включает таблицу платежей.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | UI/Payments — API‑driven реестр, фильтры, модалки, RBAC
+- client: `client/src/pages/Payments.js` переписана под API (`paymentsService`), добавлены фильтры (период, тип, касса, заметка, `locked`, древо статей), модалки создания/редактирования/возврата, блокировка.
+- ui: Totals (income/expense/refund/balance), пустые состояния, тосты ошибок (Snackbar+Alert), скрытие кнопок по RBAC.
+- docs: обновлены `TECH_OVERVIEW.md` (раздел UI «Платежи») и `CHANGELOG_TRAE.md`.
+- Acceptance: визуальная проверка `/payments` в dev-превью, API обращается на `http://localhost:5003/api`.
+
 ## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Контракты API: согласование ответов и документации
 - server: обновлены `routes/payments.js` — успешные ответы `200` с `{ ok, id }`; DEV ветка требует `orderId`, ошибки `PAYMENTS_LOCKED`/`ORDER_CLOSED` сохранены; Mongo‑ветка упрощена для тестовой среды (без проверки кассы и записи в БД).
 - scripts: перегенерирован Swagger (`scripts/generateSwagger.js`) → `artifacts/swagger.json`.
@@ -879,3 +913,6 @@ Least covered (server, by lines):
 - `DELETE /api/cash/{id}` удаляет обычную кассу; при наличии связанных платежей → `409 CASH_IN_USE`.
 - RBAC: `Finance` имеет чтение; `Admin` — полный CRUD.
 2025-10-21T16:52:19+03:00 | .github/workflows/ci.yml | ci: add GitHub Actions for lint, test, build and npm audit
+2025-10-22T01:49:06+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/.env.local, client/eslint.config.cjs, client/src/App.js, client/src/context/AuthContext.jsx, client/src/pages/BootstrapFirst.js, client/src/pages/Login.js, client/src/pages/RbacTest.js, client/src/services/http.js, middleware/auth.js, middleware/error.js, middleware/validate.js, models/UserToken.js, package.json, routes/auth.js, routes/cash.js, routes/orders.js, routes/payments.js, scripts/bootstrap-demo.sh, scripts/extractAuthSpec.js, scripts/generateSwagger.js, scripts/setup-dev-db.sh, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/files/0448d3f8-5d4a-4e41-a125-58e86edcbca6.bin, storage/files/0ddda825-fc8a-4c6e-8371-acdb22531b20.bin, storage/files/42ec0f14-c7fb-45fd-93f5-7f6a05f0205b.bin, storage/files/96210809-3c92-407d-987d-6716adef91ba.bin, storage/files/97f74646-79fa-455d-bd4e-9f543b004787.bin, storage/files/a53d1f9f-a3a5-4cbe-b3a0-f283a530bc0c.bin, storage/files/d0649d23-74c0-4b5a-b6ca-b264f8f39bb9.bin, storage/files/d88947b8-6805-4d13-a2e1-9ce648f4af41.bin, storage/files/e8665ca9-30e5-48b1-905a-3737bf5273ca.bin, storage/files/fe34aefe-fc3e-4ad3-be18-3547c873bd2a.bin, storage/files/ff20742c-cefc-4d3f-ac7b-5bb017f12caa.bin, storage/reports/TECH_OVERVIEW.md, storage/reports/api-contracts/auth.json, storage/reports/migrateOrderStatuses-1761083409756.csv, storage/reports/migrateOrderStatuses-1761083409914.csv, storage/reports/migrateOrderStatuses-1761083410151.csv, storage/reports/migrateOrderStatuses-1761083410336.csv, storage/reports/migrateOrderStatuses-1761083410577.csv, storage/reports/migrateOrderStatuses-1761083417627.csv, storage/reports/migrateOrderStatuses-1761083417786.csv, storage/reports/migrateOrderStatuses-1761083418014.csv, storage/reports/migrateOrderStatuses-1761083418201.csv, storage/reports/migrateOrderStatuses-1761083418437.csv, storage/reports/migrateOrderStatuses-1761083418437.json, storage/reports/statusActionQueue-load-report-2025-10-21.md, tests/auth.contract.test.js, tests/auth.refresh.e2e.test.js, tests/auth.register-first.e2e.test.js, tests/migrateOrderStatuses.test.js, tests/notify.print.e2e.prodlike.test.js, tests/notify.unit.test.js, tests/payments.locked.e2e.test.js, tests/print.unit.test.js | feat(auth): implement register-first flow with bootstrap admin
+2025-10-21T22:51:44.905Z | client/src/services/cashService.js, client/src/services/paymentsService.js, TECH_OVERVIEW.md | feat(client/services): добавлены API-клиенты для касс и платежей; ошибки доверяются; обновлена документация (Client Services)
+2025-10-22T02:07:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, server.js, routes/reports.js, routes/payments.js, services/devPaymentsStore.js, client/src/services/reportsService.js, client/src/pages/Payments.js | feat(reports/cashflow): mini‑report endpoint and Payments widget; DEV store; docs

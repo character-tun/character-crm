@@ -86,6 +86,7 @@ app.use('/api/files', require('./routes/files'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/queue', require('./routes/queue'));
+app.use('/api/reports', require('./routes/reports'));
 
 // 3.3 Step 2: FieldSchemas & Dictionaries
 app.use('/api/fields', require('./routes/fields'));

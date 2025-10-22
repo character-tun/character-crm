@@ -98,6 +98,21 @@ const orderFilesResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).requ
 const paymentCreateRequestSchema = Joi.object({ orderId: objectIdLike.required() });
 const paymentCreateResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), id: Joi.string().required() });
 
+// Cash
+const cashRegisterSchema = Joi.object({
+  _id: idSchema.optional(),
+  code: Joi.string().required(),
+  name: Joi.string().required(),
+  defaultForLocation: Joi.boolean().default(false),
+  cashierMode: Joi.string().optional(),
+  isSystem: Joi.boolean().default(false),
+  createdAt: Joi.date().optional(),
+  updatedAt: Joi.date().optional(),
+});
+const cashListResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), items: Joi.array().items(cashRegisterSchema).required() });
+const cashCreateRequestSchema = Joi.object({ code: Joi.string().required(), name: Joi.string().required(), defaultForLocation: Joi.boolean().optional(), cashierMode: Joi.string().optional(), isSystem: Joi.boolean().optional() });
+const cashItemResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), item: cashRegisterSchema.required() });
+
 // Queue Metrics
 const queueMetricsResponseSchema = Joi.object({
   processed24h: Joi.number().integer().min(0).required(),
@@ -159,6 +174,11 @@ module.exports = {
   // Payments
   paymentCreateRequestSchema,
   paymentCreateResponseSchema,
+  // Cash
+  cashRegisterSchema,
+  cashListResponseSchema,
+  cashCreateRequestSchema,
+  cashItemResponseSchema,
   // Queue
   queueMetricsResponseSchema,
   // Templates

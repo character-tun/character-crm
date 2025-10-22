@@ -20,9 +20,9 @@ const httpError = (statusCode, message) => {
   return err;
 };
 
-// In-memory store for DEV mode (no MongoDB)
-const memStore = { items: [], idSeq: 1 };
-const nextId = () => `pay-${memStore.idSeq++}`;
+// DEV payments store
+const devPaymentsStore = require('../services/devPaymentsStore');
+const nextId = () => devPaymentsStore.nextId();
 
 // Validation schemas
 /* Validation schemas moved to middleware/validate.js */
@@ -107,7 +107,7 @@ router.get('/', requirePermission('payments.read'), async (req, res) => {
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   if (DEV_MODE && !mongoReady()) {
-    const filtered = filterMemItems(memStore.items, req.query);
+    const filtered = filterMemItems(devPaymentsStore.getItems(), req.query);
     const items = filtered
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -172,7 +172,7 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      memStore.items.push(item);
+      devPaymentsStore.pushItem(item);
       return res.status(200).json({ ok: true, id: item._id });
     }
 
@@ -228,7 +228,7 @@ router.post('/refund', requirePermission('payments.write'), validate(schemas.pay
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      memStore.items.push(item);
+      devPaymentsStore.pushItem(item);
       return res.status(200).json({ ok: true, id: item._id });
     }
 
@@ -262,9 +262,10 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
     const patch = req.body || {};
 
     if (DEV_MODE && !mongoReady()) {
-      const idx = memStore.items.findIndex((i) => String(i._id) === String(id));
+      const items = devPaymentsStore.getItems();
+      const idx = items.findIndex((i) => String(i._id) === String(id));
       if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
-      const current = memStore.items[idx];
+      const current = items[idx];
       if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
       // Guard by order state if available
       if (current.orderId) {
@@ -274,7 +275,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
         if (st && st.closed && st.closed.success === true) return next(httpError(403, 'ORDER_CLOSED'));
       }
       const nextItem = { ...current, ...patch, updatedAt: new Date().toISOString() };
-      memStore.items[idx] = nextItem;
+      items[idx] = nextItem;
       return res.json({ ok: true, item: nextItem });
     }
 
@@ -326,24 +327,23 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
 // POST /api/payments/:id/lock — set locked=true (payments.lock)
 router.post('/:id/lock', requirePermission('payments.lock'), async (req, res, next) => {
   try {
-    const { id } = req.params;
-
+    const id = String(req.params.id);
     if (DEV_MODE && !mongoReady()) {
-      const idx = memStore.items.findIndex((i) => String(i._id) === String(id));
-      if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
-      memStore.items[idx] = { ...memStore.items[idx], locked: true, updatedAt: new Date().toISOString() };
-      return res.json({ ok: true, item: memStore.items[idx] });
+      const item = devPaymentsStore.getItems().find((p) => String(p._id) === id);
+      if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
+      item.locked = true;
+      item.lockedAt = new Date();
+      item.updatedAt = new Date();
+      return res.json({ ok: true, item });
     }
-
-    if (!Payment) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
-
-    const item = await Payment.findByIdAndUpdate(
-      id,
-      { $set: { locked: true } },
-      { new: true }
-    ).lean();
-    if (!item) return next(httpError(404, 'NOT_FOUND'));
-    return res.json({ ok: true, item });
+    if (!Payment) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
+    const payment = await Payment.findById(id);
+    if (!payment) return res.status(404).json({ error: 'NOT_FOUND' });
+    if (payment.locked) return res.json({ ok: true, item: payment });
+    payment.locked = true;
+    payment.lockedAt = new Date();
+    await payment.save();
+    return res.json({ ok: true, item: payment });
   } catch (err) {
     return next(err);
   }
