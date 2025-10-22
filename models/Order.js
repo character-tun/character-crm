@@ -8,10 +8,30 @@ const ClosedSchema = new mongoose.Schema({
 
 const OrderSchema = new mongoose.Schema({
   orderTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'OrderType', required: true, index: true },
+  clientId: { type: String, ref: 'Client', index: true },
   status: { type: String, index: true },
   statusChangedAt: { type: Date },
   closed: { type: ClosedSchema, default: undefined },
   paymentsLocked: { type: Boolean, default: false },
+  items: [{
+    itemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+    qty: { type: Number, default: 1 },
+    total: { type: Number, default: 0 },
+    snapshot: {
+      name: { type: String },
+      price: { type: Number },
+      unit: { type: String },
+      sku: { type: String },
+      tags: { type: [String], default: [] },
+      note: { type: String },
+    },
+    snapshotAt: { type: Date, default: Date.now },
+  }],
+  totals: {
+    subtotal: { type: Number, default: 0 },
+    discountTotal: { type: Number, default: 0 },
+    grandTotal: { type: Number, default: 0 },
+  },
   files: [{
     id: { type: String, required: true },
     name: { type: String, required: true },

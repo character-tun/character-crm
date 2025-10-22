@@ -7,8 +7,9 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import AddIcon from '@mui/icons-material/Add';
+import { formatCurrencyRu } from '../services/format';
 
 const DetailingOrders = () => {
   const [orders, setOrders] = useState([
@@ -172,14 +173,14 @@ const DetailingOrders = () => {
       field: 'total', 
       headerName: 'Сумма', 
       width: 120,
-      valueFormatter: (params) => formatCurrency(params.value)
+      valueFormatter: (params) => formatCurrencyRu(params.value)
     },
     { 
       field: 'profit', 
       headerName: 'Прибыль', 
       width: 120,
       valueGetter: (params) => params.row.total - (params.row.materials_cost + params.row.labor_cost),
-      valueFormatter: (params) => formatCurrency(params.value)
+      valueFormatter: (params) => formatCurrencyRu(params.value)
     },
   ];
 
@@ -212,7 +213,7 @@ const DetailingOrders = () => {
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>Создать новый заказ</DialogTitle>
         <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>

@@ -2,8 +2,24 @@ const express = require('express');
 
 const router = express.Router();
 const Client = require('../models/Client');
-const { requireRoles } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 const { getActiveSchema } = require('../services/fieldSchemaProvider');
+
+const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
+const { randomUUID } = require('crypto');
+const devClients = [
+  { _id: randomUUID(), name: 'Иван Петров', phone: '+7 999 123-45-67', telegram: '@ivanp', city: 'Москва', vehicle: 'Sedan', tags: [], notes: '', createdAt: new Date().toISOString() },
+  { _id: randomUUID(), name: 'Анна Сидорова', phone: '+7 999 765-43-21', telegram: '@annas', city: 'Санкт-Петербург', vehicle: 'Hatchback', tags: [], notes: '', createdAt: new Date().toISOString() },
+];
+
+function filterClientsMem(items, q) {
+  const s = String(q || '').trim().toLowerCase();
+  if (!s) return items.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const includes = (v) => String(v || '').toLowerCase().includes(s);
+  return items
+    .filter((c) => includes(c.name) || includes(c.phone) || includes(c.telegram) || includes(c.city) || includes(c.vehicle))
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
 
 // Helper: extract value by code from body (supports nested `fields` map)
 function getVal(body, code) {
@@ -54,10 +70,26 @@ async function validateRequiredFields(req, res, next) {
 // @route   GET api/clients
 // @desc    Get all clients
 // @access  Authenticated
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('clients.read'), async (req, res) => {
   try {
-    const clients = await Client.find().sort({ createdAt: -1 });
-    res.json(clients);
+    const q = String(req.query.q || '').trim();
+    if (DEV_MODE) {
+      const items = filterClientsMem(devClients, q);
+      return res.json({ ok: true, items });
+    }
+    const match = q
+      ? {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { phone: { $regex: q, $options: 'i' } },
+            { telegram: { $regex: q, $options: 'i' } },
+            { city: { $regex: q, $options: 'i' } },
+            { vehicle: { $regex: q, $options: 'i' } },
+          ],
+        }
+      : {};
+    const clients = await Client.find(match).sort({ createdAt: -1 });
+    return res.json({ ok: true, items: clients });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Ошибка сервера');
@@ -67,8 +99,13 @@ router.get('/', async (req, res) => {
 // @route   GET api/clients/:id
 // @desc    Get client by ID
 // @access  Authenticated
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('clients.read'), async (req, res) => {
   try {
+    if (DEV_MODE) {
+      const c = devClients.find((x) => String(x._id) === String(req.params.id));
+      if (!c) return res.status(404).json({ msg: 'Клиент не найден' });
+      return res.json(c);
+    }
     const client = await Client.findById(req.params.id);
 
     if (!client) {
@@ -88,12 +125,27 @@ router.get('/:id', async (req, res) => {
 // @route   POST api/clients
 // @desc    Create a client
 // @access  Restricted
-router.post('/', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), validateRequiredFields, async (req, res) => {
+router.post('/', requirePermission('clients.write'), validateRequiredFields, async (req, res) => {
   const {
     name, phone, telegram, city, vehicle, tags, notes,
   } = req.body;
 
   try {
+    if (DEV_MODE) {
+      const created = {
+        _id: randomUUID(),
+        name,
+        phone,
+        telegram,
+        city,
+        vehicle,
+        tags: Array.isArray(tags) ? tags : [],
+        notes,
+        createdAt: new Date().toISOString(),
+      };
+      devClients.push(created);
+      return res.json(created);
+    }
     const newClient = new Client({
       name,
       phone,
@@ -115,7 +167,7 @@ router.post('/', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Fi
 // @route   PUT api/clients/:id
 // @desc    Update a client
 // @access  Restricted
-router.put('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), validateRequiredFields, async (req, res) => {
+router.put('/:id', requirePermission('clients.write'), validateRequiredFields, async (req, res) => {
   const {
     name, phone, telegram, city, vehicle, tags, notes,
   } = req.body;
@@ -131,6 +183,13 @@ router.put('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', '
   if (notes) clientFields.notes = notes;
 
   try {
+    if (DEV_MODE) {
+      const idx = devClients.findIndex((x) => String(x._id) === String(req.params.id));
+      if (idx === -1) return res.status(404).json({ msg: 'Клиент не найден' });
+      const next = { ...devClients[idx], ...clientFields, updatedAt: new Date().toISOString() };
+      devClients[idx] = next;
+      return res.json(next);
+    }
     let client = await Client.findById(req.params.id);
 
     if (!client) {
@@ -156,8 +215,15 @@ router.put('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', '
 // @route   DELETE api/clients/:id
 // @desc    Delete a client
 // @access  Restricted
-router.delete('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production', 'Finance'), async (req, res) => {
+router.delete('/:id', requirePermission('clients.write'), async (req, res) => {
   try {
+    if (DEV_MODE) {
+      const idx = devClients.findIndex((x) => String(x._id) === String(req.params.id));
+      if (idx === -1) return res.status(404).json({ msg: 'Клиент не найден' });
+      const removed = devClients[idx];
+      devClients.splice(idx, 1);
+      return res.json({ ok: true, id: removed._id });
+    }
     const client = await Client.findById(req.params.id);
 
     if (!client) {
@@ -166,7 +232,7 @@ router.delete('/:id', requireRoles('Admin', 'Manager', 'Detailing', 'Production'
 
     await Client.findByIdAndRemove(req.params.id);
 
-    res.json({ msg: 'Клиент удален' });
+    res.json({ ok: true });
   } catch (err) {
     console.error(err.message);
     if (err.kind === 'ObjectId') {

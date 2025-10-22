@@ -82,6 +82,7 @@ npm run client      # http://localhost:3000 (UI)
 - Технический обзор: `TECH_OVERVIEW.md`
 - История изменений: `CHANGELOG_TRAE.md`
 - Отчёты/артефакты: `storage/reports/`
+- Откат UI‑темы (MUI): `docs/ui-theme-rollback.md`
 
 ## Замечания по безопасности
 - В DEV разрешены упрощения (in‑memory, dry‑run печати/уведомлений)

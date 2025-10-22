@@ -46,11 +46,11 @@ const Calendar = () => {
   const [myEvents, setMyEvents] = useState(events);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
+    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 0 }}>
         Календарь бронирования
       </Typography>
-      <Paper sx={{ p: 2, height: 'calc(100vh - 180px)' }}>
+      <Paper sx={{ p: 2, flex: 1, minHeight: 0 }}>
         <BigCalendar
           localizer={localizer}
           events={myEvents}

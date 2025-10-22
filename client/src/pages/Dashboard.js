@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Grid, Paper, Typography, Button, TextField } from '@mui/material';
+import { Box, Grid, Paper, Typography, Button, TextField, Container, Card, CardContent, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Chart from '../components/Chart';
 import OrdersTable from '../components/OrdersTable';
+import { formatCurrencyRu } from '../services/format';
+import { formatNumberRu } from '../services/format';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -14,6 +16,7 @@ const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+// удаляю локальный форматтер валюты, используем общий из services/format
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
 const Dashboard = () => {
@@ -97,8 +100,8 @@ const Dashboard = () => {
   }, [filteredOrders]);
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Grid container spacing={3}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Grid container spacing={2}>
         <Grid item xs={12}>
           <Typography variant="h4" component="h1" gutterBottom>
             Дашборд
@@ -121,30 +124,34 @@ const Dashboard = () => {
           </Box>
         </Grid>
         
-        {/* Статистика */}
+        {/* KPI-плитки */}
         <Grid item xs={12} md={4}>
-          <Item>
-            <Typography variant="h6" gutterBottom>
-              Всего заказов
-            </Typography>
-            <Typography variant="h3">{totalOrders}</Typography>
-          </Item>
+          <Card elevation={1}>
+            <CardContent>
+              <Stack spacing={0.5}>
+                <Typography variant="overline">Всего заказов</Typography>
+                <Typography variant="h4">{formatNumberRu(totalOrders)}</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Item>
-            <Typography variant="h6" gutterBottom>
-              Выручка
-            </Typography>
-            <Typography variant="h3">{formatCurrency(totalRevenue)}</Typography>
-          </Item>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="overline" color="text.secondary">Выручка</Typography>
+              <Typography variant="h4">{formatCurrencyRu(totalRevenue)}</Typography>
+            </CardContent>
+          </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Item>
-            <Typography variant="h6" gutterBottom>
-              Клиенты
-            </Typography>
-            <Typography variant="h3">{uniqueClients}</Typography>
-          </Item>
+          <Card elevation={1}>
+            <CardContent>
+              <Stack spacing={0.5}>
+                <Typography variant="overline">Клиенты</Typography>
+                <Typography variant="h4">{formatNumberRu(uniqueClients)}</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
         </Grid>
         
         {/* Графики */}
@@ -175,7 +182,7 @@ const Dashboard = () => {
           </Item>
         </Grid>
       </Grid>
-    </Box>
+    </Container>
   );
 };
 

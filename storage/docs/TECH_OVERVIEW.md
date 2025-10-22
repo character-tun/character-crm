@@ -259,6 +259,7 @@
   - `client/src/assets/theme-overrides.css` — переопределения MUI на базе CSS‑токенов + утилиты (классы).
   - `client/src/components/ThemeSwitcher.{tsx,jsx}` — переключатель темы в AppBar.
   - `client/src/components/Layout.js` — интеграция `ThemeSwitcher` в AppBar и пункт меню «Оформление» (`/settings/ui-theme`).
+  - Rollback‑гайд темы (MUI): `docs/ui-theme-rollback.md`.
 - Список токенов CSS:
   - Цвета: `--color-primary`, `--color-secondary`, `--color-bg`, `--color-surface`, `--color-surfaceAlt`, `--color-text`, `--color-textMuted`, `--color-border`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`.
   - Статусы: `--status-draft`, `--status-in-progress`, `--status-success`, `--status-fail`.

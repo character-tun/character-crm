@@ -50,6 +50,14 @@ const RBAC_MAP = {
   'payments.lock': ['Admin', 'Finance'],
   'cash.read': ['Admin', 'Finance'],
   'cash.write': ['Admin'],
+
+  // Clients
+  'clients.read': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
+  'clients.write': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
+
+  // Catalog (items)
+  'catalog.read': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
+  'catalog.write': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],
 };
 
 const requireRoles = (...roles) => (req, res, next) => {

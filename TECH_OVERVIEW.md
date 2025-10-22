@@ -157,6 +157,8 @@
 - UI:
   - Полевая страница `client/src/pages/settings/FieldsBuilderPage.js` — импорт схем из локального хранилища, список версий (карточки), «Активировать» версию, ошибки/успехи, скрытие действий без ролей.
   - Справочники — базовые CRUD-страницы.
+  - Базовая MUI-тема (без переключателей), единые радиусы/рамки/типографика.
+  - App wrapped with ThemeProvider + CssBaseline.
 
 ## Client: Payments UI
 - Страница `client/src/pages/Payments.js` — реестр платежей, работающий поверх API.
@@ -180,6 +182,8 @@
 - В Orders (`client/src/pages/Orders.js`) отображается виджет платежей текущего заказа.
 - Автозагрузка `orderPayments` по `orderId` при открытии редактора (`editOpen`) и смене текущего заказа.
 - Быстрые операции: кнопки «Платёж» (income) и «Возврат» (refund) с модалкой; отправка через `paymentsService.create`/`paymentsService.refund`.
+- Быстрая модалка: поля `amount`, `method`, `cashRegisterId`; авто-подстановка «Остаток к оплате».
+- Остаток рассчитывается как `currentOrder.amount - paid` с учётом API-платежей (`orderPayments`) и рефандов/расходов.
 - Переход в реестр `/payments` с автоподстановкой фильтра `orderId`.
 - Кнопка «Обновить» перезагружает список через `paymentsService.list({ orderId })`.
 - Печать заказа: таблица платежей строится из `orderPayments` (статья, метод, чек, сотрудник, дата, сумма).
@@ -259,6 +263,7 @@
   - `client/src/assets/theme-overrides.css` — переопределения MUI на базе CSS‑токенов + утилиты (классы).
   - `client/src/components/ThemeSwitcher.{tsx,jsx}` — переключатель темы в AppBar.
   - `client/src/components/Layout.js` — интеграция `ThemeSwitcher` в AppBar и пункт меню «Оформление» (`/settings/ui-theme`).
+  - Rollback‑гайд темы (MUI): `docs/ui-theme-rollback.md`.
 - Список токенов CSS:
   - Цвета: `--color-primary`, `--color-secondary`, `--color-bg`, `--color-surface`, `--color-surfaceAlt`, `--color-text`, `--color-textMuted`, `--color-border`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`.
   - Статусы: `--status-draft`, `--status-in-progress`, `--status-success`, `--status-fail`.
@@ -322,3 +327,11 @@
 - `POST /api/payments/{id}/lock` — 200, выставляет `locked=true`, `lockedAt`.
 - `POST /api/payments/refund` — 200 + `{ ok:true, id }`; ограничения по состоянию заказа аналогичны create.
 - `GET /api/cash` — 200; `POST /api/cash` — 201; `PATCH /api/cash/{id}` — 200 с защитой `SYSTEM_CODE_PROTECTED`; `DELETE /api/cash/{id}` — 409 `CASH_IN_USE` при платежах (Mongo).
+
+
+## UI Preflight (темизация)
+- Глобальные стили: `client/src/assets/theme-overrides.css` (в `index.js`), `react-big-calendar/lib/css/react-big-calendar.css` (в `Calendar.js`)
+- UI-библиотеки: MUI (`@mui/material`, `@mui/x-data-grid`, `@mui/x-date-pickers`), Emotion, React Big Calendar, Recharts, TinyMCE, Lucide Icons
+- Конфликты: точечные `!important` и таргеты на классы MUI в `theme-overrides.css`; глобальный CSS Big Calendar может пересекаться по специфичности на странице календаря
+- Рекомендации: не трогать `theme-overrides.css` и импорт Big Calendar на первом шаге; не менять Emotion; переносить overrides в MUI theme без добавления новых `!important`
+- Подробный отчёт: `storage/reports/ui-preflight.md`

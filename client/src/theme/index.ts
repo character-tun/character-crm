@@ -1,3 +1,67 @@
+import { createTheme } from '@mui/material/styles';
+import { tokens, ThemeMode } from './tokens';
+
+export const makeTheme = (mode: ThemeMode) => createTheme({
+  palette: { mode, ...tokens.palette },
+  shape: { borderRadius: tokens.shape.radius },
+  typography: {
+    fontFamily: '"Inter","Roboto","Helvetica","Arial",sans-serif',
+    h6: { fontWeight: 600 },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: mode === 'dark' ? '#0f1216' : '#fafafa',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'var(--mui-shadow-2)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: tokens.shape.radius,
+        },
+      },
+    },
+    MuiAppBar: {
+      defaultProps: { elevation: 0 },
+    },
+    MuiPaper: {
+      defaultProps: { elevation: 1 },
+    },
+    MuiCardHeader: {
+      defaultProps: {
+        titleTypographyProps: { variant: 'subtitle1', fontWeight: 600 },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: 8,
+          '&.Mui-selected': { backgroundColor: theme.palette.action.selected },
+        }),
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          borderRight: 0,
+          backgroundColor:
+            theme.palette.mode === 'dark' ? '#111418' : theme.palette.background.paper,
+        }),
+      },
+    },
+  },
+});
+
 export type Theme = {
   name: string;
   colors: {

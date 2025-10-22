@@ -6,13 +6,39 @@ import http from '../services/http';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [firstAllowed, setFirstAllowed] = useState(false);
 
+  // Мгновенный редирект с Login при DEV‑режиме
   useEffect(() => {
+    const devBypass = (() => {
+      try {
+        const flag = localStorage.getItem('auth_dev_mode');
+        if (flag === '1' || flag === 'true') return true;
+      } catch {}
+      return process.env.NODE_ENV !== 'production';
+    })();
+    if (devBypass) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    const devBypass = (() => {
+      try {
+        const flag = localStorage.getItem('auth_dev_mode');
+        if (flag === '1' || flag === 'true') return true;
+      } catch {}
+      return process.env.NODE_ENV !== 'production';
+    })();
+    if (devBypass) {
+      setFirstAllowed(false);
+      return;
+    }
     const cached = localStorage.getItem('first_user_allowed');
     if (cached === '1') {
       setFirstAllowed(true);
@@ -69,6 +95,7 @@ export default function LoginPage() {
     >
       <form
         onSubmit={onSubmit}
+        data-login="1"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -85,6 +112,16 @@ export default function LoginPage() {
           color: '#fff'
         }}
       >
+        <style>{`
+          form[data-login] input:-webkit-autofill,
+          form[data-login] input:-webkit-autofill:hover,
+          form[data-login] input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important;
+            transition: background-color 50000s ease-in-out 0s;
+            box-shadow: 0 0 0px 1000px rgba(255,255,255,0.08) inset !important;
+            -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.08) inset !important;
+          }
+        `}</style>
         <h2 style={{ margin: 0, fontWeight: 600 }}>Вход в CRM Character</h2>
         {firstAllowed && (
           <div style={{ marginTop: 6 }}>

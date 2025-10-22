@@ -50,6 +50,25 @@ const cashPatchSchema = Joi.object({
   isSystem: Joi.boolean(),
 }).min(1).unknown(true);
 
+// Schemas: items (catalog)
+const itemCreateSchema = Joi.object({
+  name: Joi.string().trim().min(1).required(),
+  price: Joi.number().min(0).optional(),
+  unit: Joi.string().trim().optional(),
+  sku: Joi.string().trim().optional(),
+  tags: Joi.array().items(Joi.string().trim()).optional(),
+  note: Joi.string().trim().optional(),
+}).unknown(true);
+
+const itemPatchSchema = Joi.object({
+  name: Joi.string().trim().min(1),
+  price: Joi.number().min(0),
+  unit: Joi.string().trim(),
+  sku: Joi.string().trim(),
+  tags: Joi.array().items(Joi.string().trim()),
+  note: Joi.string().trim(),
+}).min(1).unknown(true);
+
 module.exports = {
   validate,
   schemas: {
@@ -58,5 +77,7 @@ module.exports = {
     paymentPatchSchema,
     cashCreateSchema,
     cashPatchSchema,
+    itemCreateSchema,
+    itemPatchSchema,
   },
 };

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme';
-import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { makeTheme } from './theme/index.js';
+import { useThemeMode } from './context/ThemeModeContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrderTypesSettingsPage from './pages/settings/OrderTypes';
@@ -48,8 +48,9 @@ import UiThemePage from './pages/settings/UiTheme';
 // Тема импортируется из отдельного файла theme.js
 
 function App() {
+  const { mode } = useThemeMode();
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={makeTheme(mode)}>
       <CssBaseline />
       <AuthProvider>
         <Routes>
@@ -67,8 +68,13 @@ function App() {
             <Route path="payments" element={<ProtectedRoute roles={["Admin","Finance"]}><Payments /></ProtectedRoute>} />
             <Route path="clients" element={<Clients />} />
             <Route path="marketing" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Маркетинг</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
+            <Route path="marketing/anti-rain" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Маркетинг: антидождь</h2><p>TODO page</p></div></ProtectedRoute>} />
+            <Route path="marketing/analytics" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Маркетинг: аналитика</h2><p>TODO page</p></div></ProtectedRoute>} />
+            <Route path="marketing/mailing" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Маркетинг: рассылки</h2><p>TODO page</p></div></ProtectedRoute>} />
             <Route path="services" element={<ProtectedRoute roles={["Admin","Manager","Detailing"]}><Services /></ProtectedRoute>} />
             <Route path="production" element={<ProtectedRoute roles={["Admin","Production"]}><div><h2>Производство</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
+            <Route path="production/orders" element={<ProtectedRoute roles={["Admin","Production"]}><div><h2>Производство: заказы</h2><p>TODO page</p></div></ProtectedRoute>} />
+            <Route path="production/history" element={<ProtectedRoute roles={["Admin","Production"]}><div><h2>Производство: история</h2><p>TODO page</p></div></ProtectedRoute>} />
             <Route path="inventory" element={<ProtectedRoute roles={["Admin","Production"]}><div><h2>Склад</h2><p>Выберите подпункт слева</p></div></ProtectedRoute>} />
             <Route path="inventory/products" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryProducts /></ProtectedRoute>} />
             <Route path="inventory/orders" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryOrders /></ProtectedRoute>} />

@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-function ensureDir(p) {
-  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
-}
+function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
+
+const reportFile = path.join(__dirname, '../storage/reports/api-contracts/swagger.json');
 
 const spec = {
   openapi: '3.0.3',
@@ -204,6 +204,178 @@ const spec = {
           accessToken: 'jwt-access-token',
           access: 'jwt-access-token',
         },
+      },
+
+      // Item catalog schemas
+      Item: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          name: { type: 'string' },
+          price: { type: 'number', minimum: 0 },
+          unit: { type: 'string' },
+          sku: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          note: { type: 'string' },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          locked: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        additionalProperties: true,
+      },
+      ItemCreateRequest: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          price: { type: 'number', minimum: 0 },
+          unit: { type: 'string' },
+          sku: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          note: { type: 'string' },
+        },
+        required: ['name'],
+        additionalProperties: true,
+      },
+      ItemPatchRequest: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          price: { type: 'number', minimum: 0 },
+          unit: { type: 'string' },
+          sku: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          note: { type: 'string' },
+        },
+        additionalProperties: true,
+      },
+      ItemItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/Item' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      ItemsListResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/Item' } },
+        },
+        required: ['items'],
+        additionalProperties: true,
+      },
+      ItemCreateResponse: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          id: { type: 'string' },
+        },
+        required: ['ok', 'id'],
+        additionalProperties: true,
+      },
+
+      // Field schemas
+      FieldSpec: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          type: { type: 'string', enum: ['text','number','date','bool','list','multilist'] },
+          label: { type: 'string' },
+          required: { type: 'boolean' },
+          options: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          note: { type: 'string' },
+        },
+        required: ['code','type'],
+        additionalProperties: true,
+      },
+      FieldSchema: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          scope: { type: 'string' },
+          name: { type: 'string' },
+          version: { type: 'integer', minimum: 1 },
+          isActive: { type: 'boolean' },
+          note: { type: 'string' },
+          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdAt: { type: 'string', format: 'date-time' },
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+        },
+        required: ['scope','name','version','fields'],
+        additionalProperties: true,
+      },
+      FieldSchemaCreateRequest: {
+        type: 'object',
+        properties: {
+          scope: { type: 'string' },
+          name: { type: 'string' },
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+          note: { type: 'string' },
+        },
+        required: ['scope','name'],
+        additionalProperties: true,
+      },
+      FieldSchemaPatchRequest: {
+        type: 'object',
+        properties: {
+          fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
+          note: { type: 'string' },
+        },
+        additionalProperties: true,
+      },
+      FieldSchemaItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/FieldSchema' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      FieldSchemasListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/FieldSchema' } } },
+        required: ['items'],
+        additionalProperties: true,
+      },
+
+      // Dictionary schemas
+      Dictionary: {
+        type: 'object',
+        properties: {
+          _id: { type: 'string' },
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['code','values'],
+        additionalProperties: true,
+      },
+      DictionaryCreateRequest: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+        },
+        required: ['code'],
+        additionalProperties: true,
+      },
+      DictionaryPatchRequest: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+        },
+        additionalProperties: true,
+      },
+      DictionaryItemResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, item: { $ref: '#/components/schemas/Dictionary' } },
+        required: ['item'],
+        additionalProperties: true,
+      },
+      DictionariesListResponse: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, items: { type: 'array', items: { $ref: '#/components/schemas/Dictionary' } } },
+        required: ['items'],
+        additionalProperties: true,
       },
     },
   },
@@ -894,6 +1066,10 @@ const spec = {
   },
 };
 
+// Merge Orders spec fragments before writing
+const orderSpec = require('./orderSwaggerSpec');
+Object.assign(spec.components.schemas, orderSpec.schemas);
+Object.assign(spec.paths, orderSpec.paths);
 const outDir = path.join(__dirname, '..', 'artifacts');
 ensureDir(outDir);
 const outPath = path.join(outDir, 'swagger.json');
