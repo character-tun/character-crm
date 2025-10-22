@@ -12,7 +12,7 @@ const validate = (schema) => (req, res, next) => {
     });
   }
 
-  next();
+  return next();
 };
 
 // Schemas: payments

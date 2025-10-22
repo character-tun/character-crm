@@ -23,7 +23,7 @@ jobs:
       - name: Install root deps
         run: npm ci
       - name: Lint root (ESLint v8)
-        run: npx eslint . --ext .js --max-warnings=0 --ignore-pattern client/**
+        run: npx eslint . --ext .js --max-warnings=0
       - name: Install client deps
         run: npm ci
         working-directory: client

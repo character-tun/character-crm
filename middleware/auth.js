@@ -27,7 +27,7 @@ const withUser = (req, res, next) => {
   }
 
   req.user = user;
-  next();
+  return next();
 };
 
 const requireAuth = (req, res, next) => {
@@ -35,7 +35,7 @@ const requireAuth = (req, res, next) => {
   if (!u || !u.id) {
     return res.status(401).json({ msg: 'Необходима авторизация' });
   }
-  next();
+  return next();
 };
 
 // RBAC permissions map (resource.action -> allowed roles)
@@ -60,7 +60,7 @@ const requireRoles = (...roles) => (req, res, next) => {
   if (!hasArray && !hasSingle) {
     return res.status(403).json({ msg: 'Недостаточно прав' });
   }
-  next();
+  return next();
 };
 
 // Single-role guard convenience wrapper
@@ -117,6 +117,15 @@ const revokeAll = async (userId) => {
 };
 
 module.exports = {
-  withUser, requireAuth, requireRoles, requireRole, requireAnyRole,
-  RBAC_MAP, hasPermission, requirePermission, signToken, verifyToken, revokeAll,
+  withUser,
+  requireAuth,
+  requireRoles,
+  requireRole,
+  requireAnyRole,
+  RBAC_MAP,
+  hasPermission,
+  requirePermission,
+  signToken,
+  verifyToken,
+  revokeAll,
 };

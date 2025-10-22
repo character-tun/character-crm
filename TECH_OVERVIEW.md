@@ -304,3 +304,21 @@
 - Идентификатор сессии: `session_id` (uuid) добавлен в `UserToken` для точечной ревокации конкретной сессии.
 - Массовая ревокация: `middleware/auth.js` экспортирует `revokeAll(userId)` — удаляет все refresh‑токены пользователя; используйте при сбросе пароля.
 - ENV: `AUTH_LOGIN_LIMIT`, `AUTH_REFRESH_LIMIT` для настройки лимитов в DEV.
+
+## Версия 3.4 — Payments (MVP) — Final (2025-10-22 13:40 CEST)
+- Payments API: `GET /api/payments`, `POST /api/payments`, `POST /api/payments/refund`, `PATCH /api/payments/{id}`, `POST /api/payments/{id}/lock`.
+- Ошибки: `PAYMENTS_LOCKED`/`ORDER_CLOSED` при создании/возврате для закрытых или заблокированных заказов; `PAYMENT_LOCKED` при попытке редактировать залоченный без права `payments.lock`; `CASH_NOT_FOUND` при неверной кассе.
+- Totals: `GET /api/payments` возвращает свод по типам `{ income, expense, refund, balance }` и пустые состояния корректно.
+- Cash: `DELETE /api/cash/{id}` запрещён при наличии связанных платежей → `409 CASH_IN_USE` (Mongo ветка).
+- RBAC: `Admin|Finance` для `payments.read|write|lock`; `Admin` для `cash.write`; `Admin|Finance` для `cash.read`.
+- Swagger/артефакты: обновлены схемы и пути для Payments/Cash; `artifacts/swagger.json` регенерирован.
+- Клиент: реестр `Payments` (фильтры, totals, операции create/edit/refund/lock), виджет Cashflow, интеграция с `Orders` (виджет платежей заказа).
+- DEV_MODE: in-memory стораджи для Payments и Cash, ответы соблюдают контракты.
+
+### Acceptance
+- `GET /api/payments` — 200, корректные totals, пустые выборки без ошибок.
+- `POST /api/payments` — 200 + `{ ok:true, id }`; ограничения: `PAYMENTS_LOCKED|ORDER_CLOSED`.
+- `PATCH /api/payments/{id}` — запрет смены `type`; 403 `PAYMENT_LOCKED` без `payments.lock`; `CASH_NOT_FOUND` при неверной кассе.
+- `POST /api/payments/{id}/lock` — 200, выставляет `locked=true`, `lockedAt`.
+- `POST /api/payments/refund` — 200 + `{ ok:true, id }`; ограничения по состоянию заказа аналогичны create.
+- `GET /api/cash` — 200; `POST /api/cash` — 201; `PATCH /api/cash/{id}` — 200 с защитой `SYSTEM_CODE_PROTECTED`; `DELETE /api/cash/{id}` — 409 `CASH_IN_USE` при платежах (Mongo).
