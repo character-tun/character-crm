@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { 
   Box, Typography, Button, Paper, 
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Grid, MenuItem, Select, InputLabel, FormControl
+  TextField, Grid, MenuItem, Select
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import FormField from '../components/FormField';
+
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import AddIcon from '@mui/icons-material/Add';
 import { formatCurrencyRu } from '../services/format';
+import DataGridBase from '../components/DataGridBase';
+import ModalBase from '../components/ModalBase';
 
 const DetailingOrders = () => {
   const [orders, setOrders] = useState([
@@ -200,7 +201,7 @@ const DetailingOrders = () => {
       </Box>
 
       <Paper sx={{ height: 400, width: '100%' }}>
-        <DataGrid
+        <DataGridBase
           rows={orders}
           columns={columns}
           pageSize={5}
@@ -210,132 +211,134 @@ const DetailingOrders = () => {
         />
       </Paper>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>Создать новый заказ</DialogTitle>
-        <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel id="client-label">Клиент</InputLabel>
-                  <Select
-                    labelId="client-label"
-                    name="client_id"
-                    value={newOrder.client_id}
-                    label="Клиент"
-                    onChange={handleChange}
-                  >
-                    {clients.map(client => (
-                      <MenuItem key={client.id} value={client.id}>{client.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="service"
-                  label="Услуга"
-                  fullWidth
-                  value={newOrder.service}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel id="status-label">Статус</InputLabel>
-                  <Select
-                    labelId="status-label"
-                    name="status"
-                    value={newOrder.status}
-                    label="Статус"
-                    onChange={handleChange}
-                  >
-                    <MenuItem value="Новый">Новый</MenuItem>
-                    <MenuItem value="В работе">В работе</MenuItem>
-                    <MenuItem value="Готов">Готов</MenuItem>
-                    <MenuItem value="Выдан">Выдан</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel id="box-label">Бокс</InputLabel>
-                  <Select
-                    labelId="box-label"
-                    name="box"
-                    value={newOrder.box}
-                    label="Бокс"
-                    onChange={handleChange}
-                  >
-                    {boxes.map(box => (
-                      <MenuItem key={box.id} value={box.id}>{box.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="Начало"
-                  value={newOrder.start}
-                  onChange={(newValue) => handleDateChange('start', newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="Окончание"
-                  value={newOrder.end}
-                  onChange={(newValue) => handleDateChange('end', newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  name="materials_cost"
-                  label="Стоимость материалов"
-                  type="number"
-                  fullWidth
-                  value={newOrder.materials_cost}
-                  onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <span>₽</span>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  name="labor_cost"
-                  label="Стоимость работ"
-                  type="number"
-                  fullWidth
-                  value={newOrder.labor_cost}
-                  onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <span>₽</span>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  name="total"
-                  label="Итоговая сумма"
-                  type="number"
-                  fullWidth
-                  value={newOrder.total}
-                  onChange={handleChange}
-                  InputProps={{
-                    startAdornment: <span>₽</span>,
-                  }}
-                />
-              </Grid>
-            </Grid>
-          </LocalizationProvider>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Отмена</Button>
-          <Button onClick={handleSubmit} variant="contained">Сохранить</Button>
-        </DialogActions>
-      </Dialog>
+      <ModalBase
+        open={open}
+        onClose={handleClose}
+        title="Создать новый заказ"
+        maxWidth="md"
+        actions={(
+          <React.Fragment>
+            <Button onClick={handleClose}>Отмена</Button>
+            <Button onClick={handleSubmit} variant="contained">Сохранить</Button>
+          </React.Fragment>
+        )}
+      >
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={12} md={6}>
+            <FormField label="Клиент" fullWidth>
+              <Select
+                name="client_id"
+                value={newOrder.client_id}
+                onChange={handleChange}
+                fullWidth
+              >
+                {clients.map(client => (
+                  <MenuItem key={client.id} value={client.id}>{client.name}</MenuItem>
+                ))}
+              </Select>
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Услуга" fullWidth>
+              <TextField
+                name="service"
+                fullWidth
+                value={newOrder.service}
+                onChange={handleChange}
+              />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Статус" fullWidth>
+              <Select
+                name="status"
+                value={newOrder.status}
+                onChange={handleChange}
+                fullWidth
+              >
+                <MenuItem value="Новый">Новый</MenuItem>
+                <MenuItem value="В работе">В работе</MenuItem>
+                <MenuItem value="Готов">Готов</MenuItem>
+                <MenuItem value="Выдан">Выдан</MenuItem>
+              </Select>
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Бокс" fullWidth>
+              <Select
+                name="box"
+                value={newOrder.box}
+                onChange={handleChange}
+                fullWidth
+              >
+                {boxes.map(box => (
+                  <MenuItem key={box.id} value={box.id}>{box.name}</MenuItem>
+                ))}
+              </Select>
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Начало" fullWidth>
+              <DateTimePicker
+                value={newOrder.start}
+                onChange={(newValue) => handleDateChange('start', newValue)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Окончание" fullWidth>
+              <DateTimePicker
+                value={newOrder.end}
+                onChange={(newValue) => handleDateChange('end', newValue)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <FormField label="Стоимость материалов" fullWidth>
+              <TextField
+                name="materials_cost"
+                type="number"
+                fullWidth
+                value={newOrder.materials_cost}
+                onChange={handleChange}
+                InputProps={{
+                  startAdornment: <span>₽</span>,
+                }}
+              />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <FormField label="Стоимость работ" fullWidth>
+              <TextField
+                name="labor_cost"
+                type="number"
+                fullWidth
+                value={newOrder.labor_cost}
+                onChange={handleChange}
+                InputProps={{
+                  startAdornment: <span>₽</span>,
+                }}
+              />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <FormField label="Итоговая сумма" fullWidth>
+              <TextField
+                name="total"
+                type="number"
+                fullWidth
+                value={newOrder.total}
+                onChange={handleChange}
+                InputProps={{
+                  startAdornment: <span>₽</span>,
+                }}
+              />
+            </FormField>
+          </Grid>
+        </Grid>
+      </ModalBase>
     </Box>
   );
 };

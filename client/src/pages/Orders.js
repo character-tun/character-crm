@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Box, Typography, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, MenuItem, Select, InputLabel, FormControl, Divider, List, ListItem, ListItemText, Chip, Stack, IconButton, Checkbox, Autocomplete } from '@mui/material';
+import FormField from '../components/FormField';
 import CloseIcon from '@mui/icons-material/Close';
-import { DataGrid } from '@mui/x-data-grid';
+import DataGridBase from '../components/DataGridBase';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import OrderTimeline from '../components/OrderTimeline';
 // import OrderTimeline from '../components/OrderTimeline';
@@ -15,6 +16,8 @@ import { fieldsService } from '../services/fieldsService';
 import { formatCurrencyRu } from '../services/format';
 import { clientsService } from '../services/clientsService';
 import { itemsService } from '../services/itemsService';
+import ModalBase from '../components/ModalBase';
+import { useNotify } from '../components/NotifyProvider';
 
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
@@ -124,10 +127,10 @@ export default function Orders() {
   });
   const [editOpen, setEditOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
-
+  const notify = useNotify();
 
   // Загрузка платежей заказа через API
-  const loadOrderPayments = async () => {
+  const loadOrderPayments = useCallback(async () => {
     if (!currentOrder?.id) return;
     setPaymentsLoading(true);
     setPaymentsError('');
@@ -141,7 +144,7 @@ export default function Orders() {
     } finally {
       setPaymentsLoading(false);
     }
-  };
+  }, [currentOrder?.id]);
   // Открытие/закрытие и сабмит модалки быстрого платежа/рефанда
   const openPaymentModal = (mode = 'income') => {
     setPMode(mode);
@@ -182,8 +185,11 @@ export default function Orders() {
       }
       setPModalOpen(false);
       await loadOrderPayments();
+      notify(pMode === 'refund' ? 'Возврат проведён' : 'Платёж проведён', { severity: 'success' });
     } catch (e) {
-      setPaymentsError(e?.response?.data?.error || e.message || 'Ошибка операции');
+      const msg = e?.response?.data?.error || e.message || 'Ошибка операции';
+      setPaymentsError(msg);
+      notify(`Ошибка операции: ${msg}`, { severity: 'error' });
     }
   };
 
@@ -191,8 +197,7 @@ export default function Orders() {
     if (editOpen && currentOrder?.id) {
       loadOrderPayments();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editOpen, currentOrder?.id]);
+  }, [editOpen, currentOrder?.id, loadOrderPayments]);
 
   const navigate = useNavigate();
   const typeMap = { parts: 'Детали', detailing: 'Детейлинг', bodywork: 'Кузовной ремонт' };
@@ -263,7 +268,7 @@ export default function Orders() {
     return () => { mounted = false; };
   }, []);
 
-  const loadClients = async (q = '') => {
+  const loadClients = useCallback(async (q = '') => {
     setClientsLoading(true);
     setClientsError('');
     try {
@@ -275,20 +280,31 @@ export default function Orders() {
     } finally {
       setClientsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (editOpen) {
-      loadClients(currentOrder?.client || '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editOpen]);
+    if (!editOpen) return;
+    loadClients(currentOrder?.client || '');
+  }, [editOpen, currentOrder?.client, loadClients]);
 
   useEffect(() => {
-    if (editOpen) {
-      loadCatalogItems('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!editOpen) return;
+    let active = true;
+    setCatalogLoading(true);
+    itemsService.list({})
+      .then((data) => {
+        if (!active) return;
+        const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        setCatalogItems(items);
+      })
+      .catch((e) => {
+        if (!active) return;
+        console.warn('Не удалось загрузить каталог', e);
+      })
+      .finally(() => {
+        if (active) setCatalogLoading(false);
+      });
+    return () => { active = false; };
   }, [editOpen]);
 
   useEffect(() => {
@@ -423,15 +439,18 @@ export default function Orders() {
       setCurrentOrder((prev) => ({ ...prev, client: name }));
       await loadClients(name);
       setNewClientOpen(false);
+      notify('Клиент создан', { severity: 'success' });
     } catch (e) {
-      setNewClientError(e?.response?.data?.error || e.message || 'Ошибка создания клиента');
+      const msg = e?.response?.data?.error || e.message || 'Ошибка создания клиента';
+      setNewClientError(msg);
+      notify(`Ошибка создания клиента: ${msg}`, { severity: 'error' });
     } finally {
       setNewClientSaving(false);
     }
   };
 
   // Каталог (товары/услуги): загрузка, добавление, создание
-  const loadCatalogItems = async (q = '') => {
+  const loadCatalogItems = useCallback(async (q = '') => {
     setCatalogLoading(true);
     try {
       const data = await itemsService.list(q ? { q } : {});
@@ -442,7 +461,7 @@ export default function Orders() {
     } finally {
       setCatalogLoading(false);
     }
-  };
+  }, []);
 
   const addItemFromCatalog = (item) => {
     if (!item || !item.name) return;
@@ -479,8 +498,11 @@ export default function Orders() {
       const price = Number((created?.price ?? newItem.price) || 0);
       addItemFromCatalog({ name, price });
       setNewItemOpen(false);
+      notify('Позиция создана и добавлена в заказ', { severity: 'success' });
     } catch (e) {
-      setNewItemError(e?.response?.data?.error || e.message || 'Ошибка создания позиции');
+      const msg = e?.response?.data?.error || e.message || 'Ошибка создания позиции';
+      setNewItemError(msg);
+      notify(`Ошибка создания позиции: ${msg}`, { severity: 'error' });
     } finally {
       setNewItemSaving(false);
     }
@@ -838,7 +860,7 @@ export default function Orders() {
       </Box>
 
       <Paper sx={{ height: 500, width: '100%' }}>
-        <DataGrid
+        <DataGridBase
           rows={filteredOrders}
           columns={columns}
           pageSize={8}
@@ -940,16 +962,16 @@ export default function Orders() {
                     </List>
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="subtitle1" sx={{ px: 1 }}>Смены статусов</Typography>
-                    <Box sx={{ mt: 1 }}>
-                      <OrderTimeline logs={statusLogs} loading={logsLoading} error={logsError} />
-                    </Box>
-                  </Box>
-                </Grid>
+                    <Box sx={{ mt: 1, minHeight: 140 }}>
+                       <OrderTimeline logs={statusLogs} loading={logsLoading} error={logsError} />
+                     </Box>
+                   </Box>
+                 </Grid>
 
-                {/* Right: Editor */}
-                <Grid item xs={12} md={8} lg={9} sx={{ p: 3, overflow: 'auto' }}>
-                  <Typography variant="h6" gutterBottom>Позиции</Typography>
-                  <Paper sx={{ mb: 3, p: 2 }}>
+                 {/* Right: Editor */}
+                 <Grid item xs={12} md={8} lg={9} sx={{ p: 3, overflow: 'auto' }}>
+                   <Typography variant="h6" gutterBottom>Позиции</Typography>
+                   <Paper sx={{ mb: 3, p: 2 }}>
                     <Stack spacing={2}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Autocomplete
@@ -1033,84 +1055,125 @@ export default function Orders() {
                       ))}
                     </Stack>
                   </Paper>
-                  <Dialog open={pModalOpen} onClose={closePaymentModal} maxWidth="xs" fullWidth>
-                    <DialogTitle>{pMode === 'refund' ? 'Быстрый возврат' : 'Быстрый платёж'}</DialogTitle>
-                    <DialogContent>
-                      <Stack spacing={2} sx={{ mt: 1 }}>
-                        <TextField label="Сумма" type="number" value={pAmount} onChange={(e) => setPAmount(e.target.value)} fullWidth />
-                        <TextField label="Метод" value={pMethod} onChange={(e)=>setPMethod(e.target.value)} fullWidth />
-                        <FormControl fullWidth>
-                          <InputLabel id="cash-quick-label">Касса</InputLabel>
-                          <Select labelId="cash-quick-label" label="Касса" value={pCashRegisterId} onChange={(e)=>setPCashRegisterId(e.target.value)}>
-                            <MenuItem value="">Не выбрано</MenuItem>
-                            {cash.map((c) => (
-                              <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <Typography variant="body2">Заказ: {currentOrder?.id || '-'}</Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                          Статья: {(pMode === 'refund' ? DEFAULT_ARTICLE_REFUND : DEFAULT_ARTICLE_INCOME).join(' / ')}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                          Остаток: {formatCurrencyRu(Math.max(Number(currentOrder?.amount || 0) - (((orderPayments || []).length > 0) ? (orderPayments || []).reduce((sum,p)=>sum + (String(p.type||'')==='income' ? Number(p.amount||0) : -Number(p.amount||0)), 0) : Number(currentOrder?.paid || 0)), 0))}
-                        </Typography>
-                      </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={closePaymentModal}>Отмена</Button>
-                      <Button onClick={submitPaymentModal} variant="contained">Сохранить</Button>
-                    </DialogActions>
-                  </Dialog>
+                  <ModalBase
+                    open={pModalOpen}
+                    onClose={closePaymentModal}
+                    maxWidth="xs"
+                    title={pMode === 'refund' ? 'Быстрый возврат' : 'Быстрый платёж'}
+                    actions={(
+                      <>
+                        <Button onClick={closePaymentModal}>Отмена</Button>
+                        <Button onClick={submitPaymentModal} variant="contained">Сохранить</Button>
+                      </>
+                    )}
+                  >
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                      <FormField label="Сумма" fullWidth>
+                        <TextField type="number" value={pAmount} onChange={(e) => setPAmount(e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Метод" fullWidth>
+                        <TextField value={pMethod} onChange={(e)=>setPMethod(e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Касса" fullWidth>
+                        <Select value={pCashRegisterId} onChange={(e)=>setPCashRegisterId(e.target.value)} fullWidth displayEmpty>
+                          <MenuItem value="">Не выбрано</MenuItem>
+                          {cash.map((c) => (
+                            <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
+                          ))}
+                        </Select>
+                      </FormField>
+                      <Typography variant="body2">Заказ: {currentOrder?.id || '-'}</Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                        Статья: {(pMode === 'refund' ? DEFAULT_ARTICLE_REFUND : DEFAULT_ARTICLE_INCOME).join(' / ')}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                        Остаток: {formatCurrencyRu(Math.max(Number(currentOrder?.amount || 0) - (((orderPayments || []).length > 0) ? (orderPayments || []).reduce((sum,p)=>sum + (String(p.type||'')==='income' ? Number(p.amount||0) : -Number(p.amount||0)), 0) : Number(currentOrder?.paid || 0)), 0))}
+                      </Typography>
+                    </Stack>
+                  </ModalBase>
 
-                  <Dialog open={newClientOpen} onClose={closeNewClientModal} maxWidth="sm" fullWidth>
-                    <DialogTitle>Новый клиент</DialogTitle>
-                    <DialogContent>
-                      <Stack spacing={2} sx={{ mt: 1 }}>
-                        {newClientError && <Typography color="error">{newClientError}</Typography>}
-                        <TextField label="Имя" value={newClient.name} onChange={(e) => handleNewClientFieldChange('name', e.target.value)} fullWidth required />
-                        <TextField label="Телефон" value={newClient.phone} onChange={(e) => handleNewClientFieldChange('phone', e.target.value)} fullWidth />
-                        <TextField label="Telegram" value={newClient.telegram} onChange={(e) => handleNewClientFieldChange('telegram', e.target.value)} fullWidth />
-                        <TextField label="Город" value={newClient.city} onChange={(e) => handleNewClientFieldChange('city', e.target.value)} fullWidth />
-                        <TextField label="Транспорт" value={newClient.vehicle} onChange={(e) => handleNewClientFieldChange('vehicle', e.target.value)} fullWidth />
-                        <TextField label="Теги (через запятую)" value={Array.isArray(newClient.tags) ? newClient.tags.join(', ') : newClient.tags} onChange={(e) => handleNewClientFieldChange('tags', e.target.value)} fullWidth />
-                        <TextField label="Заметки" value={newClient.notes || ''} onChange={(e) => handleNewClientFieldChange('notes', e.target.value)} fullWidth multiline minRows={2} />
-                      </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={closeNewClientModal} disabled={newClientSaving}>Отмена</Button>
-                      <Button onClick={submitNewClient} variant="contained" disabled={newClientSaving || !newClient.name}>Сохранить</Button>
-                    </DialogActions>
-                  </Dialog>
+                  <ModalBase
+                    open={newClientOpen}
+                    onClose={closeNewClientModal}
+                    maxWidth="sm"
+                    title="Новый клиент"
+                    actions={(
+                      <>
+                        <Button onClick={closeNewClientModal} disabled={newClientSaving}>Отмена</Button>
+                        <Button onClick={submitNewClient} variant="contained" disabled={newClientSaving || !newClient.name}>Сохранить</Button>
+                      </>
+                    )}
+                  >
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                      {newClientError && <Typography color="error">{newClientError}</Typography>}
+                      <FormField label="Имя" required fullWidth>
+                        <TextField value={newClient.name} onChange={(e) => handleNewClientFieldChange('name', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Телефон" fullWidth>
+                        <TextField value={newClient.phone} onChange={(e) => handleNewClientFieldChange('phone', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Telegram" fullWidth>
+                        <TextField value={newClient.telegram} onChange={(e) => handleNewClientFieldChange('telegram', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Город" fullWidth>
+                        <TextField value={newClient.city} onChange={(e) => handleNewClientFieldChange('city', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Транспорт" fullWidth>
+                        <TextField value={newClient.vehicle} onChange={(e) => handleNewClientFieldChange('vehicle', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Теги (через запятую)" fullWidth>
+                        <TextField value={Array.isArray(newClient.tags) ? newClient.tags.join(', ') : newClient.tags} onChange={(e) => handleNewClientFieldChange('tags', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Заметки" fullWidth>
+                        <TextField value={newClient.notes || ''} onChange={(e) => handleNewClientFieldChange('notes', e.target.value)} fullWidth multiline minRows={2} />
+                      </FormField>
+                    </Stack>
+                  </ModalBase>
 
-                  <Dialog open={newItemOpen} onClose={closeNewItemModal} maxWidth="sm" fullWidth>
-                    <DialogTitle>Новая позиция каталога</DialogTitle>
-                    <DialogContent>
-                      <Stack spacing={2} sx={{ mt: 1 }}>
-                        {newItemError && <Typography color="error">{newItemError}</Typography>}
-                        <TextField label="Название" value={newItem.name} onChange={(e)=>handleNewItemFieldChange('name', e.target.value)} fullWidth required />
-                        <TextField label="Цена" type="number" value={newItem.price} onChange={(e)=>handleNewItemFieldChange('price', Number(e.target.value))} fullWidth />
-                        <TextField label="Ед. изм." value={newItem.unit} onChange={(e)=>handleNewItemFieldChange('unit', e.target.value)} fullWidth />
-                        <TextField label="SKU" value={newItem.sku} onChange={(e)=>handleNewItemFieldChange('sku', e.target.value)} fullWidth />
-                        <TextField label="Теги (через запятую)" value={newItem.tags} onChange={(e)=>handleNewItemFieldChange('tags', e.target.value)} fullWidth />
-                        <TextField label="Примечание" value={newItem.note} onChange={(e)=>handleNewItemFieldChange('note', e.target.value)} fullWidth multiline rows={3} />
-                      </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={closeNewItemModal}>Отмена</Button>
-                      <Button onClick={submitNewItem} variant="contained" disabled={newItemSaving || !newItem.name}>Сохранить</Button>
-                    </DialogActions>
-                  </Dialog>
+                  <ModalBase
+                    open={newItemOpen}
+                    onClose={closeNewItemModal}
+                    title="Новая позиция каталога"
+                    maxWidth="sm"
+                    actions={(
+                      <React.Fragment>
+                        <Button onClick={closeNewItemModal}>Отмена</Button>
+                        <Button onClick={submitNewItem} variant="contained" disabled={newItemSaving || !newItem.name}>Сохранить</Button>
+                      </React.Fragment>
+                    )}
+                  >
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                      {newItemError && <Typography color="error">{newItemError}</Typography>}
+                      <FormField label="Название" required fullWidth>
+                        <TextField value={newItem.name} onChange={(e)=>handleNewItemFieldChange('name', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Цена" fullWidth>
+                        <TextField type="number" value={newItem.price} onChange={(e)=>handleNewItemFieldChange('price', Number(e.target.value))} fullWidth />
+                      </FormField>
+                      <FormField label="Ед. изм." fullWidth>
+                        <TextField value={newItem.unit} onChange={(e)=>handleNewItemFieldChange('unit', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="SKU" fullWidth>
+                        <TextField value={newItem.sku} onChange={(e)=>handleNewItemFieldChange('sku', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Теги (через запятую)" fullWidth>
+                        <TextField value={newItem.tags} onChange={(e)=>handleNewItemFieldChange('tags', e.target.value)} fullWidth />
+                      </FormField>
+                      <FormField label="Примечание" fullWidth>
+                        <TextField value={newItem.note} onChange={(e)=>handleNewItemFieldChange('note', e.target.value)} fullWidth multiline rows={3} />
+                      </FormField>
+                    </Stack>
+                  </ModalBase>
 
                   {/* Timeline */}
                   <Typography variant="h6" gutterBottom>Сроки</Typography>
-                  <Paper sx={{ mb: 3, p: 2 }}>
-                    <OrderTimeline
-                      startDate={currentOrder.startDate}
-                      endDateForecast={currentOrder.endDateForecast}
-                      onChange={(start, end) => setCurrentOrder((prev) => ({ ...prev, startDate: start, endDateForecast: end }))}
-                    />
-                  </Paper>
+                  <Paper sx={{ mb: 3, p: 2, minHeight: 160 }}>
+                     <OrderTimeline
+                       startDate={currentOrder.startDate}
+                       endDateForecast={currentOrder.endDateForecast}
+                       onChange={(start, end) => setCurrentOrder((prev) => ({ ...prev, startDate: start, endDateForecast: end }))}
+                     />
+                   </Paper>
 
                   {/* Tasks */}
                   <Typography variant="h6" gutterBottom>Задачи</Typography>

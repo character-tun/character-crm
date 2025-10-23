@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { applyThemeVars, type Theme } from '../theme/index';
+import { type Theme } from '../theme/index';
 import { CharacterDark } from '../theme/CharacterDark';
 import { LightMinimal } from '../theme/LightMinimal';
 
@@ -60,19 +60,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [themeName]);
 
-  useEffect(() => {
-    const resolved = resolveThemeName(themeName);
-    const t = THEMES[resolved] || CharacterDark;
-    applyThemeVars(t);
-    try {
-      let value = t.colors.primary;
-      if (accentMode === 'secondary') value = t.colors.secondary;
-      else if (accentMode === 'custom') value = accentHex;
-      if (typeof document !== 'undefined') {
-        document.documentElement.style.setProperty('--color-primary', value);
-      }
-    } catch {}
-  }, [themeName, accentMode, accentHex, systemPrefersDark]);
+  useEffect(() => {}, [themeName, accentMode, accentHex, systemPrefersDark]);
 
   const value = useMemo<ThemeContextValue>(() => ({
     theme: THEMES[resolveThemeName(themeName)] || CharacterDark,

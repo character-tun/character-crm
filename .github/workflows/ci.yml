@@ -30,6 +30,48 @@ jobs:
       - name: Lint client (ESLint v9 flat config)
         run: npx eslint . --max-warnings=0
         working-directory: client
+      - name: Get changed UI files (PR only)
+        if: ${{ github.event_name == 'pull_request' }}
+        id: changed_client
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            client/src/**/*.{js,jsx}
+      - name: UI rules gate (no-hardcoded-ui)
+        if: ${{ github.event_name == 'pull_request' && steps.changed_client.outputs.any_modified == 'true' }}
+        working-directory: client
+        run: |
+          echo "${{ steps.changed_client.outputs.all_changed_files }}" \
+            | tr ' ' '\n' \
+            | grep -E '^client/src/.*\.(js|jsx)$' \
+            | sed 's#^client/##' \
+            | xargs -r npx eslint --no-eslintrc -c eslint.config.cjs --max-warnings=0 --rule "no-hardcoded-ui/no-hardcoded-ui:error"
+      - name: UI TS/TSX gate (grep fallback)
+        if: ${{ github.event_name == 'pull_request' && steps.changed_client.outputs.any_modified == 'true' }}
+        working-directory: client
+        shell: bash
+        run: |
+          CHANGED_TS=$(echo "${{ steps.changed_client.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^client/src/.*\.(ts|tsx)$' | sed 's#^client/##' || true)
+          if [ -z "$CHANGED_TS" ]; then
+            echo "No changed TS/TSX UI files."
+            exit 0
+          fi
+          echo "TS/TSX files to check:" && echo "$CHANGED_TS"
+          MATCH_HEX=0
+          MATCH_PX=0
+          if echo "$CHANGED_TS" | xargs -r grep -nE --color=never '#[0-9A-Fa-f]{3,8}\b' | grep -vE '<svg|<SvgIcon|<[A-Za-z0-9_]+Icon\b' | grep -vE 'var\(|calc\(' ; then
+            MATCH_HEX=1
+          fi
+          if echo "$CHANGED_TS" | xargs -r grep -nE --color=never '(^|[^a-zA-Z-])\d+px\b' | grep -vE '<svg|<SvgIcon|<[A-Za-z0-9_]+Icon\b' | grep -vE 'var\(|calc\(' ; then
+            MATCH_PX=1
+          fi
+          if [ "$MATCH_HEX" -eq 1 ] || [ "$MATCH_PX" -eq 1 ]; then
+            echo 'Forbidden hardcoded values found in TS/TSX files:' >&2
+            # Re-run to print offending lines clearly
+            echo "$CHANGED_TS" | xargs -r grep -nE --color=never '#[0-9A-Fa-f]{3,8}\b|(^|[^a-zA-Z-])\d+px\b' | grep -vE '<svg|<SvgIcon|<[A-Za-z0-9_]+Icon\b' | grep -vE 'var\(|calc\(' >&2 || true
+            exit 2
+          fi
+          echo "TS/TSX check passed: no hardcoded UI values."
 
   test:
     name: Test (root + client)

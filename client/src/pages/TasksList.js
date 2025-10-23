@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Paper, Stack, Typography, Button, TextField, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, Paper, Stack, Typography, Button, TextField, Chip, Select, MenuItem } from '@mui/material';
+import DataGridBase from '../components/DataGridBase';
 
 const PRIORITIES = ['Низкий','Средний','Высокий','Критический'];
 const getCurrentUser = () => {
@@ -29,6 +29,52 @@ export default function TasksList() {
     setNewTitle('');
   };
 
+  const columns = useMemo(() => [
+    { field: 'id', headerName: 'ID', width: 120 },
+    { field: 'title', headerName: 'Заголовок', flex: 2, minWidth: 220 },
+    {
+      field: 'priority',
+      headerName: 'Приоритет',
+      width: 140,
+      renderCell: (params) => <Chip size="small" label={params.value} color={params.value==='Критический' ? 'error' : params.value==='Высокий' ? 'warning' : 'default'} variant="outlined" />,
+    },
+    { field: 'deadline', headerName: 'Дедлайн', width: 140 },
+    { field: 'assignee', headerName: 'Исполнитель', width: 160 },
+    { field: 'status', headerName: 'Статус', width: 140 },
+    {
+      field: 'tags',
+      headerName: 'Тэги',
+      flex: 1,
+      minWidth: 200,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {(params.value||[]).map((tag, i)=>(<Chip key={`${tag}-${i}`} size="small" label={`#${tag}`} variant="outlined" />))}
+        </Stack>
+      ),
+    },
+    {
+      field: 'checklist',
+      headerName: 'Чек-лист',
+      width: 120,
+      valueGetter: (params) => `${(params.value||[]).filter(c=>c.done).length}/${(params.value||[]).length}`,
+    },
+    {
+      field: 'links',
+      headerName: 'Связи',
+      flex: 1,
+      minWidth: 220,
+      sortable: false,
+      valueGetter: (params) => params.row, // pass row to renderCell
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {params.value.orderId && <Chip size="small" label={`Заказ: ${params.value.orderId}`} variant="outlined" />}
+          {params.value.workOrderId && <Chip size="small" label={`ПП: ${params.value.workOrderId}`} variant="outlined" />}
+        </Stack>
+      ),
+    },
+  ], []);
+
   return (
     <Box>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
@@ -45,50 +91,15 @@ export default function TasksList() {
         <Button variant="contained" onClick={handleAddTask}>+ Задача</Button>
       </Stack>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2, border: (theme)=>`1px solid ${theme.palette.divider}` }}>
-        <Table size="small" sx={(theme)=>({
-          '& tbody tr:nth-of-type(odd)': { backgroundColor: alpha(theme.palette.primary.main, 0.03) },
-          '& tbody tr:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.08) },
-        })}>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Заголовок</TableCell>
-              <TableCell>Приоритет</TableCell>
-              <TableCell>Дедлайн</TableCell>
-              <TableCell>Исполнитель</TableCell>
-              <TableCell>Статус</TableCell>
-              <TableCell>Тэги</TableCell>
-              <TableCell>Чек-лист</TableCell>
-              <TableCell>Связи</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filtered.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell>{t.id}</TableCell>
-                <TableCell>{t.title}</TableCell>
-                <TableCell>{t.priority}</TableCell>
-                <TableCell>{t.deadline || '-'}</TableCell>
-                <TableCell>{t.assignee || '-'}</TableCell>
-                <TableCell>{t.status}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
-                    {(t.tags||[]).map((tag, i)=>(<Chip key={`${tag}-${i}`} size="small" label={`#${tag}`} variant="outlined" />))}
-                  </Stack>
-                </TableCell>
-                <TableCell>{(t.checklist||[]).filter(c=>c.done).length}/{(t.checklist||[]).length}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
-                    {t.orderId && <Chip size="small" label={`Заказ: ${t.orderId}`} variant="outlined" />}
-                    {t.workOrderId && <Chip size="small" label={`ПП: ${t.workOrderId}`} variant="outlined" />}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Paper>
+        <DataGridBase
+          autoHeight
+          rows={filtered}
+          columns={columns}
+          getRowId={(row)=>row.id}
+          checkboxSelection={false}
+        />
+      </Paper>
     </Box>
   );
 }

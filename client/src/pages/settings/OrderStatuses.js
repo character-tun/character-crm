@@ -77,7 +77,6 @@ export default function OrderStatusesSettingsPage() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const markDirty = (id) => setDirtyMap(prev => ({ ...prev, [id]: true }));

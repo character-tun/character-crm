@@ -28,13 +28,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import CloseIcon from '@mui/icons-material/Close';
+import DataGridBase from '../../components/DataGridBase';
 
 const LS = {
   suppliers: 'warehouse_suppliers',
@@ -188,7 +189,7 @@ export default function SuppliersPage() {
     if (!categoryFilter) return products;
     const ids = [categoryFilter, ...descendantIds(categoryFilter)];
     return products.filter((p) => ids.includes(p.categoryId));
-  }, [products, categoryFilter, categories]);
+  }, [products, categoryFilter, descendantIds]);
 
   const addItemToOrder = (product) => {
     setOrderDraft((prev) => {
@@ -241,7 +242,7 @@ export default function SuppliersPage() {
       </Box>
 
       <Paper sx={{ height: 520 }}>
-        <DataGrid rows={filtered} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick onRowClick={(p) => openDetails(p.row)} />
+        <DataGridBase rows={filtered} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick onRowClick={(p) => openDetails(p.row)} />
       </Paper>
 
       {/* Create/Edit Supplier */}

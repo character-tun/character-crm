@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { Box, Typography, Paper, Stack, Divider, Button, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Table, TableHead, TableRow, TableCell, TableBody, Chip, Select, MenuItem, TextField, InputAdornment, Card, CardContent } from '@mui/material';
-import ThemeSwitcher from '../../components/ThemeSwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useUiTheme } from '../../context/ThemeContext';
 

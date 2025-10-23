@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, Paper, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Select, MenuItem, FormControl, InputLabel, Chip, Divider, IconButton, Tooltip, Alert, Snackbar } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { Box, Typography, Paper, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Select, MenuItem, FormControl, FormControlLabel, InputLabel, Chip, Divider, IconButton, Tooltip, Alert, Snackbar, Skeleton, Checkbox } from '@mui/material';
+
 import AddIcon from '@mui/icons-material/Add';
 import UndoIcon from '@mui/icons-material/Undo';
 import EditIcon from '@mui/icons-material/Edit';
@@ -10,6 +10,10 @@ import { paymentsService } from '../services/paymentsService';
 import { cashService } from '../services/cashService';
 import { useAuth } from '../context/AuthContext';
 import { reportsService } from '../services/reportsService';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format } from 'date-fns';
+import DataGridBase from '../components/DataGridBase';
+import FormField from '../components/FormField';
 
 const currency = (v) => `₽${Number(v || 0).toLocaleString('ru-RU')}`;
 const formatDateTime = (iso) => {
@@ -117,7 +121,7 @@ export default function PaymentsPage() {
     }
   };
 
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -150,9 +154,9 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, openToast]);
   // Load cashflow report
-  const loadCashflow = async () => {
+  const loadCashflow = useCallback(async () => {
     setCfLoading(true);
     setCfError('');
     try {
@@ -165,11 +169,11 @@ export default function PaymentsPage() {
     } finally {
       setCfLoading(false);
     }
-  };
+  }, [dateFrom, dateTo]);
 
   useEffect(() => { loadCash(); }, []);
-  useEffect(() => { loadPayments(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles.length]);
-  useEffect(() => { loadCashflow(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [dateFrom, dateTo]);
+  useEffect(() => { loadPayments(); }, [loadPayments]);
+  useEffect(() => { loadCashflow(); }, [loadCashflow]);
 
   const filteredItems = useMemo(() => {
     let arr = items.slice();
@@ -340,18 +344,22 @@ export default function PaymentsPage() {
         <Box sx={{ mb: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
             <Typography variant="subtitle1">Итоги по кассам</Typography>
-            <Chip label={`Сальдо: ${currency(cashflowBalance)}`} color={cashflowBalance >= 0 ? 'success' : 'error'} />
+            {cfLoading ? (
+              <Skeleton variant="rounded" width={140} height={28} />
+            ) : (
+              <Chip label={`Сальдо: ${currency(cashflowBalance)}`} color={cashflowBalance >= 0 ? 'success' : 'error'} />
+            )}
           </Stack>
           {cfError && <Alert severity="error" sx={{ mt: 1 }}>{cfError}</Alert>}
           <Grid container spacing={1} sx={{ mt: 1 }}>
-            {cashflowGroups.map((g) => {
+            {!cfLoading && cashflowGroups.map((g) => {
               const id = String(g.cashRegisterId || '');
               const c = cashMap.get(id);
               const title = c ? `${c.name} (${c.code})` : (id ? `#${id}` : 'Без кассы');
               const t = g.totals || { income: 0, expense: 0, refund: 0, balance: 0 };
               return (
                 <Grid item xs={12} md={6} lg={4} key={id || 'none'}>
-                  <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)' }}>
+                  <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
                     </Stack>
@@ -366,7 +374,21 @@ export default function PaymentsPage() {
               );
             })}
             {cfLoading && (
-              <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Загрузка отчёта…</Typography></Grid>
+              <>
+                {[0,1,2].map((i) => (
+                  <Grid item xs={12} md={6} lg={4} key={`sk-${i}`}>
+                    <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
+                      <Skeleton variant="text" width="60%" height={24} />
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                        <Skeleton variant="rounded" width={88} height={28} />
+                        <Skeleton variant="rounded" width={88} height={28} />
+                        <Skeleton variant="rounded" width={88} height={28} />
+                        <Skeleton variant="rounded" width={88} height={28} />
+                      </Stack>
+                    </Paper>
+                  </Grid>
+                ))}
+              </>
             )}
             {!cfLoading && cashflowGroups.length === 0 && !cfError && (
               <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Нет данных за выбранный период</Typography></Grid>
@@ -376,10 +398,22 @@ export default function PaymentsPage() {
 
         <Grid container spacing={2}>
           <Grid item xs={12} md={2}>
-            <TextField type="date" label="С даты" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+            <DatePicker
+              label="С даты"
+              value={dateFrom ? new Date(dateFrom) : null}
+              onChange={(newValue) => setDateFrom(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+              inputFormat="dd.MM.yyyy"
+            />
           </Grid>
           <Grid item xs={12} md={2}>
-            <TextField type="date" label="По дату" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+            <DatePicker
+              label="По дату"
+              value={dateTo ? new Date(dateTo) : null}
+              onChange={(newValue) => setDateTo(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+              inputFormat="dd.MM.yyyy"
+            />
           </Grid>
           <Grid item xs={12} md={2}>
             <FormControl fullWidth>
@@ -448,7 +482,7 @@ export default function PaymentsPage() {
         )}
 
         <div style={{ height: 520, width: '100%' }}>
-          <DataGrid
+          <DataGridBase
             rows={filteredItems}
             columns={columns}
             pageSizeOptions={[25, 50, 100]}
@@ -460,11 +494,22 @@ export default function PaymentsPage() {
 
         <Divider sx={{ my: 2 }} />
 
-        <Stack direction="row" spacing={3} alignItems="center">
-          <Chip label={`Приход: ${currency(totals.income)}`} />
-          <Chip label={`Расход: ${currency(totals.expense)}`} />
-          <Chip label={`Рефанд: ${currency(totals.refund)}`} />
-          <Chip label={`Сальдо: ${currency(totals.balance)}`} color={totals.balance >= 0 ? 'success' : 'error'} />
+        <Stack direction="row" spacing={3} alignItems="center" sx={{ minHeight: 36 }}>
+          {loading ? (
+            <>
+              <Skeleton variant="rounded" width={140} height={28} />
+              <Skeleton variant="rounded" width={140} height={28} />
+              <Skeleton variant="rounded" width={140} height={28} />
+              <Skeleton variant="rounded" width={140} height={28} />
+            </>
+          ) : (
+            <>
+              <Chip label={`Приход: ${currency(totals.income)}`} />
+              <Chip label={`Расход: ${currency(totals.expense)}`} />
+              <Chip label={`Рефанд: ${currency(totals.refund)}`} />
+              <Chip label={`Сальдо: ${currency(totals.balance)}`} color={totals.balance >= 0 ? 'success' : 'error'} />
+            </>
+          )}
         </Stack>
       </Paper>
 
@@ -476,17 +521,20 @@ export default function PaymentsPage() {
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Заказ (orderId)" value={form.orderId} onChange={(e)=>setForm((f)=>({ ...f, orderId: e.target.value }))} fullWidth />
             <TextField label="Сумма" type="number" value={form.amount} onChange={(e)=>setForm((f)=>({ ...f, amount: Number(e.target.value) }))} fullWidth />
-            <TextField label="Метод" value={form.method} onChange={(e)=>setForm((f)=>({ ...f, method: e.target.value }))} fullWidth />
-            <FormControl fullWidth>
-              <InputLabel id="cash-edit-label">Касса</InputLabel>
-              <Select labelId="cash-edit-label" label="Касса" value={form.cashRegisterId} onChange={(e)=>setForm((f)=>({ ...f, cashRegisterId: e.target.value }))}>
+            <FormField label="Метод">
+              <TextField label={undefined} value={form.method} onChange={(e)=>setForm((f)=>({ ...f, method: e.target.value }))} fullWidth />
+            </FormField>
+            <FormField label="Касса">
+              <Select value={form.cashRegisterId} onChange={(e)=>setForm((f)=>({ ...f, cashRegisterId: e.target.value }))} fullWidth>
                 <MenuItem value="">Не выбрано</MenuItem>
                 {cash.map((c) => (
                   <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
                 ))}
               </Select>
-            </FormControl>
-            <TextField label="Заметка" value={form.note} onChange={(e)=>setForm((f)=>({ ...f, note: e.target.value }))} fullWidth />
+            </FormField>
+            <FormField label="Заметка">
+              <TextField label={undefined} value={form.note} onChange={(e)=>setForm((f)=>({ ...f, note: e.target.value }))} fullWidth />
+            </FormField>
             <Stack>
               <Typography variant="body2" sx={{ mb: 1 }}>Статья (хлебные крошки)</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
@@ -514,22 +562,21 @@ export default function PaymentsPage() {
             )}
             {allArticlePaths.map((p) => (
               <FormControl key={p}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <input type="checkbox" checked={selectedArticles.includes(p)} onChange={(e)=>{
+                <FormControlLabel
+                  control={<Checkbox checked={selectedArticles.includes(p)} onChange={(e)=>{
                     const checked = e.target.checked;
                     setSelectedArticles((prev) => {
                       const s = new Set(prev);
                       if (checked) s.add(p); else s.delete(p);
                       return Array.from(s);
                     });
-                    // If choosing for modal form, also reflect single selection to form.articlePath
                     if (modalOpen) {
                       const segs = p.split('/').map((t)=>t.trim()).filter(Boolean);
                       setForm((f)=>({ ...f, articlePath: segs }));
                     }
-                  }} />
-                  <Typography>{p}</Typography>
-                </Stack>
+                  }} />}
+                  label={p}
+                />
               </FormControl>
             ))}
           </Stack>

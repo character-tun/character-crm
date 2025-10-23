@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, InputLabel, List, ListItem, ListItemText, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DataGridBase from '../../components/DataGridBase';
 
 const LS = {
   suppliers: 'warehouse_suppliers',
@@ -118,7 +119,7 @@ export default function InventoryOrdersPage() {
     if (!categoryFilter) return products;
     const ids = [categoryFilter, ...descendantIds(categoryFilter)];
     return products.filter((p) => ids.includes(p.categoryId));
-  }, [products, categoryFilter, categories]);
+  }, [products, categoryFilter, descendantIds]);
 
   const addItemToOrder = (product) => {
     setOrderDraft((prev) => {
@@ -238,7 +239,7 @@ export default function InventoryOrdersPage() {
       </Box>
 
       <Paper sx={{ height: 520 }}>
-        <DataGrid rows={withSupplierName} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick />
+        <DataGridBase rows={withSupplierName} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick />
       </Paper>
 
       <Paper sx={{ mt: 2, p: 2 }}>

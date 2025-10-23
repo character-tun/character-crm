@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { listRoles, createRole, updateRole, deleteRole } from '../../services/rolesService';
 import SettingsBackBar from '../../components/SettingsBackBar';
+import DataGridBase from '../../components/DataGridBase';
 import {
   Box,
   Stack,
@@ -8,11 +9,6 @@ import {
   Button,
   Alert,
   Typography,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -48,6 +44,59 @@ export default function RolesSettingsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const columns = React.useMemo(() => [
+    { field: 'code', headerName: 'Код', width: 220 },
+    {
+      field: 'name',
+      headerName: 'Название',
+      flex: 1,
+      renderCell: (params) => (
+        <TextField
+          size="small"
+          value={params.row.name || ''}
+          onChange={(e) =>
+            setRoles(roles.map(x => x._id === params.row._id ? { ...x, name: e.target.value } : x))
+          }
+          fullWidth
+        />
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Действия',
+      width: 160,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Сохранить">
+            <span>
+              <IconButton
+                color="primary"
+                onClick={() => onUpdate(params.row._id, { name: params.row.name })}
+                disabled={loading}
+              >
+                <SaveOutlinedIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Удалить">
+            <span>
+              <IconButton
+                color="error"
+                onClick={() => onDelete(params.row._id)}
+                disabled={loading}
+              >
+                <DeleteOutlineIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
+      ),
+    },
+  ], [roles, loading]);
 
   const onCreate = async (e) => {
     e.preventDefault();
@@ -166,48 +215,16 @@ export default function RolesSettingsPage() {
           </Stack>
         </Box>
 
-        <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: 220 }}>Код</TableCell>
-              <TableCell>Название</TableCell>
-              <TableCell sx={{ width: 160 }}>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {roles.map((r) => (
-              <TableRow key={r._id} hover>
-                <TableCell>{r.code}</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    value={r.name || ''}
-                    onChange={(e) => setRoles(roles.map(x => x._id === r._id ? { ...x, name: e.target.value } : x))}
-                    fullWidth
-                  />
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Сохранить">
-                      <span>
-                        <IconButton color="primary" onClick={() => onUpdate(r._id, { name: r.name })} disabled={loading}>
-                          <SaveOutlinedIcon />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title="Удалить">
-                      <span>
-                        <IconButton color="error" onClick={() => onDelete(r._id)} disabled={loading}>
-                          <DeleteOutlineIcon />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {roles.length > 0 && (
+          <DataGridBase
+            autoHeight
+            rows={roles}
+            columns={columns}
+            getRowId={(row) => row._id}
+            loading={loading}
+            initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+          />
+        )}
       </Stack>
     </Box>
   );

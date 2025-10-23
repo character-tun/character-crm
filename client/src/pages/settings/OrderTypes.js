@@ -72,7 +72,6 @@ export default function OrderTypesSettingsPage() {
   useEffect(() => {
     loadRefs();
     loadItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => setForm({ code: '', name: '', startStatusId: '', allowedStatuses: [], docTemplateIds: [], fieldsSchemaId: '' });

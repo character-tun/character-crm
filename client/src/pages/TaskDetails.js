@@ -4,6 +4,8 @@ import { Box, Stack, Typography, TextField, Select, MenuItem, Chip, Button, Chec
 import { alpha, useTheme } from '@mui/material/styles';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { tasksService } from '../services/tasksService';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format } from 'date-fns';
 
 const PRIORITIES = ['Низкий','Средний','Высокий','Критический'];
 
@@ -128,7 +130,13 @@ export default function TaskDetails() {
             <Select fullWidth value={task.priority || 'Средний'} onChange={(e)=>setField('priority', e.target.value)}>
               {PRIORITIES.map((p)=>(<MenuItem key={p} value={p}>{p}</MenuItem>))}
             </Select>
-            <TextField label="Дедлайн" type="date" value={task.deadline || ''} onChange={(e)=>setField('deadline', e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+            <DatePicker
+              label="Дедлайн"
+              value={task.deadline ? new Date(task.deadline) : null}
+              onChange={(newValue)=>setField('deadline', newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+              inputFormat="dd.MM.yyyy"
+            />
           </Stack>
 
           <Stack direction="row" spacing={2}>

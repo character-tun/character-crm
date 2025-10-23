@@ -1,4 +1,5 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, alpha } from '@mui/material/styles';
+import '@mui/x-data-grid/themeAugmentation';
 import { tokens, ThemeMode } from './tokens';
 
 export const makeTheme = (mode: ThemeMode) => createTheme({
@@ -59,8 +60,43 @@ export const makeTheme = (mode: ThemeMode) => createTheme({
         }),
       },
     },
+    // Unified look for DataGrid across the app
+    MuiDataGrid: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          '--DataGrid-rowBorderColor': theme.palette.divider,
+        }),
+        columnHeaders: ({ theme }) => ({
+          backgroundColor:
+            theme.palette.mode === 'dark'
+              ? alpha(theme.palette.background.paper, 0.9)
+              : theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }),
+        row: ({ theme }) => ({
+          '&:hover': { backgroundColor: theme.palette.action.hover },
+        }),
+        cell: ({ theme }) => ({
+          borderColor: theme.palette.divider,
+        }),
+        footerContainer: ({ theme }) => ({
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+        }),
+        toolbarContainer: ({ theme }) => ({
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }),
+      },
+    },
   },
 });
+
+// Stage 10 API: expose createAppTheme(mode) used by the app to switch light/dark
+export const createAppTheme = (mode: ThemeMode) => makeTheme(mode);
 
 export type Theme = {
   name: string;
@@ -127,3 +163,178 @@ export function applyThemeVars(theme: Theme) {
   }
   styleEl.textContent = css;
 }
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: { main: '#1976d2' },
+    secondary: { main: '#9c27b0' },
+    background: { default: '#fafafa', paper: '#fff' },
+  },
+  typography: {
+    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+    button: { textTransform: 'none' },
+  },
+  shape: { borderRadius: 8 },
+  spacing: 8,
+  components: {
+    MuiButton: {
+      defaultProps: { disableElevation: true },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          textTransform: 'none',
+          '&.Mui-disabled': { opacity: 0.48, pointerEvents: 'none' },
+        }),
+        containedPrimary: ({ theme }) => ({
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.primary.contrastText,
+          '&:hover': { backgroundColor: theme.palette.primary.dark },
+          '&.Mui-focusVisible': { boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.3)}` },
+          '&.Mui-disabled': {
+            backgroundColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+          },
+        }),
+        outlinedPrimary: ({ theme }) => ({
+          borderColor: theme.palette.primary.main,
+          '&:hover': { borderColor: theme.palette.primary.dark },
+          '&.Mui-focusVisible': { boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.25)}` },
+        }),
+        textPrimary: ({ theme }) => ({
+          '&:hover': { backgroundColor: theme.palette.action.hover },
+        }),
+      },
+    },
+    MuiAppBar: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }),
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          borderRight: 0,
+          backgroundColor: theme.palette.mode === 'dark' ? '#111418' : theme.palette.background.paper,
+          borderRadius: 0,
+        }),
+      },
+    },
+    MuiTextField: {
+      defaultProps: {
+        variant: 'outlined',
+        size: 'medium',
+      },
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          minHeight: 48,
+          '&.Mui-disabled': {
+            backgroundColor: theme.palette.action.disabledBackground,
+          },
+        }),
+        input: ({ theme }) => ({
+          padding: '12px 14px',
+          '&::placeholder': { color: theme.palette.text.disabled, opacity: 1 },
+        }),
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          '& .MuiOutlinedInput-input': { padding: '12px 14px' },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main,
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main,
+            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.15)}`,
+          },
+          '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.action.disabled,
+          },
+        }),
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          border: '1px solid',
+          borderColor: theme.palette.divider,
+          boxShadow: 'var(--mui-shadow-2)',
+        }),
+      },
+    },
+    MuiTabs: {
+      defaultProps: { textColor: 'primary', indicatorColor: 'primary' },
+      styleOverrides: {
+        indicator: ({ theme }) => ({
+          height: 3,
+          borderRadius: 3,
+        }),
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          minHeight: 48,
+          textTransform: 'none',
+          '&.Mui-selected': { color: theme.palette.primary.main },
+          '&.Mui-focusVisible': {
+            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+          },
+        }),
+      },
+    },
+    MuiTable: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          '& thead th': { fontWeight: 700 },
+          '& tbody tr:hover': { backgroundColor: theme.palette.action.hover },
+        }),
+      },
+    },
+    // Mirror DataGrid styles for the alternate theme object too
+    MuiDataGrid: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          '--DataGrid-rowBorderColor': theme.palette.divider,
+        }),
+        columnHeaders: ({ theme }) => ({
+          backgroundColor:
+            theme.palette.mode === 'dark'
+              ? alpha(theme.palette.background.paper, 0.9)
+              : theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }),
+        row: ({ theme }) => ({
+          '&:hover': { backgroundColor: theme.palette.action.hover },
+        }),
+        cell: ({ theme }) => ({
+          borderColor: theme.palette.divider,
+        }),
+        footerContainer: ({ theme }) => ({
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+        }),
+        toolbarContainer: ({ theme }) => ({
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }),
+      },
+    },
+  },
+});
+export default theme;

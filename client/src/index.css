@@ -1,0 +1,18 @@
+/* Minimal base styles to avoid conflicts with MUI */
+html, body, #root {
+  height: 100%;
+}
+
+html {
+  box-sizing: border-box;
+}
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Roboto, Helvetica, Arial, sans-serif;
+  background: #fff;
+  color: #111;
+}

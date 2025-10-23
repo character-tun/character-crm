@@ -1,42 +1,34 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Paper } from '@mui/material';
+import DataGridBase from './DataGridBase';
 
 const OrdersTable = ({ orders }) => {
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'customer', headerName: 'Клиент', flex: 1, minWidth: 160 },
+    { field: 'date', headerName: 'Дата', width: 140 },
+    {
+      field: 'amount',
+      headerName: 'Сумма',
+      type: 'number',
+      width: 140,
+      align: 'right',
+      headerAlign: 'right',
+      valueFormatter: (params) => `₽${params.value}`,
+    },
+    { field: 'status', headerName: 'Статус', width: 160 },
+  ];
+
   return (
-    <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
-      <Table
-        stickyHeader
-        aria-label="orders table"
-        sx={(theme) => ({
-          '& tbody tr:nth-of-type(odd)': { backgroundColor: alpha(theme.palette.primary.main, 0.035) },
-          '& tbody tr:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.085) },
-        })}
-      >
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Клиент</TableCell>
-            <TableCell>Дата</TableCell>
-            <TableCell align="right">Сумма</TableCell>
-            <TableCell>Статус</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell component="th" scope="row">
-                {order.id}
-              </TableCell>
-              <TableCell>{order.customer}</TableCell>
-              <TableCell>{order.date}</TableCell>
-              <TableCell align="right">₽{order.amount}</TableCell>
-              <TableCell>{order.status}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <Paper sx={{ width: '100%' }}>
+      <DataGridBase
+        autoHeight
+        rows={orders}
+        columns={columns}
+        checkboxSelection={false}
+        disableColumnMenu
+      />
+    </Paper>
   );
 };
 

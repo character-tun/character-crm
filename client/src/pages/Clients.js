@@ -2,11 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { 
   Box, Typography, Button, Paper, 
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Grid, FormControl, InputLabel, Select, MenuItem, Stack, Checkbox
+  TextField, Grid, FormControl, InputLabel, Select, MenuItem, Stack, Checkbox, FormControlLabel
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import DataGridBase from '../components/DataGridBase';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
+import { DatePicker } from '@mui/x-date-pickers';
+import { format, parse } from 'date-fns';
+import FormField from '../components/FormField';
 
 const Clients = () => {
   const [clients, setClients] = useState([
@@ -142,7 +145,7 @@ const Clients = () => {
       </Box>
 
       <Paper sx={{ height: 400, width: '100%' }}>
-        <DataGrid
+        <DataGridBase
           rows={clients}
           columns={columns}
           pageSize={5}
@@ -157,70 +160,91 @@ const Clients = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="name"
-                label="Имя"
-                fullWidth
-                value={newClient.name}
-                onChange={handleChange}
-              />
+              <FormField label="Имя">
+                <TextField
+                  name="name"
+                  fullWidth
+                  value={newClient.name}
+                  onChange={handleChange}
+                />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="phone"
-                label="Телефон"
-                fullWidth
-                value={newClient.phone}
-                onChange={handleChange}
-              />
+              <FormField label="Телефон">
+                <TextField
+                  name="phone"
+                  fullWidth
+                  value={newClient.phone}
+                  onChange={handleChange}
+                />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="telegram"
-                label="Telegram"
-                fullWidth
-                value={newClient.telegram}
-                onChange={handleChange}
-              />
+              <FormField label="Telegram">
+                <TextField
+                  name="telegram"
+                  fullWidth
+                  value={newClient.telegram}
+                  onChange={handleChange}
+                />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="city"
-                label="Город"
-                fullWidth
-                value={newClient.city}
-                onChange={handleChange}
-              />
+              <FormField label="Город">
+                <TextField
+                  name="city"
+                  fullWidth
+                  value={newClient.city}
+                  onChange={handleChange}
+                />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="vehicle"
-                label="Автомобиль"
-                fullWidth
-                value={newClient.vehicle}
-                onChange={handleChange}
-              />
+              <FormField label="Автомобиль">
+                <TextField
+                  name="vehicle"
+                  fullWidth
+                  value={newClient.vehicle}
+                  onChange={handleChange}
+                />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel id="client-type">Тип клиента</InputLabel>
-                <Select labelId="client-type" label="Тип клиента" value={newClient.type || ''} onChange={(e)=>setNewClient(prev=>({ ...prev, type: e.target.value }))}>
+              <FormField label="Тип клиента">
+                <Select
+                  fullWidth
+                  value={newClient.type || ''}
+                  onChange={(e)=>setNewClient(prev=>({ ...prev, type: e.target.value }))}
+                >
                   {clientTypes.map((t)=>(<MenuItem key={t} value={t}>{t}</MenuItem>))}
                 </Select>
-              </FormControl>
+              </FormField>
             </Grid>
-
+            {/* dynamic extra fields */}
             {clientFields.length > 0 && (
               <>
                 {clientFields.map((f) => (
                   <Grid item xs={12} md={6} key={f.name}>
                     {f.type === 'checkbox' ? (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Checkbox checked={!!newClient[f.name]} onChange={(e)=>setNewClient(prev=>({ ...prev, [f.name]: e.target.checked }))} />
-                        <Typography>{f.label}</Typography>
-                      </Stack>
+                      <FormField>
+                        <FormControlLabel
+                          control={<Checkbox checked={!!newClient[f.name]} onChange={(e)=>setNewClient(prev=>({ ...prev, [f.name]: e.target.checked }))} />}
+                          label={f.label}
+                        />
+                      </FormField>
+                    ) : f.type === 'date' ? (
+                      <FormField label={f.label}>
+                        <DatePicker
+                          value={newClient[f.name] ? parse(newClient[f.name], 'yyyy-MM-dd', new Date()) : null}
+                          onChange={(date) => setNewClient(prev => ({ ...prev, [f.name]: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                          format="dd.MM.yyyy"
+                          slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                        />
+                      </FormField>
                     ) : (
-                      <TextField label={f.label} fullWidth size="small" type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'} value={newClient[f.name] || ''} onChange={(e)=>setNewClient(prev=>({ ...prev, [f.name]: e.target.value }))} />
+                      <FormField label={f.label}>
+                        <TextField fullWidth size="small" type={f.type === 'number' ? 'number' : 'text'} value={newClient[f.name] || ''} onChange={(e)=>setNewClient(prev=>({ ...prev, [f.name]: e.target.value }))} />
+                      </FormField>
                     )}
                   </Grid>
                 ))}

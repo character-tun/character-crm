@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Paper, Stack, Typography, Button, IconButton, Divider, List, ListItemButton, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip } from '@mui/material';
+import { Box, Paper, Stack, Typography, Button, IconButton, Divider, List, ListItemButton, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Tooltip } from '@mui/material';
+import FormField from '../../components/FormField';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsBackBar from '../../components/SettingsBackBar';
+import ModalBase from '../../components/ModalBase';
 
 const DOCS_KEY = 'settings_documents';
 const DOC_META_KEY = 'document_meta';
@@ -168,24 +170,29 @@ export default function DocumentsSettingsPage() {
 
       <HelpBlock />
 
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Документ</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Название" value={newName} onChange={(e) => setNewName(e.target.value)} fullWidth />
-            <FormControl fullWidth>
-              <InputLabel id="module-label">Модуль</InputLabel>
-              <Select labelId="module-label" label="Модуль" value={newModule} onChange={(e) => setNewModule(e.target.value)}>
-                {MODULES.map((m) => (<MenuItem key={m} value={m}>{m}</MenuItem>))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateOpen(false)}>Отмена</Button>
-          <Button variant="contained" onClick={onCreate}>Сохранить</Button>
-        </DialogActions>
-      </Dialog>
+      <ModalBase
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Документ"
+        maxWidth="sm"
+        actions={(
+          <React.Fragment>
+            <Button onClick={() => setCreateOpen(false)}>Отмена</Button>
+            <Button variant="contained" onClick={onCreate}>Сохранить</Button>
+          </React.Fragment>
+        )}
+      >
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <FormField label="Название" required fullWidth>
+            <TextField value={newName} onChange={(e) => setNewName(e.target.value)} fullWidth />
+          </FormField>
+          <FormField label="Модуль" fullWidth>
+            <Select value={newModule} onChange={(e) => setNewModule(e.target.value)} fullWidth>
+              {MODULES.map((m) => (<MenuItem key={m} value={m}>{m}</MenuItem>))}
+            </Select>
+          </FormField>
+        </Stack>
+      </ModalBase>
     </Box>
   );
 }

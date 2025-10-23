@@ -31,7 +31,6 @@ import Tooltip from '@mui/material/Tooltip';
 import Menu from '@mui/material/Menu';
 import Avatar from '@mui/material/Avatar';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import ThemeSwitcher from './ThemeSwitcher';
 import { ThemeProvider } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -233,11 +232,6 @@ export default function Layout({ children }) {
               </Typography>
             </Box>
             <Box>
-              <Tooltip title="Сменить тему">
-                <Box sx={{ mr: 1 }}>
-                  <ThemeSwitcher disabled={!hasAnyRole(['Admin'])} />
-                </Box>
-              </Tooltip>
               <Tooltip title={mode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}>
                 <IconButton aria-label="Переключить режим темы" onClick={toggle} sx={{ mr: 1 }}>
                   {mode === 'dark' ? <DarkModeIcon /> : <LightModeIcon />}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Box, Typography, Paper, Stack, TextField, Button, Grid, MenuItem, IconButton, Tooltip, InputAdornment, Chip, Alert, Divider, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -118,7 +118,7 @@ const FieldsBuilderPage = ({ title, storageKey }) => {
     return { scope: 'custom', name: title || 'Пользовательская форма' };
   }, [storageKey, title]);
 
-  const loadVersions = async () => {
+  const loadVersions = useCallback(async () => {
     setVersionsError('');
     setVersionsLoading(true);
     try {
@@ -131,13 +131,12 @@ const FieldsBuilderPage = ({ title, storageKey }) => {
     } finally {
       setVersionsLoading(false);
     }
-  };
+  }, [getScopeAndName]);
 
   useEffect(() => {
     // загружаем версии на монтирование
     loadVersions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  }, [storageKey, loadVersions]);
 
   const importToServer = async () => {
     setImportError('');

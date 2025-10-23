@@ -5,6 +5,8 @@ import Chart from '../components/Chart';
 import OrdersTable from '../components/OrdersTable';
 import { formatCurrencyRu } from '../services/format';
 import { formatNumberRu } from '../services/format';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format } from 'date-fns';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -117,8 +119,20 @@ const Dashboard = () => {
             <Button variant={filterMode === 'custom' ? 'contained' : 'outlined'} onClick={() => setFilterMode('custom')}>Произвольный период</Button>
             {filterMode === 'custom' && (
               <>
-                <TextField type="date" label="Начало" size="small" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
-                <TextField type="date" label="Конец" size="small" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+                <DatePicker
+                  label="Начало"
+                  value={customStart ? new Date(customStart) : null}
+                  onChange={(newValue) => setCustomStart(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+                  renderInput={(params) => <TextField {...params} size="small" />}
+                  inputFormat="dd.MM.yyyy"
+                />
+                <DatePicker
+                  label="Конец"
+                  value={customEnd ? new Date(customEnd) : null}
+                  onChange={(newValue) => setCustomEnd(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+                  renderInput={(params) => <TextField {...params} size="small" />}
+                  inputFormat="dd.MM.yyyy"
+                />
               </>
             )}
           </Box>

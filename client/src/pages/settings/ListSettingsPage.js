@@ -20,7 +20,7 @@ const ListSettingsPage = ({ title, storageKey, placeholder = 'Название',
     } else {
       setItems(initialItems);
     }
-  }, [storageKey]);
+  }, [storageKey, initialItems]);
 
   const handleAdd = () => {
     const value = input.trim();

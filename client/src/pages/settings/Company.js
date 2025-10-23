@@ -21,7 +21,7 @@ const Company = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setForm({ ...form, ...parsed });
+        setForm((prev) => ({ ...prev, ...parsed }));
       } catch {}
     }
      

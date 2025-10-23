@@ -8,10 +8,10 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
+
   Grid,
   IconButton,
-  InputLabel,
+
   List,
   ListItem,
   ListItemButton,
@@ -24,12 +24,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DataGridBase from '../components/DataGridBase';
+
+import FormField from '../components/FormField';
 
 const currency = (n) => `₽${Number(n || 0).toLocaleString('ru-RU')}`;
 
@@ -139,7 +142,7 @@ function ServicesPage() {
       return descendants.includes(row.categoryId);
     };
     return services.filter((s) => filterByCat(s) && (!q || s.name.toLowerCase().includes(q)));
-  }, [services, search, selectedCategoryId, categories]);
+  }, [services, search, selectedCategoryId, collectDescendants]);
 
   const columns = [
     { field: 'name', headerName: 'Название', flex: 1, minWidth: 200 },
@@ -307,7 +310,7 @@ function ServicesPage() {
         </Grid>
         <Grid item xs={12} md={9}>
           <Paper sx={{ height: 540 }}>
-            <DataGrid
+            <DataGridBase
               rows={visibleServices}
               columns={columns}
               getRowId={(r) => r.id}
@@ -322,7 +325,9 @@ function ServicesPage() {
       <Dialog open={catDialogOpen} onClose={() => setCatDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Категория</DialogTitle>
         <DialogContent>
-          <TextField autoFocus margin="dense" label="Название" fullWidth value={catName} onChange={(e) => setCatName(e.target.value)} />
+          <FormField label="Название">
+            <TextField autoFocus margin="dense" fullWidth value={catName} onChange={(e) => setCatName(e.target.value)} />
+          </FormField>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCatDialogOpen(false)}>Отмена</Button>
@@ -335,33 +340,42 @@ function ServicesPage() {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
-              <TextField label="Название" fullWidth value={srvData.name} onChange={(e) => setSrvData((p) => ({ ...p, name: e.target.value }))} />
+              <FormField label="Название">
+                <TextField fullWidth value={srvData.name} onChange={(e) => setSrvData((p) => ({ ...p, name: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Категория</InputLabel>
-                <Select label="Категория" value={srvData.categoryId || ''} onChange={(e) => setSrvData((p) => ({ ...p, categoryId: e.target.value || null }))}>
-                  <MenuItem value="">Без категории</MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                  ))}
+              <FormField label="Категория">
+                <Select fullWidth value={srvData.categoryId || ''} onChange={(e) => setSrvData((p) => ({ ...p, categoryId: e.target.value }))}>
+                  <MenuItem value=""><em>Не выбрано</em></MenuItem>
+                  {categories.map((c) => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
                 </Select>
-              </FormControl>
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Себестоимость" type="number" fullWidth value={srvData.cost} onChange={(e) => setSrvData((p) => ({ ...p, cost: e.target.value }))} />
+              <FormField label="Себестоимость">
+                <TextField type="number" fullWidth value={srvData.cost} onChange={(e) => setSrvData((p) => ({ ...p, cost: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Цена" type="number" fullWidth value={srvData.price} onChange={(e) => setSrvData((p) => ({ ...p, price: e.target.value }))} />
+              <FormField label="Цена">
+                <TextField type="number" fullWidth value={srvData.price} onChange={(e) => setSrvData((p) => ({ ...p, price: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Гарантия, дн." type="number" fullWidth value={srvData.warrantyDays} onChange={(e) => setSrvData((p) => ({ ...p, warrantyDays: e.target.value }))} />
+              <FormField label="Гарантия, дн.">
+                <TextField type="number" fullWidth value={srvData.warrantyDays} onChange={(e) => setSrvData((p) => ({ ...p, warrantyDays: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Процент" type="number" fullWidth value={srvData.rewardPercent} onChange={(e) => setSrvData((p) => ({ ...p, rewardPercent: e.target.value }))} />
+              <FormField label="Процент">
+                <TextField type="number" fullWidth value={srvData.rewardPercent} onChange={(e) => setSrvData((p) => ({ ...p, rewardPercent: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField label="Сумма" type="number" fullWidth value={srvData.rewardAmount} onChange={(e) => setSrvData((p) => ({ ...p, rewardAmount: e.target.value }))} />
+              <FormField label="Сумма">
+                <TextField type="number" fullWidth value={srvData.rewardAmount} onChange={(e) => setSrvData((p) => ({ ...p, rewardAmount: e.target.value }))} />
+              </FormField>
             </Grid>
             <Grid item xs={12}>
               <Typography variant="body2" color="text.secondary">Вознаграждение исполнителю. Настройка влияет на прибыль и карточки сотрудника.</Typography>

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, List, ListItem, ListItemText, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DataGridBase from '../../components/DataGridBase';
+import FormField from '../../components/FormField';
 
 const LS = {
   products: 'warehouse_products',
@@ -71,7 +73,7 @@ export default function InventoryProductsPage() {
       list = list.filter((p) => ids.includes(p.categoryId));
     }
     return list.filter((p) => !q || p.name.toLowerCase().includes(q));
-  }, [products, search, selectedCategoryId, categories]);
+  }, [products, search, selectedCategoryId, descendantIds]);
 
   const columns = [
     { field: 'name', headerName: 'Название', flex: 1, minWidth: 220 },
@@ -188,7 +190,7 @@ export default function InventoryProductsPage() {
         </Grid>
         <Grid item xs={12} md={8}>
           <Paper sx={{ height: 520 }}>
-            <DataGrid rows={withCategory} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick />
+            <DataGridBase rows={withCategory} columns={columns} getRowId={(r) => r.id} pageSize={10} rowsPerPageOptions={[10, 25]} disableSelectionOnClick />
           </Paper>
         </Grid>
       </Grid>
@@ -197,12 +199,15 @@ export default function InventoryProductsPage() {
       <Dialog open={catDialog} onClose={() => setCatDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingCategory ? 'Редактировать категорию' : 'Создать категорию'}</DialogTitle>
         <DialogContent>
-          <TextField label="Название*" fullWidth sx={{ mt: 1 }} value={catForm.name} onChange={(e) => setCatForm((p) => ({ ...p, name: e.target.value }))} />
-          <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>Родительская категория</Typography>
-          <Select fullWidth value={catForm.parentId || ''} onChange={(e) => setCatForm((p) => ({ ...p, parentId: e.target.value || null }))}>
-            <MenuItem value="">(нет)</MenuItem>
-            {topCategories.map((c) => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
-          </Select>
+          <FormField label="Название*">
+            <TextField fullWidth value={catForm.name} onChange={(e) => setCatForm((p) => ({ ...p, name: e.target.value }))} />
+          </FormField>
+          <FormField label="Родительская категория">
+            <Select fullWidth value={catForm.parentId || ''} onChange={(e) => setCatForm((p) => ({ ...p, parentId: e.target.value || null }))}>
+              <MenuItem value="">(нет)</MenuItem>
+              {topCategories.map((c) => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
+            </Select>
+          </FormField>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCatDialog(false)}>Отмена</Button>
@@ -214,14 +219,25 @@ export default function InventoryProductsPage() {
       <Dialog open={prodDialog} onClose={() => setProdDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingProduct ? 'Редактировать товар' : 'Создать товар'}</DialogTitle>
         <DialogContent>
-          <TextField label="Название*" fullWidth sx={{ mt: 1 }} value={prodForm.name} onChange={(e) => setProdForm((p) => ({ ...p, name: e.target.value }))} />
-          <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>Категория*</Typography>
-          <Select fullWidth value={prodForm.categoryId || ''} onChange={(e) => setProdForm((p) => ({ ...p, categoryId: e.target.value }))}>
-            {categories.map((c) => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
-          </Select>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={6}><TextField label="Цена" type="number" fullWidth value={prodForm.price} onChange={(e) => setProdForm((p) => ({ ...p, price: Number(e.target.value) }))} /></Grid>
-            <Grid item xs={6}><TextField label="Себестоимость" type="number" fullWidth value={prodForm.cost} onChange={(e) => setProdForm((p) => ({ ...p, cost: Number(e.target.value) }))} /></Grid>
+          <FormField label="Название*">
+            <TextField fullWidth value={prodForm.name} onChange={(e) => setProdForm((p) => ({ ...p, name: e.target.value }))} />
+          </FormField>
+          <FormField label="Категория*">
+            <Select fullWidth value={prodForm.categoryId || ''} onChange={(e) => setProdForm((p) => ({ ...p, categoryId: e.target.value }))}>
+              {categories.map((c) => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
+            </Select>
+          </FormField>
+          <Grid container spacing={2} sx={{ mt: 0 }}>
+            <Grid item xs={6}>
+              <FormField label="Цена">
+                <TextField type="number" fullWidth value={prodForm.price} onChange={(e) => setProdForm((p) => ({ ...p, price: Number(e.target.value) }))} />
+              </FormField>
+            </Grid>
+            <Grid item xs={6}>
+              <FormField label="Себестоимость">
+                <TextField type="number" fullWidth value={prodForm.cost} onChange={(e) => setProdForm((p) => ({ ...p, cost: Number(e.target.value) }))} />
+              </FormField>
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>

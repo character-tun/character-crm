@@ -62,6 +62,7 @@ const baseTheme = createTheme({
         }),
       },
     },
+
     MuiCard: {
       styleOverrides: {
         root: ({ theme }) => ({
@@ -70,19 +71,7 @@ const baseTheme = createTheme({
         }),
       },
     },
-    MuiCardHeader: {
-      defaultProps: {
-        titleTypographyProps: { variant: 'subtitle1', fontWeight: 600 },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: 8,
-          '&.Mui-selected': { backgroundColor: theme.palette.action.selected },
-        }),
-      },
-    },
+
     MuiDrawer: {
       styleOverrides: {
         paper: ({ theme }) => ({
@@ -153,4 +142,4 @@ export function applyThemeVars(theme) {
   styleEl.textContent = css;
 }
 
-export default appTheme;
+export default createTheme({});

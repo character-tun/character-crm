@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, Paper, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { Box, Typography, Paper, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Select, MenuItem } from '@mui/material';
+import FormField from '../../components/FormField';
+import DataGridBase from '../../components/DataGridBase';
 import SettingsBackBar from '../../components/SettingsBackBar';
+import ModalBase from '../../components/ModalBase';
 
 const STORAGE_KEY = 'settings_employees';
 const DEFAULT_ROLES = ['Администратор', 'Менеджер', 'Мастер'];
@@ -75,39 +77,48 @@ const Employees = () => {
       </Stack>
 
       <Paper sx={{ height: 420, p: 1, borderRadius: 2, border: '1px solid var(--color-border)' }}>
-        <DataGrid rows={employees} columns={columns} pageSize={5} rowsPerPageOptions={[5, 10]} />
+        <DataGridBase rows={employees} columns={columns} pageSize={5} rowsPerPageOptions={[5, 10]} />
       </Paper>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Добавить сотрудника</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Имя" name="name" value={form.name} onChange={handleChange} error={Boolean(errors.name)} helperText={errors.name || ''} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={Boolean(errors.role)}>
-                <InputLabel id="role-label">Роль</InputLabel>
-                <Select labelId="role-label" label="Роль" name="role" value={form.role} onChange={handleChange}>
-                  {roles.map((r) => (
-                    <MenuItem key={r} value={r}>{r}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Телефон" name="phone" value={form.phone} onChange={handleChange} error={Boolean(errors.phone)} helperText={errors.phone || ''} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Email" name="email" value={form.email} onChange={handleChange} error={Boolean(errors.email)} helperText={errors.email || ''} />
-            </Grid>
+      <ModalBase
+        open={open}
+        onClose={handleClose}
+        title="Добавить сотрудника"
+        maxWidth="sm"
+        actions={(
+          <React.Fragment>
+            <Button onClick={handleClose}>Отмена</Button>
+            <Button variant="contained" onClick={handleAdd}>Добавить</Button>
+          </React.Fragment>
+        )}
+      >
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          <Grid item xs={12} md={6}>
+            <FormField label="Имя" required fullWidth errorText={errors.name} htmlFor="employee-name">
+              <TextField id="employee-name" fullWidth name="name" value={form.name} onChange={handleChange} />
+            </FormField>
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Отмена</Button>
-          <Button variant="contained" onClick={handleAdd}>Добавить</Button>
-        </DialogActions>
-      </Dialog>
+          <Grid item xs={12} md={6}>
+            <FormField label="Роль" fullWidth errorText={errors.role} htmlFor="employee-role">
+              <Select id="employee-role" name="role" value={form.role} onChange={handleChange} fullWidth>
+                {roles.map((r) => (
+                  <MenuItem key={r} value={r}>{r}</MenuItem>
+                ))}
+              </Select>
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Телефон" fullWidth errorText={errors.phone} htmlFor="employee-phone">
+              <TextField id="employee-phone" fullWidth name="phone" value={form.phone} onChange={handleChange} />
+            </FormField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormField label="Email" fullWidth errorText={errors.email} htmlFor="employee-email">
+              <TextField id="employee-email" fullWidth name="email" value={form.email} onChange={handleChange} />
+            </FormField>
+          </Grid>
+        </Grid>
+      </ModalBase>
     </Box>
   );
 };

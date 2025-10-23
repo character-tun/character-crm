@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { tasksService } from '../services/tasksService';
 import { ordersService } from '../services/ordersService';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format } from 'date-fns';
 
 const COLUMNS = ['Назначено', 'В работе', 'Проверка', 'Готово'];
 const PRIORITIES = ['Низкий','Средний','Высокий','Критический'];
@@ -70,13 +72,19 @@ function DraggableCard({ task, selected, onSelect, onOpenDetails, dragDisabled, 
         {editingDeadline ? (
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="caption" color="text.secondary">Дедлайн:</Typography>
-            <TextField size="small" type="date" value={tmpDeadline || ''}
-                       onChange={(e)=>setTmpDeadline(e.target.value)}
-                       onBlur={(e)=>{ setEditingDeadline(false); onChangeDeadline && onChangeDeadline(task.id, e.target.value); }}
-                       onKeyDown={(e)=>{ if (e.key === 'Enter') { setEditingDeadline(false); onChangeDeadline && onChangeDeadline(task.id, tmpDeadline); } }}
-                       sx={{ maxWidth: 180 }} />
+            <DatePicker
+              value={tmpDeadline ? new Date(tmpDeadline) : null}
+              onChange={(newValue) => {
+                const val = newValue ? format(newValue, 'yyyy-MM-dd') : '';
+                setTmpDeadline(val);
+                setEditingDeadline(false);
+                onChangeDeadline && onChangeDeadline(task.id, val);
+              }}
+              renderInput={(params) => <TextField {...params} size="small" sx={{ maxWidth: 180 }} />}
+              inputFormat="dd.MM.yyyy"
+            />
           </Stack>
-        ) : (
+          ) : (
           <Typography variant="caption" color="text.secondary" onClick={(e)=>{ e.stopPropagation(); setEditingDeadline(true); }}>
             Дедлайн: {task.deadline || '-'}
           </Typography>

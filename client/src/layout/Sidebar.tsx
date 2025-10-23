@@ -19,8 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.svg';
 import { isRouteActive, getActiveSection } from './useActiveMatch';
 
-const WIDTH_LG = 260;
-const WIDTH_MD_MINI = 80;
+const DRAWER_WIDTH = 280;
 
 export type SidebarProps = {
   mobileOpen?: boolean;
@@ -54,11 +53,10 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
-  const isSmDown = useMediaQuery(theme.breakpoints.down('md'));
-  const isMdOnly = !isLgUp && !isSmDown;
-  const width = isLgUp ? WIDTH_LG : isMdOnly ? WIDTH_MD_MINI : WIDTH_LG;
-  const variant: 'permanent' | 'temporary' = isSmDown ? 'temporary' : 'permanent';
+  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const isMdOnly = useMediaQuery(theme.breakpoints.only('md'));
+  const width = DRAWER_WIDTH;
+  const variant: 'persistent' | 'temporary' = mdUp ? 'persistent' : 'temporary';
   const pathname = location.pathname;
 
   const handleKeyNav = (e: React.KeyboardEvent) => {
@@ -95,7 +93,7 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
   return (
     <Drawer
       variant={variant}
-      open={variant === 'temporary' ? Boolean(mobileOpen) : undefined}
+      open={variant === 'temporary' ? Boolean(mobileOpen) : true}
       onClose={variant === 'temporary' ? onClose : undefined}
       anchor="left"
       sx={{ '& .MuiDrawer-paper': { width, borderRight: 0, display: 'flex', flexDirection: 'column' } }}
@@ -108,14 +106,14 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
           sx={{
             borderRadius: 1,
             minHeight: 40,
-            px: isMdOnly ? 1 : 1.5,
-            justifyContent: isMdOnly ? 'center' : 'flex-start',
+            px: 1.5,
+            justifyContent: 'flex-start',
           }}
         >
-          <ListItemIcon sx={{ minWidth: isMdOnly ? 0 : 32 }}>
+          <ListItemIcon sx={{ minWidth: 32 }}>
             <Box component="img" src={logo} alt="logo" sx={{ height: 24, width: 24 }} />
           </ListItemIcon>
-          {!isMdOnly && <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary="" />}
+          <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary="" />
         </ListItemButton>
       </Box>
       <Divider />
@@ -123,12 +121,11 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
       {/* Main navigation list */}
       <List dense sx={{ px: 1, py: 1, flex: '1 1 auto' }}>
         {items.map((section) => {
-          const mini = isMdOnly;
+          const mini = false;
           const hasChildren = !!section.children?.length;
           const sectionActive = isRouteActive(section.path, pathname);
           const activeChild = section.children?.find((c) => c.path && pathname === c.path) || null;
           const childActive = Boolean(activeChild);
-          // expand when toggled OR current route is under the section
           const expanded = hasChildren && (openId === section.id || sectionActive || childActive);
 
           const onSectionClick = () => {
@@ -162,10 +159,10 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
                 sx={(t) => ({
                   borderRadius: 1,
                   minHeight: 40,
-                  px: mini ? 1 : 2,
+                  px: 2,
                   position: 'relative',
-                  justifyContent: mini ? 'center' : 'flex-start',
-                  '& .MuiListItemIcon-root': { minWidth: mini ? 0 : 32, color: t.palette.text.secondary },
+                  justifyContent: 'flex-start',
+                  '& .MuiListItemIcon-root': { minWidth: 32, color: t.palette.text.secondary },
                   '&.Mui-selected': { backgroundColor: t.palette.action.selected },
                   '&.Mui-selected .MuiListItemIcon-root': { color: t.palette.primary.main },
                   '&.Mui-selected::before': {
@@ -182,7 +179,7 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
                     {section.icon}
                   </ListItemIcon>
                 )}
-                {!mini && <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary={section.label} />}
+                <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary={section.label} />
               </ListItemButton>
               </Tooltip>
 
@@ -221,7 +218,7 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
                          <ListItemIcon sx={{ minWidth: 28 }}>
                            {child.icon}
                          </ListItemIcon>
-                         {!mini && <ListItemText primary={child.label} />}
+                         <ListItemText primary={child.label} />
                        </ListItemButton
                        >
                      );
@@ -235,23 +232,23 @@ export default function Sidebar({ mobileOpen, onClose, hasRole }: SidebarProps) 
 
       {/* Bottom profile link */}
       <Box sx={{ px: 1, py: 1 }}>
-        <Tooltip title={isMdOnly ? 'Профиль' : ''} placement="right">
+        <Tooltip title={''} placement="right">
           <ListItemButton component={NavLink} to="/settings"
             onClick={() => console.log('clicked profile','to=/settings')}
             dense
             sx={{
               borderRadius: 1,
               minHeight: 40,
-              px: isMdOnly ? 1 : 1.5,
-              justifyContent: isMdOnly ? 'center' : 'flex-start',
+              px: 1.5,
+              justifyContent: 'flex-start',
             }}
           >
-            <ListItemIcon sx={{ minWidth: isMdOnly ? 0 : 32 }}>
+            <ListItemIcon sx={{ minWidth: 32 }}>
               <Avatar sx={{ width: 24, height: 24 }}>
                 {(user?.email || 'U').slice(0, 1).toUpperCase()}
               </Avatar>
             </ListItemIcon>
-            {!isMdOnly && <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary="Профиль" />}
+            <ListItemText primaryTypographyProps={{ variant: 'body2' }} primary="Профиль" />
           </ListItemButton>
         </Tooltip>
       </Box>
