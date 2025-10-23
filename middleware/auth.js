@@ -45,11 +45,11 @@ const RBAC_MAP = {
   'uiTheme.read': ['Admin', 'Manager'],
   'uiTheme.write': ['Admin'],
 
-  'payments.read': ['Admin', 'Finance'],
+  'payments.read': ['Admin', 'Finance', 'Manager'],
   'payments.write': ['Admin', 'Finance'],
   'payments.lock': ['Admin', 'Finance'],
-  'cash.read': ['Admin', 'Finance'],
-  'cash.write': ['Admin'],
+  'cash.read': ['Admin', 'Finance', 'Manager'],
+  'cash.write': ['Admin', 'Finance'],
 
   // Clients
   'clients.read': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],

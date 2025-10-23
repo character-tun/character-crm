@@ -24,9 +24,10 @@ describe('Payments RBAC e2e', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    test('Manager → 403', async () => {
+    test('Manager → 200', async () => {
       const res = await request(app).get('/api/payments').set('x-user-role', 'Manager');
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(200);
+      expect(res.body && res.body.ok).toBe(true);
     });
 
     test('Finance → 200', async () => {

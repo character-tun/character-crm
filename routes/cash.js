@@ -49,8 +49,9 @@ router.post('/', requirePermission('cash.write'), validate(schemas.cashCreateSch
   const code = normalizeCode(body.code);
   const name = body.name && String(body.name).trim();
   const defaultForLocation = !!body.defaultForLocation;
-  const cashierMode = body.cashierMode || 'open';
+  const cashierMode = body.cashierMode || 'manual';
   const isSystem = !!body.isSystem;
+  const locationId = body.locationId;
 
   if (DEV_MODE && !mongoReady()) {
     if (memStore.items.some((i) => i.code === code)) return res.status(409).json({ error: 'CODE_EXISTS' });
@@ -61,13 +62,14 @@ router.post('/', requirePermission('cash.write'), validate(schemas.cashCreateSch
       defaultForLocation,
       cashierMode,
       isSystem,
+      locationId,
     };
     memStore.items.push(item);
     return res.status(201).json({ ok: true, item });
   }
   if (!CashRegister) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
-    const created = await CashRegister.create({ code, name, defaultForLocation, cashierMode, isSystem });
+    const created = await CashRegister.create({ code, name, defaultForLocation, cashierMode, isSystem, locationId });
     const item = await CashRegister.findById(created._id).lean();
     return res.status(201).json({ ok: true, item });
   } catch (err) {

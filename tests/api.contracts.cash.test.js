@@ -50,7 +50,7 @@ describe('API Contracts: /api/cash', () => {
     });
 
     test('POST /api/cash (create) returns valid item shape', async () => {
-      const payload = { code: 'main', name: 'Главная касса', defaultForLocation: true, cashierMode: 'open' };
+      const payload = { code: 'main', name: 'Главная касса', defaultForLocation: true, cashierMode: 'manual' };
       joiOk(cashCreateRequestSchema, payload);
       const res = await request(app)
         .post('/api/cash')

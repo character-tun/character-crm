@@ -42,9 +42,10 @@ describe('RBAC + Locations + Reports e2e (DEV)', () => {
       results.rbac403NoRole = res.statusCode;
     });
 
-    test('GET /api/payments роль Manager → 403', async () => {
+    test('GET /api/payments роль Manager → 200', async () => {
       const res = await request(app).get('/api/payments').set('x-user-role', 'Manager');
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(200);
+      expect(res.body && res.body.ok).toBe(true);
       results.rbac403Manager = res.statusCode;
     });
 

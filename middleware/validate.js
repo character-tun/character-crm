@@ -1,21 +1,15 @@
 const Joi = require('joi');
 
 const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
-
+  const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: true });
   if (error) {
     const details = error.details.map((d) => d.message);
-    return res.status(400).json({
-      ok: false,
-      error: 'VALIDATION_ERROR',
-      details,
-    });
+    return res.status(400).json({ ok: false, error: 'VALIDATION_ERROR', details });
   }
-
   return next();
 };
 
-// Schemas: payments
+// Payments
 const paymentCreateSchema = Joi.object({
   orderId: Joi.string().required(),
 }).unknown(true);
@@ -33,24 +27,26 @@ const paymentPatchSchema = Joi.object({
   locationId: Joi.string(),
 }).min(1).unknown(true);
 
-// Schemas: cash
+// Cash
 const cashCreateSchema = Joi.object({
   code: Joi.string().trim().min(1).required(),
   name: Joi.string().trim().min(1).required(),
   defaultForLocation: Joi.boolean().optional(),
-  cashierMode: Joi.string().valid('open', 'strict').optional(),
+  cashierMode: Joi.string().valid('manual', 'auto').optional(),
   isSystem: Joi.boolean().optional(),
+  locationId: Joi.string().optional(),
 }).unknown(true);
 
 const cashPatchSchema = Joi.object({
   code: Joi.string().trim().min(1),
   name: Joi.string().trim().min(1),
   defaultForLocation: Joi.boolean(),
-  cashierMode: Joi.string().valid('open', 'strict'),
+  cashierMode: Joi.string().valid('manual', 'auto'),
   isSystem: Joi.boolean(),
+  locationId: Joi.string().optional(),
 }).min(1).unknown(true);
 
-// Schemas: items (catalog)
+// Items (catalog)
 const itemCreateSchema = Joi.object({
   name: Joi.string().trim().min(1).required(),
   price: Joi.number().min(0).optional(),
@@ -69,7 +65,7 @@ const itemPatchSchema = Joi.object({
   note: Joi.string().trim(),
 }).min(1).unknown(true);
 
-// Schemas: stock
+// Stock
 const stockItemCreateSchema = Joi.object({
   itemId: Joi.string().trim().required(),
   qtyOnHand: Joi.number().optional(),

@@ -90,6 +90,11 @@
   - Load/Perf: `tests/load/queues.cache.perf.test.js` — 10k смен статусов с авто‑действиями; пишет отчёты `storage/reports/queue-load-report.md` и `storage/reports/perf-report.md`.
   - TTL‑кэш: замеры hits/misses и времени списков для `GET /api/statuses` и `GET /api/doc-templates`.
 
+### Models: Payments & Cash
+- CashRegister: поля `code`, `name`, `defaultForLocation`, `cashierMode ∈ {manual, auto}` (default: `manual`), `isSystem`, `locationId`; уникальный индекс по `code`; guard на удаление блокирует удаление при наличии платежей.
+- Payment: поля `orderId`, `type ∈ {income, expense, refund}`, `articlePath[]` (обязателен, массив строк), `amount > 0`, `method`, `cashRegisterId`, `note`, `createdBy`, `locked`, `lockedAt`, `locationId`; индексы: `cashRegisterId`, `orderId`, `type`, `createdAt`, `locationId`, `locked`, `lockedAt`, `articlePath`, композитный `{ orderId:1, createdAt:-1 }`, новый композитный `{ locationId:1, type:1 }`.
+- DEV-ветка: in-memory стораджи поддерживают те же поля; `cashierMode` по умолчанию `manual`.
+
 ## Changelog
 - См. `CHANGELOG_TRAE.md` для детальной хронологии изменений.
 
@@ -259,7 +264,7 @@
   - `POST /api/cash` — создать кассу; обязательные поля `code`, `name`; нормализация `code` (trim+lower); конфликт кода → `409 CODE_EXISTS`.
   - `PATCH /api/cash/:id` — частичное обновление; запрет смены `code` для системной кассы (`isSystem=true`) → `409 SYSTEM_CODE_PROTECTED`; `409 CODE_EXISTS` при дублировании; `400 VALIDATION_ERROR`; `404 NOT_FOUND`.
   - `DELETE /api/cash/:id` — удалить; при наличии платежей → `409 CASH_IN_USE`; `404 NOT_FOUND`.
-  - RBAC: `cash.read` → `Admin|Finance`; `cash.write` → `Admin`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` и недоступной Mongo (в DEV удаление без проверки платежей).
+  - RBAC: `cash.read` → `Admin|Finance|Manager`; `cash.write` → `Admin|Finance`. DEV fallback: in‑memory при `AUTH_DEV_MODE=1` и недоступной Mongo (в DEV удаление без проверки платежей).
 
 - API / Payments:
   - `GET /api/payments` — список платежей; параметры: `type (income|expense|refund)`, `orderId`, `cashRegisterId`, `locationId`, `dateFrom`, `dateTo`, `articlePath[]`, `limit` (1..500, по умолчанию 50), `offset` (>=0); сортировка по `createdAt` (desc). Ответ: `{ ok, items: Payment[], totals: { income, expense, refund, balance } }`.
@@ -267,8 +272,9 @@
   - `POST /api/payments/refund` — создать возврат; минимально требуется `orderId`; ответ `200` → `{ ok, id }`; ошибки: `400 VALIDATION_ERROR|PAYMENTS_LOCKED|ORDER_CLOSED`, `403 FORBIDDEN`, `404 NOT_FOUND`.
   - `PATCH /api/payments/:id` — частичное обновление; ошибки: `400 VALIDATION_ERROR`, `400 PAYMENTS_LOCKED`, `400 ORDER_CLOSED`, `403 FORBIDDEN`, `404 NOT_FOUND`.
   - `POST /api/payments/:id/lock` — заблокировать платёж; ответ `200` → `PaymentItemResponse`; ошибки: `403 FORBIDDEN`, `404 NOT_FOUND`.
+  - `DELETE /api/payments/:id` — удалить; только `Admin`; при `locked=true` → `403 PAYMENT_LOCKED`; `404 NOT_FOUND`.
   - Ошибки домена: `PAYMENTS_LOCKED` — платёжные операции недоступны; `ORDER_CLOSED` — заказ закрыт; `VALIDATION_ERROR`; `NOT_FOUND`; DEV fallback: без проверки кассы (`CASH_NOT_FOUND` только в полной Mongo‑ветке).
-  - RBAC: `payments.read` → `Admin|Finance`; `payments.write` → `Admin|Finance`; `payments.lock` → `Admin|Finance`.
+  - RBAC: `payments.read` → `Admin|Finance|Manager`; `payments.write` → `Admin|Finance`; `payments.lock` → `Admin|Finance`; `DELETE /api/payments/:id` — только `Admin`.
   - Security: `bearerAuth`.
   - DEV fallback: при `AUTH_DEV_MODE=1` и недоступной Mongo — in‑memory; минимальная валидация: требуется `orderId`; ответы и ошибки соответствуют контрактным тестам.
 

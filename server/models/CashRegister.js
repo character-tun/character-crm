@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
+const { Schema } = mongoose;
+
 const CashRegisterSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, lowercase: true, trim: true },
   name: { type: String, required: true, trim: true },
   defaultForLocation: { type: Boolean, default: false },
-  cashierMode: { type: String, enum: ['open', 'strict'], default: 'open' },
+  cashierMode: { type: String, enum: ['manual', 'auto'], default: 'manual' },
   isSystem: { type: Boolean, default: false },
+  locationId: { type: Schema.Types.ObjectId, ref: 'Location' },
 }, { timestamps: true });
 
 // Unique index for code

@@ -22,6 +22,7 @@ if (!DEV_MODE) {
 // Initialize status action queue (Queue + Worker + QueueScheduler)
 require('./queues/statusActionQueue');
 
+try { require('./server/models/Payment'); require('./server/models/CashRegister'); } catch (e) {}
 const app = express();
 
 // Middleware

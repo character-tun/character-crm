@@ -9,7 +9,7 @@ let Payment; try { Payment = require('../server/models/Payment'); } catch (e) {}
 let CashRegister; try { CashRegister = require('../server/models/CashRegister'); } catch (e) {}
 
 
-const { requirePermission, hasPermission } = require('../middleware/auth');
+const { requirePermission, hasPermission, requireRole } = require('../middleware/auth');
 const { isPaymentsLocked, getDevState } = require('../services/statusActionsHandler');
 
 
@@ -411,6 +411,34 @@ router.post('/:id/lock', requirePermission('payments.lock'), async (req, res, ne
     payment.lockedAt = new Date();
     await payment.save();
     return res.json({ ok: true, item: payment });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// DELETE /api/payments/:id — Admin only, forbid if locked
+router.delete('/:id', requireRole('Admin'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // DEV fallback: remove from in-memory store
+    if (DEV_MODE && !mongoReady() && devStore && typeof devStore.getItems === 'function') {
+      const items = devStore.getItems();
+      const idx = items.findIndex((i) => String(i._id) === String(id));
+      if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
+      const current = items[idx];
+      if (current.locked === true) return next(httpError(403, 'PAYMENT_LOCKED'));
+      items.splice(idx, 1);
+      return res.json({ ok: true });
+    }
+
+    if (!Payment) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const current = await Payment.findById(id).lean();
+    if (!current) return next(httpError(404, 'NOT_FOUND'));
+    if (current.locked === true) return next(httpError(403, 'PAYMENT_LOCKED'));
+
+    await Payment.deleteOne({ _id: id });
+    return res.json({ ok: true });
   } catch (err) {
     return next(err);
   }

@@ -48,5 +48,7 @@ PaymentSchema.index({ lockedAt: 1 });
 PaymentSchema.index({ articlePath: 1 });
 // Optional: optimize order-specific timelines
 PaymentSchema.index({ orderId: 1, createdAt: -1 });
+// New: compound index for locationId and type
+PaymentSchema.index({ locationId: 1, type: 1 });
 
 module.exports = mongoose.model('Payment', PaymentSchema);
