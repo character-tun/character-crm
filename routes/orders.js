@@ -7,7 +7,7 @@ const { changeOrderStatus } = require('../services/orderStatusService');
 const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
 const Order = require('../models/Order');
-const { getDevState } = require('../services/statusActionsHandler');
+const { getDevState, setDevState } = require('../services/statusActionsHandler');
 let OrderStatus; try { OrderStatus = require('../models/OrderStatus'); } catch (e) { /* optional in DEV */ }
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 let Item; try { Item = require('../server/models/Item'); } catch (e) {}
@@ -381,6 +381,40 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
     if (!userId) return next(httpError(400, 'userId is required'));
 
     const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+    // DEV fallback: update in-memory state and enqueue actions when Mongo is unavailable
+    if (!mongoReady && DEV_MODE) {
+      const nowIso = new Date().toISOString();
+      const prev = getDevState(orderId) || {};
+      let actions = [];
+      let closed = undefined;
+      if (finalCode === 'closed_unpaid') {
+        closed = { success: false, at: nowIso, by: String(userId) };
+        actions = ['closeWithoutPayment'];
+      } else if (finalCode === 'closed_paid') {
+        closed = { success: true, at: nowIso, by: String(userId) };
+        actions = ['payrollAccrual', 'stockIssue'];
+      }
+      setDevState(orderId, {
+        status: finalCode,
+        statusChangedAt: nowIso,
+        closed,
+        paymentsLocked: closed && closed.success === false ? true : !!prev.paymentsLocked,
+      });
+
+      try {
+        await enqueueStatusActions({
+          orderId,
+          statusCode: finalCode,
+          actions,
+          logId: `dev-${orderId}-${Date.now()}`,
+          userId,
+        });
+      } catch (err) {
+        // ignore enqueue errors in DEV
+      }
+      return res.json({ ok: true });
+    }
+
     if (!mongoReady) return next(httpError(503, 'MongoDB is required'));
 
     const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : ((req.user && req.user.role) ? [req.user.role] : []);

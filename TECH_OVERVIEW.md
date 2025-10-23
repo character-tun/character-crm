@@ -61,12 +61,15 @@
 ## Test Runs
 - Модели/валидаторы: `tests/models/fields.valid.test.js`, `tests/models/fields.invalid.test.js`.
 - e2e: `tests/fields.schemas.e2e.test.js`, `tests/dicts.e2e.test.js`.
+- Docs + Notify — e2e: `tests/e2e/docs.notify.test.js`.
 - Контракты Swagger: `tests/api.contracts.fields.dicts.swagger.test.js`.
 - Payments — контракты: `tests/api.contracts.payments.test.js` (create/refund: `{ ok, id }`, требуется `orderId`; DEV/Mongo ветка возвращает stub `id`).
 - Payments — RBAC e2e: `tests/payments.rbac.e2e.test.js` (GET/POST/PATCH/lock/refund, роли Admin/Finance/Manager/без ролей).
+- RBAC + Locations + Reports — e2e: `tests/e2e/rbac.locations.reports.test.js` (репорт: `storage/reports/rbac-locations-reports.md`).
 - Payments — правила блокировок: `tests/payments.lock.rules.e2e.test.js` (редактирование залоченного без `payments.lock` → 403).
 - Payments — закрытие без оплаты: `tests/payments.locked.e2e.test.js` (`closeWithoutPayment` ⇒ `PAYMENTS_LOCKED` на create).
 - Cash — контракты: `tests/api.contracts.cash.test.js` (list/get/create, валидные ответы).
+- Staff — Payroll Accrual 10%: `tests/e2e/payroll.accrual.test.js` (DEV: проверяет 10% от `grandTotal` для `closed_paid`, предотвращает дубли; прямой вызов `handleStatusActions`).
 
 ## 2.0 Stock + Shop + Staff
 - Связанный цикл: Склад → Магазин → Сотрудники.
@@ -84,6 +87,8 @@
   - Тест `tests/stock.shop.staff.e2e.prodlike.test.js` моделирует цикл: receipt → sale → stockIssue → payrollAccrual; проверяет остатки, движения, начисление и аудит.
 - Queue:
   - Очередь статус-экшенов (`queues/statusActionQueue.js`): DEV — in-memory, Prod — BullMQ/Redis; метрики — `/api/queue/status-actions/metrics`.
+  - Load/Perf: `tests/load/queues.cache.perf.test.js` — 10k смен статусов с авто‑действиями; пишет отчёты `storage/reports/queue-load-report.md` и `storage/reports/perf-report.md`.
+  - TTL‑кэш: замеры hits/misses и времени списков для `GET /api/statuses` и `GET /api/doc-templates`.
 
 ## Changelog
 - См. `CHANGELOG_TRAE.md` для детальной хронологии изменений.

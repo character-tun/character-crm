@@ -52,6 +52,8 @@
 ## Производительность
 - Легкие маршруты, отсутствие тяжелых ORM-абстракций.
 - Кэш активных FieldSchema с TTL (in-memory).
+- Load/Perf: `tests/load/queues.cache.perf.test.js` — 10k смен статусов; отчёты `storage/reports/queue-load-report.md`, `storage/reports/perf-report.md`.
+- TTL‑кэш: замеры hits/misses и времени списков для `GET /api/statuses` и `GET /api/doc-templates`.
 
 ## Скрипты
 - `npm test` — запуски Jest.

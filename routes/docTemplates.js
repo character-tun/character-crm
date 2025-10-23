@@ -16,21 +16,29 @@ try { DocTemplate = require('../models/DocTemplate'); } catch (e) { /* optional 
 router.use(requireRole('settings.docs:*'));
 
 router.get('/', async (req, res) => {
-  const cache = getCache('docTemplates');
-  const cached = cache.get('list');
-  if (cached) {
-    return res.json(cached);
-  }
+  try {
+    const cache = getCache('docTemplates');
+    const cached = cache.get('list');
+    if (cached) {
+      return res.json(cached);
+    }
 
-  if (DEV_MODE || !DocTemplate) {
-    const payload = { ok: true, items: TemplatesStore.listDocTemplates() };
+    if (DEV_MODE || !DocTemplate) {
+      const items = (function safeList() { try { return TemplatesStore.listDocTemplates(); } catch { return []; } }());
+      const payload = { ok: true, items };
+      cache.set('list', payload);
+      return res.json(payload);
+    }
+    const items = await DocTemplate.find().lean();
+    const payload = { ok: true, items };
     cache.set('list', payload);
-    return res.json(payload);
+    res.json(payload);
+  } catch (err) {
+    if (DEV_MODE) {
+      return res.json({ ok: true, items: [] });
+    }
+    return res.status(500).json({ msg: 'DOC_TEMPLATES_LIST_ERROR' });
   }
-  const items = await DocTemplate.find().lean();
-  const payload = { ok: true, items };
-  cache.set('list', payload);
-  res.json(payload);
 });
 
 router.post('/', async (req, res) => {

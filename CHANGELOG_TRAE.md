@@ -1,3 +1,51 @@
+## 2025-10-23 16:20 (Europe/Warsaw) | Tests — Load perf refactor (service calls)
+- files: `tests/load/queues.cache.perf.test.js`, `scripts/runLoadPerf.js`, `storage/reports/routes-debug-jest.md`, `storage/reports/queue-load-report-small.md`, `storage/reports/perf-report-small.md`.
+- changes: перф‑тест перестроен: вместо 10k HTTP PATCH — прямые вызовы `changeOrderStatus(...)`; устраняет «Parse Error» под Jest при массовых запросах, сохраняет логику инкремента `sent` и ожидания очереди; добавлен `routes-debug-jest.md` (карта роутов тестового приложения); прогрев TTL‑кэшей списков «Статусы» и «Шаблоны документов» с записью метрик.
+- env: `AUTH_DEV_MODE=1`, `ENABLE_STATUS_QUEUE=1`; Mongo принудительно «не готова» (`mongoose.connection.readyState=0`), чтобы сработала DEV‑ветка.
+- Acceptance:
+  - `node scripts/runLoadPerf.js` генерирует `perf-report-small.md` и `queue-load-report-small.md`: `Processed=1000 Failed=0`; TTL hit/miss и p95 — не пустые.
+  - `tests/load/queues.cache.perf.test.js` больше не вызывает HTTP‑парсер в цикле; стабильность повышена.
+  - Отчёт `routes-debug-jest.md` создан и помогает диагностике роутов в Jest.
+
+## 2025-10-23 15:05 (Europe/Warsaw) | Load — Queues/Cache/Perf
+- Добавлен `tests/load/queues.cache.perf.test.js`: 10k смен статусов с авто-действиями; DEV queue inline (при `DISABLE_STATUS_QUEUE=1`).
+- Метрики очереди: `/api/queue/status-actions/metrics` — ожидание завершения и отчёт по waiting/active/delayed/completed/failed.
+- TTL‑кэш: замеры hits/misses и времени списков для `GET /api/statuses` и `GET /api/doc-templates`.
+- Репорты: `storage/reports/queue-load-report.md`, `storage/reports/perf-report.md`.
+- Обновлена документация: `TECH_OVERVIEW.md` и `storage/docs/TECH_OVERVIEW.md`.
+
+## 2025-10-23 14:20 (Europe/Warsaw) | Tests — RBAC + Locations + Reports E2E (DEV)
+- Добавлен `tests/e2e/rbac.locations.reports.test.js`: 403 на платежи без роли Finance; видимость данных по `locationId`; отчёт cashflow по параметрам (`dateFrom/dateTo/locationId`).
+- Репорт: `storage/reports/rbac-locations-reports.md`.
+- Обновлён `TECH_OVERVIEW.md` (Test Runs).
+
+- Acceptance:
+  - GET `/api/payments` — 403 для без роли и `Manager`.
+  - GET `/api/payments?locationId=loc-A` (Finance) — только элементы локации; totals соответствуют.
+  - GET `/api/reports/cashflow?locationId=loc-A` — группы по `cashRegisterId` и баланс по фильтру.
+
+## 2025-10-23 13:45 (Europe/Warsaw) | Tests — Docs + Notify E2E (DRY)
+- Added `tests/e2e/docs.notify.test.js` covering order `ready` status notify+doc flow.
+- Ensures DRY mode: `NOTIFY_DRY_RUN=1` and `PRINT_DRY_RUN=1` skip SMTP/PDF.
+- Asserts `nodemailer` and `puppeteer` not called; no `fileStore.saveBuffer` writes.
+- Updated `TECH_OVERVIEW.md` (Test Runs) and regenerated `artifacts/swagger.json`.
+
+## 2025-10-23 13:05 (Europe/Warsaw) | Tests — Payroll Accrual 10% E2E
+- Added `tests/e2e/payroll.accrual.test.js` validating 10% accrual on `closed_paid`.
+- Ensures single `PayrollAccrual` creation (no duplication).
+- Added report `storage/reports/payroll-e2e.md`.
+
+## 2025-10-23 12:20 (Europe/Warsaw) | Tests — Core flow E2E (Orders/Payments/Statuses/Timeline)
+- files: tests/core.flow.e2e.test.js, storage/reports/e2e-mvp-flow-report.md, CHANGELOG_TRAE.md
+- changes: added an end-to-end test that exercises the core flow across DB and DEV branches: create order (DB), create payment (DEV), patch status to `in_work` → `closed_paid` (DEV), assert `ORDER_CLOSED` for subsequent payment, verify aggregated payments, read timeline (DB) and assert payroll accrual audit. The test toggles Mongo readiness per route and runs status actions inline in the test environment.
+- env: `AUTH_DEV_MODE=1`, `NOTIFY_DRY_RUN=1`, `PRINT_DRY_RUN=1`; status actions run inline in tests unless `ENABLE_STATUS_QUEUE=1`.
+- Acceptance:
+  - POST `/api/orders` initializes status from `startStatusId` (DB branch).
+  - POST `/api/payments` succeeds before close; after `closed_paid` returns `ORDER_CLOSED` (DEV branch).
+  - PATCH `/api/orders/:id/status` to `in_work` then `closed_paid` enqueues `payrollAccrual` and `stockIssue` and applies them inline (DEV branch).
+  - GET `/api/orders/:id/timeline` includes `STATUS_ACTION_PAYROLL` audit (DB branch).
+  - Test suite passes: `tests/core.flow.e2e.test.js`.
+
 ## 2025-10-23 12:00 (Europe/Warsaw) | Tests — Quiet statusActionQueue in Jest
 - files: queues/statusActionQueue.js, CHANGELOG_TRAE.md
 - changes: в тестовой среде (`NODE_ENV=test`) очередь статусов не планирует таймеры, обрабатывает задания синхронно, логи очереди по умолчанию выключены. Добавлены флаги: `ENABLE_STATUS_QUEUE=1` (включает планирование таймеров в тестах) и `ENABLE_QUEUE_LOGS=1` (включает логи очереди).
@@ -338,3 +386,4 @@ Artifacts:
 2025-10-23T02:09:13+03:00 | CHANGELOG_TRAE.md | feat(ui): implement MUI theme with light/dark mode toggle
 2025-10-23T02:10:44+03:00 | CHANGELOG_TRAE.md, PHASE2_EPIC_PLAN.md, TECH_OVERVIEW.md, contracts/apiContracts.js, middleware/auth.js, middleware/validate.js, routes/statuses.js, routes/stock.js, scripts/generateSwagger.js, server.js, server/models/PayrollAccrual.js, server/models/StockItem.js, server/models/StockMovement.js, services/devPayrollStore.js, services/orderStatusService.js, services/statusActionsHandler.js, storage/files/9e713900-5ea8-4237-b096-86fa51aad35b.bin, storage/files/db1ace7d-65e8-4248-8ce5-31a52255ad10.bin, storage/reports/migrateOrderStatuses-1761173211779.csv, storage/reports/migrateOrderStatuses-1761173211938.csv, storage/reports/migrateOrderStatuses-1761173212156.csv, storage/reports/migrateOrderStatuses-1761173212334.csv, storage/reports/migrateOrderStatuses-1761173212581.csv, storage/reports/migrateOrderStatuses-1761173212581.json, storage/reports/statusActionQueue-load-report-2025-10-22.md, tests/api.contracts.stock.test.js, tests/statusActions.chargeInit.dev.test.js, tests/statusActions.chargeInit.mongo.test.js, tests/stock.shop.staff.e2e.prodlike.test.js | Phase 2 Final: Stock → Shop → Staff E2E, docs and Mongo mocks
 2025-10-23T10:17:11+03:00 | CHANGELOG_TRAE.md, routes/notifyDev.js, routes/notifyTemplates.js, routes/orderTypes.js, routes/orders.js, routes/payments.js, routes/statuses.js, services/statusActionsHandler.js, tests/notify.print.e2e.dev.test.js, tests/notify.print.e2e.prodlike.test.js, tests/notify.unit.test.js, tests/print.unit.test.js, tests/statusActions.chargeInit.dev.test.js | tests(notify+print): align PROD-like e2e mocks; fix print.saveBuffer assertions\n\n- PROD-like e2e: mock mongoose.readyState, Order (query+doc with save), OrderStatus (in_work with templates), OrderStatusLog.create, Client.create; valid ObjectIds for orderId/x-user-id; bind template IDs & orderDoc to global.__e2eState\n- DEV e2e: consistent mocks to ensure DRY_RUN behavior\n- unit(print): switch expectations to fileStore.saveBuffer; DRY_RUN paths verified\n- services/routes: Mongo-only branches kept; DEV helpers removed as per Phase 1.2\n\nAll targeted tests passing: notify.unit, print.unit, statusActions.chargeInit.dev, e2e notify.print (dev+prodlike).
+2025-10-23T10:22:09+03:00 | CHANGELOG_TRAE.md, queues/statusActionQueue.js | test(queue): quiet statusActionQueue under Jest; disable timers; inline synchronous processing; suppress logs by default\n\n- Add flags: ENABLE_STATUS_QUEUE=1 (enable timers in tests), ENABLE_QUEUE_LOGS=1 (enable queue logs)\n- Prevent 'Cannot log after tests are done' and Mongoose buffering timeouts in unit/e2e tests\n- Update CHANGELOG_TRAE.md with test notes

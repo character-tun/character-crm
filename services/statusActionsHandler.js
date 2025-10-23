@@ -182,6 +182,15 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const OrderStatusLog = require('../models/OrderStatusLog');
 
+// DEV in-memory order state helpers (used when Mongo is not available in tests)
+const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
+const __devOrders = new Map();
+function mongoReady() { return !!(mongoose.connection && mongoose.connection.readyState === 1 && mongoose.connection.db); }
+function getDevState(orderId) { const st = __devOrders.get(String(orderId)); return st ? { ...st } : null; }
+function setDevState(orderId, state) { const prev = getDevState(orderId) || {}; __devOrders.set(String(orderId), { ...prev, ...state }); }
+function isPaymentsLocked(orderId) { const st = getDevState(orderId); return !!(st && (st.paymentsLocked === true || (st.closed && st.closed.success === false))); }
+function __devReset() { __devOrders.clear(); }
+
 // Stock models
 let StockItem; let StockMovement;
 try { StockItem = require('../server/models/StockItem'); } catch (e) {}
@@ -204,6 +213,15 @@ async function markCloseWithoutPayment({
     orderId, userId, statusCode, logId,
   });
   const now = new Date();
+
+  // DEV fallback: update in-memory state when Mongo is not ready
+  if (!mongoReady()) {
+    setDevState(orderId, {
+      closed: { success: false, at: now.toISOString(), by: String(userId) },
+      paymentsLocked: true,
+    });
+    return { ok: true };
+  }
 
   try {
     const order = await Order.findById(orderId);
@@ -507,5 +525,5 @@ async function handleStatusActions({
 }
 
 module.exports = {
-  handleStatusActions, markCloseWithoutPayment,
+  handleStatusActions, markCloseWithoutPayment, getDevState, setDevState, isPaymentsLocked, __devReset,
 };

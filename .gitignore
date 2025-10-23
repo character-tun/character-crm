@@ -8,3 +8,5 @@ npm-debug.log*
 coverage/
 client/coverage/
 artifacts/
+storage/files/
+storage/reports/
