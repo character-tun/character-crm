@@ -20,17 +20,12 @@ function httpError(statusCode, message) {
 }
 
 async function validateActionsReferences(actions = []) {
-  const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
   for (const a of actions) {
     if (!a || typeof a !== 'object') continue;
     if (a.type === 'notify') {
       const id = a.templateId;
       if (!id) return { type: 'notify', id: null };
-      if (!mongoReady || !NotifyTemplate) {
-        const tpl = TemplatesStore.getNotifyTemplate(id);
-        if (!tpl) return { type: 'notify', id };
-        continue;
-      }
+      if (!NotifyTemplate) return { type: 'notify', id };
       const byId = await NotifyTemplate.findById(id).lean().catch(() => null);
       if (byId) continue;
       const byCode = await NotifyTemplate.findOne({ code: id }).lean().catch(() => null);
@@ -38,11 +33,7 @@ async function validateActionsReferences(actions = []) {
     } else if (a.type === 'print') {
       const id = a.docId;
       if (!id) return { type: 'print', id: null };
-      if (!mongoReady || !DocTemplate) {
-        const tpl = TemplatesStore.getDocTemplate(id);
-        if (!tpl) return { type: 'print', id };
-        continue;
-      }
+      if (!DocTemplate) return { type: 'print', id };
       const byId = await DocTemplate.findById(id).lean().catch(() => null);
       if (byId) continue;
       const byCode = await DocTemplate.findOne({ code: id }).lean().catch(() => null);
@@ -61,36 +52,6 @@ router.get('/', requireAnyRole(['Admin', 'settings.statuses:list']), async (req,
       return res.json(cached);
     }
 
-    // In DEV auth mode without Mongo connection, return in-memory defaults
-    const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
-    if (DEV_MODE && (mongoose.connection.readyState !== 1)) {
-      const { randomUUID } = require('crypto');
-      const defaults = [
-        {
-          _id: randomUUID(), code: 'new', name: 'Новый', color: '#4B5563', group: 'draft', order: 0, actions: [], system: true,
-        },
-        {
-          _id: randomUUID(), code: 'in_work', name: 'В работе', color: '#2563EB', group: 'in_progress', order: 0, actions: [], system: false,
-        },
-        {
-          _id: randomUUID(), code: 'done', name: 'Завершён', color: '#16A34A', group: 'closed_success', order: 0, actions: ['stockIssue'], system: true,
-        },
-        {
-          _id: randomUUID(), code: 'cancelled', name: 'Отменён', color: '#DC2626', group: 'closed_fail', order: 0, actions: [], system: true,
-        },
-      ];
-      const byGroupDev = new Map();
-      for (const s of defaults) {
-        const key = s.group || '';
-        if (!byGroupDev.has(key)) byGroupDev.set(key, []);
-        byGroupDev.get(key).push(s);
-      }
-      const groupsDev = Array.from(byGroupDev.entries()).map(([group, items]) => ({ group, items }));
-      groupsDev.sort((a, b) => (a.group || '').localeCompare(b.group || ''));
-      cache.set('list', groupsDev);
-      return res.json(groupsDev);
-    }
-
     const statuses = await OrderStatus.find({}).sort({ group: 1, order: 1 }).lean();
     const byGroup = new Map();
     for (const s of statuses) {
@@ -99,7 +60,6 @@ router.get('/', requireAnyRole(['Admin', 'settings.statuses:list']), async (req,
       byGroup.get(key).push(s);
     }
     const groups = Array.from(byGroup.entries()).map(([group, items]) => ({ group, items }));
-    // ensure sorted by group asc
     groups.sort((a, b) => (a.group || '').localeCompare(b.group || ''));
     cache.set('list', groups);
     return res.json(groups);

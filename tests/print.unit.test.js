@@ -1,72 +1,104 @@
-describe('print adapter unit tests', () => {
+describe('print adapter unit tests (Mongo-only, DRY_RUN)', () => {
   beforeEach(() => {
     jest.resetModules();
+    process.env.AUTH_DEV_MODE = '1';
   });
 
-  test('DRY_RUN writes to DEV outbox and does not create files', async () => {
-    process.env.AUTH_DEV_MODE = '1';
+  test('DRY_RUN=1: does not invoke puppeteer or fileStore', async () => {
     process.env.PRINT_DRY_RUN = '1';
 
-    const TemplatesStore = require('../services/templatesStore');
-    const {
-      handleStatusActions, __devReset, getOutbox, getDevState,
-    } = require('../services/statusActionsHandler');
-    __devReset();
+    const launch = jest.fn();
+    jest.doMock('puppeteer', () => ({ launch }), { virtual: true });
 
-    const tpl = TemplatesStore.createDocTemplate({
-      code: 'invoice', name: 'Invoice', bodyHtml: '<h1>Order {{order.id}}</h1>', variables: ['order.id'],
+    const saveBuffer = jest.fn().mockResolvedValue('file-1');
+    const getMeta = jest.fn(() => ({ name: 'order.pdf', size: 0, mime: 'application/pdf', createdAt: new Date().toISOString() }));
+    jest.doMock('../services/fileStore', () => ({ saveBuffer, getMeta }), { virtual: true });
+
+    const tplDoc = { _id: 'tpl-print-1', code: 'print-order', name: 'Print Order', html: '<p>Print {{order.id}}</p>' };
+    jest.doMock('../models/DocTemplate', () => ({
+      findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue(id === 'tpl-print-1' ? tplDoc : null) })),
+      findOne: jest.fn(({ code }) => ({ lean: jest.fn().mockResolvedValue(code === 'print-order' ? tplDoc : null) })),
+    }));
+
+    const orderDoc = { _id: 'ord-print-dry', files: [], save: jest.fn().mockResolvedValue(true) };
+    jest.doMock('../models/Order', () => ({
+      findById: jest.fn(async () => orderDoc),
+    }));
+
+    jest.doMock('../models/OrderStatusLog', () => ({ create: jest.fn().mockResolvedValue({ _id: 'log1' }) }));
+
+    const { handleStatusActions } = require('../services/statusActionsHandler');
+
+    const res = await handleStatusActions({
+      orderId: orderDoc._id,
+      statusCode: 'new',
+      actions: [{ type: 'print', docId: 'tpl-print-1' }],
+      logId: 'l1',
+      userId: 'u1',
     });
-    const orderId = 'ord-print-1';
 
-    await handleStatusActions({
-      orderId, statusCode: 'in_work', actions: [{ type: 'print', docId: tpl._id }], logId: 'pl1', userId: 'u1',
-    });
-
-    const out = getOutbox();
-    const last = out[out.length - 1];
-    expect(last && last.type).toBe('print');
-    expect(last && last.orderId).toBe(orderId);
-    expect(last && last.htmlPreview).toContain(orderId);
-
-    const st = getDevState(orderId);
-    const files = Array.isArray(st?.files) ? st.files : [];
-    expect(files.length).toBe(0);
+    expect(res && res.ok).toBe(true);
+    expect(res.processed).toBe(1);
+    expect(launch).not.toHaveBeenCalled();
+    expect(saveBuffer).not.toHaveBeenCalled();
+    expect(orderDoc.save).not.toHaveBeenCalled();
   });
 
-  test('non-DRY generates and saves PDF (puppeteer mocked)', async () => {
+  test('DRY_RUN=0: generates PDF via puppeteer and saves via fileStore', async () => {
     jest.resetModules();
     process.env.AUTH_DEV_MODE = '1';
     process.env.PRINT_DRY_RUN = '0';
 
-    const pdfBuffer = Buffer.from('PDF');
-    jest.doMock('puppeteer', () => ({
-      launch: async () => ({
-        newPage: async () => ({ setContent: async () => {}, pdf: async () => pdfBuffer }),
-        close: async () => {},
-      }),
-    }), { virtual: true });
+    const pdfBuffer = Buffer.from('%PDF-1.4 mock');
+    const page = {
+      setContent: jest.fn().mockResolvedValue(undefined),
+      pdf: jest.fn().mockResolvedValue(pdfBuffer),
+      close: jest.fn().mockResolvedValue(undefined),
+    };
+    const browser = {
+      newPage: jest.fn().mockResolvedValue(page),
+      close: jest.fn().mockResolvedValue(undefined),
+    };
+    const launch = jest.fn().mockResolvedValue(browser);
+    jest.doMock('puppeteer', () => ({ launch }), { virtual: true });
 
-    const TemplatesStore = require('../services/templatesStore');
-    const {
-      handleStatusActions, __devReset, getDevState, getOutbox,
-    } = require('../services/statusActionsHandler');
-    __devReset();
+    const saveBuffer = jest.fn().mockResolvedValue('file-2');
+    const getMeta = jest.fn(() => ({ name: 'order.pdf', size: pdfBuffer.length, mime: 'application/pdf', createdAt: new Date().toISOString() }));
+    jest.doMock('../services/fileStore', () => ({ saveBuffer, getMeta }), { virtual: true });
 
-    const tpl = TemplatesStore.createDocTemplate({
-      code: 'act', name: 'Act', bodyHtml: '<h1>Order {{order.id}}</h1>', variables: ['order.id'],
+    const tplDoc = { _id: 'tpl-print-2', code: 'print-order-2', name: 'Print Order 2', html: '<p>Order {{order.id}} total: {{order.total}}</p>' };
+    jest.doMock('../models/DocTemplate', () => ({
+      findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue(id === 'tpl-print-2' ? tplDoc : null) })),
+      findOne: jest.fn(({ code }) => ({ lean: jest.fn().mockResolvedValue(code === 'print-order-2' ? tplDoc : null) })),
+    }));
+
+    const orderDoc = { _id: 'ord-print-real', files: [], total: 123.45, save: jest.fn().mockResolvedValue(true) };
+    jest.doMock('../models/Order', () => ({
+      findById: jest.fn(async () => orderDoc),
+    }));
+
+    jest.doMock('../models/OrderStatusLog', () => ({ create: jest.fn().mockResolvedValue({ _id: 'log2' }) }));
+
+    const { handleStatusActions } = require('../services/statusActionsHandler');
+
+    const res = await handleStatusActions({
+      orderId: orderDoc._id,
+      statusCode: 'in_work',
+      actions: [{ type: 'print', docId: 'tpl-print-2' }],
+      logId: 'l2',
+      userId: 'u2',
     });
-    const orderId = 'ord-print-2';
 
-    await handleStatusActions({
-      orderId, statusCode: 'in_work', actions: [{ type: 'print', docId: tpl._id }], logId: 'pl2', userId: 'u2',
-    });
+    expect(res && res.ok).toBe(true);
+    expect(res.processed).toBe(1);
 
-    const st = getDevState(orderId);
-    const files = Array.isArray(st?.files) ? st.files : [];
-    expect(files.length).toBe(1);
-    expect(files[0].mime).toBe('application/pdf');
+    expect(launch).toHaveBeenCalledTimes(1);
+    expect(page.setContent).toHaveBeenCalledTimes(1);
+    expect(page.pdf).toHaveBeenCalledTimes(1);
+    expect(saveBuffer).toHaveBeenCalledTimes(1);
 
-    const out = getOutbox();
-    expect(out.some((i) => i && i.type === 'print' && i.orderId === orderId)).toBe(false);
+    // Order updated with attached file and saved
+    expect(orderDoc.files.length).toBeGreaterThan(0);
+    expect(orderDoc.save).toHaveBeenCalledTimes(1);
   });
 });

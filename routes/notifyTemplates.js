@@ -3,9 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { requireRole } = require('../middleware/auth');
 
-const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 
-const TemplatesStore = require('../services/templatesStore');
 const OrderStatus = require('../models/OrderStatus');
 
 let NotifyTemplate;
@@ -15,9 +13,6 @@ try { NotifyTemplate = require('../models/NotifyTemplate'); } catch (e) { /* opt
 router.use(requireRole('settings.notify:*'));
 
 router.get('/', async (req, res) => {
-  if (DEV_MODE || !NotifyTemplate) {
-    return res.json({ ok: true, items: TemplatesStore.listNotifyTemplates() });
-  }
   const items = await NotifyTemplate.find().lean();
   res.json({ ok: true, items });
 });
@@ -29,12 +24,6 @@ router.post('/', async (req, res) => {
   if (!code || !name || !subject || !bodyHtml) {
     return res.status(400).json({ error: 'VALIDATION_ERROR' });
   }
-  if (DEV_MODE || !NotifyTemplate) {
-    const tpl = TemplatesStore.createNotifyTemplate({
-      code, name, channel: 'email', subject, bodyHtml, variables,
-    });
-    return res.json({ ok: true, item: tpl });
-  }
   const exists = await NotifyTemplate.findOne({ code });
   if (exists) return res.status(409).json({ error: 'CODE_EXISTS' });
   const tpl = await NotifyTemplate.create({
@@ -45,11 +34,6 @@ router.post('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  if (DEV_MODE || !NotifyTemplate) {
-    const item = TemplatesStore.getNotifyTemplate(id);
-    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.json({ ok: true, item });
-  }
   const item = await NotifyTemplate.findById(id).lean();
   if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
   res.json({ ok: true, item });
@@ -58,11 +42,6 @@ router.get('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const patch = req.body || {};
-  if (DEV_MODE || !NotifyTemplate) {
-    const item = TemplatesStore.updateNotifyTemplate(id, patch);
-    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.json({ ok: true, item });
-  }
   const item = await NotifyTemplate.findByIdAndUpdate(id, patch, { new: true }).lean();
   if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
   res.json({ ok: true, item });
@@ -70,14 +49,8 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  let item;
-  if (DEV_MODE || !NotifyTemplate) {
-    item = TemplatesStore.getNotifyTemplate(id);
-    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-  } else {
-    item = await NotifyTemplate.findById(id);
-    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-  }
+  const item = await NotifyTemplate.findById(id);
+  if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
   try {
     const filterById = { actions: { $elemMatch: { type: 'notify', templateId: id } } };
     const filterByCode = item.code ? { actions: { $elemMatch: { type: 'notify', templateId: item.code } } } : null;
@@ -93,21 +66,10 @@ router.delete('/:id', async (req, res) => {
   } catch (e) {
     console.warn('[notifyTemplates.delete] OrderStatus.exists check failed:', e && e.message ? e.message : e);
   }
-  if (DEV_MODE || !NotifyTemplate) {
-    const ok = TemplatesStore.deleteNotifyTemplate(id);
-    if (!ok) return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.json({ ok: true });
-  }
   await NotifyTemplate.deleteOne({ _id: id });
   res.json({ ok: true });
 });
 
-// DEV helper: outbox view when dry-run
-const { getOutbox } = require('../services/statusActionsHandler');
 
-router.get('/__dev/outbox', (req, res) => {
-  if (!DEV_MODE) return res.status(404).json({ error: 'NOT_AVAILABLE' });
-  res.json({ ok: true, items: getOutbox ? getOutbox() : [] });
-});
 
 module.exports = router;

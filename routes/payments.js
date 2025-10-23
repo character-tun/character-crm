@@ -8,11 +8,10 @@ let Order; try { Order = require('../models/Order'); } catch (e) {}
 let Payment; try { Payment = require('../server/models/Payment'); } catch (e) {}
 let CashRegister; try { CashRegister = require('../server/models/CashRegister'); } catch (e) {}
 
-const { isPaymentsLocked, getDevState } = require('../services/statusActionsHandler');
+
 const { requirePermission, hasPermission } = require('../middleware/auth');
 
-const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
-const mongoReady = () => mongoose.connection && mongoose.connection.readyState === 1;
+
 
 const httpError = (statusCode, message) => {
   const err = new Error(message);
@@ -21,8 +20,7 @@ const httpError = (statusCode, message) => {
 };
 
 // DEV payments store
-const devPaymentsStore = require('../services/devPaymentsStore');
-const nextId = () => devPaymentsStore.nextId();
+
 
 // Validation schemas
 /* Validation schemas moved to middleware/validate.js */
@@ -65,64 +63,22 @@ function buildMatch(query) {
   return match;
 }
 
-function filterMemItems(items, query) {
-  const q = query || {};
-  return items.filter((it) => {
-    if (q.type && it.type !== q.type) return false;
-    if (q.orderId && String(it.orderId) !== String(q.orderId)) return false;
-    if (q.cashRegisterId && String(it.cashRegisterId) !== String(q.cashRegisterId)) return false;
-    if (q.locationId && String(it.locationId) !== String(q.locationId)) return false;
-    if (q.dateFrom && !(new Date(it.createdAt) >= new Date(q.dateFrom))) return false;
-    if (q.dateTo && !(new Date(it.createdAt) <= new Date(q.dateTo))) return false;
-    if (q.articlePath) {
-      const s = String(q.articlePath);
-      if (s.includes('/')) {
-        const segs = s.split('/').map((t) => t.trim()).filter(Boolean);
-        for (let i = 0; i < segs.length; i += 1) {
-          if (String((it.articlePath || [])[i] || '') !== segs[i]) return false;
-        }
-      } else {
-        if (!Array.isArray(it.articlePath) || !it.articlePath.includes(s)) return false;
-      }
-    }
-    return true;
-  });
-}
-
-function computeTotalsArray(items) {
-  const totals = { income: 0, expense: 0, refund: 0, balance: 0 };
-  items.forEach((it) => {
-    const amt = Number(it.amount || 0);
-    if (it.type === 'income') totals.income += amt;
-    else if (it.type === 'expense') totals.expense += amt;
-    else if (it.type === 'refund') totals.refund += amt;
-  });
-  totals.balance = totals.income - totals.expense - totals.refund;
-  return totals;
-}
 
 // GET /api/payments — list with filters and totals (payments.read)
-router.get('/', requirePermission('payments.read'), async (req, res) => {
-  const limit = Math.max(1, Math.min(500, parseInt(req.query.limit, 10) || 50));
-  const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
-
-  if (DEV_MODE && !mongoReady()) {
-    const filtered = filterMemItems(devPaymentsStore.getItems(), req.query);
-    const items = filtered
-      .slice()
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(offset, offset + limit);
-    const totals = computeTotalsArray(filtered);
-    return res.json({ ok: true, items, totals });
-  }
-  if (!Payment) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
+router.get('/', requirePermission('payments.read'), async (req, res, next) => {
   try {
+    const limit = Math.max(1, Math.min(500, parseInt(req.query.limit, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+
+    if (!Payment) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
+
     const match = buildMatch(req.query);
     const items = await Payment.find(match)
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
       .lean();
+
     const totalsAgg = await Payment.aggregate([
       { $match: match },
       { $group: { _id: '$type', sum: { $sum: '$amount' } } },
@@ -134,65 +90,63 @@ router.get('/', requirePermission('payments.read'), async (req, res) => {
       if (g._id === 'refund') totals.refund = g.sum || 0;
     });
     totals.balance = totals.income - totals.expense - totals.refund;
+
     return res.json({ ok: true, items, totals });
   } catch (err) {
-    return res.status(500).json({ error: 'SERVER_ERROR' });
+    return next(err);
   }
 });
 
 // POST /api/payments — create income|expense (payments.write)
 router.post('/', requirePermission('payments.write'), validate(schemas.paymentCreateSchema), async (req, res, next) => {
   try {
+    if (!Payment || !Order || !CashRegister) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
     const body = req.body || {};
     const { orderId, type, articlePath, amount, cashRegisterId, method, note, locationId } = body;
 
-    // DEV fallback first: allow minimal payloads and return contract-friendly response
-    if (DEV_MODE && !mongoReady()) {
-      // Minimal required field for DEV branch
-      if (!orderId) return next(httpError(400, 'VALIDATION_ERROR'));
-
-      if (orderId) {
-        const st = getDevState(orderId);
-        const locked = !!(st && (st.paymentsLocked || (st.closed && st.closed.success === false)));
-        if (locked) return next(httpError(400, 'PAYMENTS_LOCKED'));
-        if (st && st.closed && st.closed.success === true) return next(httpError(400, 'ORDER_CLOSED'));
-      }
-      const item = {
-        _id: nextId(),
-        orderId,
-        type: typeof type === 'string' ? type : 'income',
-        articlePath: Array.isArray(articlePath) ? articlePath : [],
-        amount: typeof amount === 'number' ? amount : 0,
-        cashRegisterId,
-        method,
-        note,
-        locationId,
-        createdBy: req.user && req.user.id,
-        locked: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      devPaymentsStore.pushItem(item);
-      return res.status(200).json({ ok: true, id: item._id });
+    const order = await Order.findById(orderId).lean();
+    if (!order) return next(httpError(404, 'Order not found'));
+    if (order.paymentsLocked === true || (order.closed && order.closed.success === false)) {
+      return next(httpError(400, 'PAYMENTS_LOCKED'));
+    }
+    if (order.closed && order.closed.success === true) {
+      return next(httpError(400, 'ORDER_CLOSED'));
     }
 
-    // Mongo-like branch: only enforce order constraints; respond with minimal contract shape
-    if (!Order) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const t = typeof type === 'string' && ['income','expense','refund'].includes(type) ? type : 'income';
+    const ap = Array.isArray(articlePath) && articlePath.length > 0
+      ? articlePath
+      : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи','Касса']));
+    const amt = typeof amount === 'number' ? amount : 0;
+    if (!(amt > 0)) return next(httpError(400, 'VALIDATION_ERROR'));
 
-    let order = null;
-    if (orderId) {
-      order = await Order.findById(orderId).lean();
-      if (!order) return next(httpError(404, 'Order not found'));
-      if (order.paymentsLocked === true || (order.closed && order.closed.success === false)) {
-        return next(httpError(400, 'PAYMENTS_LOCKED'));
+    let cashId = cashRegisterId;
+    if (cashId) {
+      const cash = await CashRegister.findById(cashId).lean();
+      if (!cash) return next(httpError(404, 'CASH_NOT_FOUND'));
+    } else {
+      let cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      if (!cash) {
+        cash = await CashRegister.findOne({ isSystem: true, code: 'main' }).lean().catch(() => null);
       }
-      if (order.closed && order.closed.success === true) {
-        return next(httpError(400, 'ORDER_CLOSED'));
-      }
+      if (!cash) { cash = await CashRegister.findOne({}).lean().catch(() => null); }
+      if (!cash || !cash._id) return next(httpError(404, 'CASH_NOT_FOUND'));
+      cashId = cash._id;
     }
 
-    // Skip DB persistence in test-like environments; return stub id to satisfy contract tests
-    return res.status(200).json({ ok: true, id: nextId() });
+    const payload = {
+      orderId: new mongoose.Types.ObjectId(orderId),
+      type: t,
+      articlePath: ap,
+      amount: amt,
+      cashRegisterId: new mongoose.Types.ObjectId(cashId),
+      method: typeof method === 'string' ? method : 'manual',
+      note,
+      createdBy: req.user && req.user.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+      locationId: locationId ? new mongoose.Types.ObjectId(locationId) : (order.locationId ? new mongoose.Types.ObjectId(order.locationId) : undefined),
+    };
+    const created = await Payment.create(payload);
+    return res.status(200).json({ ok: true, id: created._id });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
     return next(err);
@@ -202,53 +156,48 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
 // POST /api/payments/refund — create refund (payments.write)
 router.post('/refund', requirePermission('payments.write'), validate(schemas.paymentRefundSchema), async (req, res, next) => {
   try {
+    if (!Payment || !Order || !CashRegister) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
     const body = req.body || {};
     const { orderId, articlePath, amount, cashRegisterId, method, note, locationId } = body;
 
-    // DEV fallback first: allow minimal payloads and return contract-friendly response
-    if (DEV_MODE && !mongoReady()) {
-      if (orderId) {
-        const st = getDevState(orderId);
-        const locked = !!(st && (st.paymentsLocked || (st.closed && st.closed.success === false)));
-        if (locked) return next(httpError(400, 'PAYMENTS_LOCKED'));
-        if (st && st.closed && st.closed.success === true) return next(httpError(400, 'ORDER_CLOSED'));
-      }
-      const item = {
-        _id: nextId(),
-        orderId,
-        type: 'refund',
-        articlePath: Array.isArray(articlePath) ? articlePath : [],
-        amount: typeof amount === 'number' ? amount : 0,
-        cashRegisterId,
-        method,
-        note,
-        locationId,
-        createdBy: req.user && req.user.id,
-        locked: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      devPaymentsStore.pushItem(item);
-      return res.status(200).json({ ok: true, id: item._id });
+    const order = await Order.findById(orderId).lean();
+    if (!order) return next(httpError(404, 'Order not found'));
+    if (order.paymentsLocked === true || (order.closed && order.closed.success === false)) {
+      return next(httpError(400, 'PAYMENTS_LOCKED'));
+    }
+    if (order.closed && order.closed.success === true) {
+      return next(httpError(400, 'ORDER_CLOSED'));
     }
 
-    // Mongo-like branch: only enforce order constraints; respond with minimal contract shape
-    if (!Order) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const ap = Array.isArray(articlePath) && articlePath.length > 0 ? articlePath : ['Возвраты'];
+    const amt = typeof amount === 'number' ? amount : 0;
+    if (!(amt > 0)) return next(httpError(400, 'VALIDATION_ERROR'));
 
-    let order = null;
-    if (orderId) {
-      order = await Order.findById(orderId).lean();
-      if (!order) return next(httpError(404, 'Order not found'));
-      if (order.paymentsLocked === true || (order.closed && order.closed.success === false)) {
-        return next(httpError(400, 'PAYMENTS_LOCKED'));
-      }
-      if (order.closed && order.closed.success === true) {
-        return next(httpError(400, 'ORDER_CLOSED'));
-      }
+    let cashId = cashRegisterId;
+    if (cashId) {
+      const cash = await CashRegister.findById(cashId).lean();
+      if (!cash) return next(httpError(404, 'CASH_NOT_FOUND'));
+    } else {
+      let cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      if (!cash) { cash = await CashRegister.findOne({ isSystem: true, code: 'main' }).lean().catch(() => null); }
+      if (!cash) { cash = await CashRegister.findOne({}).lean().catch(() => null); }
+      if (!cash || !cash._id) return next(httpError(404, 'CASH_NOT_FOUND'));
+      cashId = cash._id;
     }
 
-    // Skip DB persistence in test-like environments; return stub id to satisfy contract tests
-    return res.status(200).json({ ok: true, id: nextId() });
+    const payload = {
+      orderId: new mongoose.Types.ObjectId(orderId),
+      type: 'refund',
+      articlePath: ap,
+      amount: amt,
+      cashRegisterId: new mongoose.Types.ObjectId(cashId),
+      method: typeof method === 'string' ? method : 'manual',
+      note,
+      createdBy: req.user && req.user.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+      locationId: locationId ? new mongoose.Types.ObjectId(locationId) : (order.locationId ? new mongoose.Types.ObjectId(order.locationId) : undefined),
+    };
+    const created = await Payment.create(payload);
+    return res.status(200).json({ ok: true, id: created._id });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
     return next(err);
@@ -261,24 +210,6 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
     const { id } = req.params;
     const patch = req.body || {};
 
-    if (DEV_MODE && !mongoReady()) {
-      const items = devPaymentsStore.getItems();
-      const idx = items.findIndex((i) => String(i._id) === String(id));
-      if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
-      const current = items[idx];
-      if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
-      // Guard by order state if available
-      if (current.orderId) {
-        const st = getDevState(current.orderId);
-        const locked = !!(st && (st.paymentsLocked || (st.closed && st.closed.success === false)));
-        if (locked) return next(httpError(403, 'PAYMENTS_LOCKED'));
-        if (st && st.closed && st.closed.success === true) return next(httpError(403, 'ORDER_CLOSED'));
-      }
-      const nextItem = { ...current, ...patch, updatedAt: new Date().toISOString() };
-      items[idx] = nextItem;
-      return res.json({ ok: true, item: nextItem });
-    }
-
     if (!Payment || !Order || !CashRegister) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
 
     const current = await Payment.findById(id).lean();
@@ -286,7 +217,6 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
 
     if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
 
-    // Order constraints
     if (current.orderId) {
       const order = await Order.findById(current.orderId).lean();
       if (!order) return next(httpError(404, 'Order not found'));
@@ -298,11 +228,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
       }
     }
 
-    if (typeof patch.type === 'string' && !['income','expense','refund'].includes(patch.type)) {
-      return next(httpError(400, 'VALIDATION_ERROR'));
-    }
     if (typeof patch.type === 'string') {
-      // disallow changing type
       return next(httpError(400, 'VALIDATION_ERROR'));
     }
 
@@ -328,14 +254,6 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
 router.post('/:id/lock', requirePermission('payments.lock'), async (req, res, next) => {
   try {
     const id = String(req.params.id);
-    if (DEV_MODE && !mongoReady()) {
-      const item = devPaymentsStore.getItems().find((p) => String(p._id) === id);
-      if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-      item.locked = true;
-      item.lockedAt = new Date();
-      item.updatedAt = new Date();
-      return res.json({ ok: true, item });
-    }
     if (!Payment) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
     const payment = await Payment.findById(id);
     if (!payment) return res.status(404).json({ error: 'NOT_FOUND' });

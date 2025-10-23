@@ -1,3 +1,24 @@
+## 2025-10-23 10:30 (Europe/Warsaw) | Tests — DRY_RUN & Mongo-only Notify/Print
+- files: tests/notify.unit.test.js, tests/print.unit.test.js, tests/notify.print.e2e.dev.test.js, tests/notify.print.e2e.prodlike.test.js, tests/statusActions.chargeInit.dev.test.js, CHANGELOG_TRAE.md
+- changes: тесты переписаны под Mongo-only и флаги DRY_RUN. Убраны зависимости от DEV outbox и TemplatesStore. В unit‑тестах мокаются модели и SMTP/puppeteer; в DEV E2E проверяется отсутствие вызовов SMTP/puppeteer и отсутствие файлов; в PROD‑like E2E проверяется отправка письма и доступность PDF через `/api/files/:id`.
+- Acceptance:
+  - `NOTIFY_DRY_RUN=1` и `PRINT_DRY_RUN=1` — nodemailer/puppeteer не вызываются; `/api/orders/:id/files` возвращает пусто.
+  - `NOTIFY_DRY_RUN=0` и `PRINT_DRY_RUN=0` — отправка SMTP один раз; PDF сохраняется и скачивается.
+  - `chargeInit` в DEV — создаёт платёж при незаблокированных заказах; при `closeWithoutPayment` бросает `PAYMENTS_LOCKED`.
+
+## 2025-10-22 17:05 (Europe/Warsaw) | Phase 1.2 — Remove DEV branches, Mongo-only Status Actions
+- files: services/statusActionsHandler.js, routes/notifyDev.js, routes/notifyTemplates.js, CHANGELOG_TRAE.md
+- changes: удалены DEV-ветки, memFlags/devOutbox, TemplatesStore; notify/print и выбор шаблонов теперь строго Mongo; issueStockFromOrder требует Mongo‑модели; убраны экспорты DEV‑хелперов (getOutbox, getDevState, __devReset, isPaymentsLocked). В routes/notifyTemplates.js удалён TemplatesStore и DEV endpoint `/__dev/outbox`; `/api/notify/dev/outbox` выключен (404). Аудит и fileStore остаются Mongo‑only.
+- scripts: добавлен scripts/run-dev-memory.js — поднимает in-memory Mongo + DEV‑авторизацию и mem‑очередь; удобен для проверки API без реальной Mongo/Redis.
+- Acceptance:
+  - Сервер поднят через `node scripts/run-dev-memory.js`; публичный `/api/public/status` отвечает `ok`.
+  - DEV‑логин `/api/auth/login` возвращает `accessToken`.
+  - GET `/api/order-types` → `{ ok:true, items:[] }`.
+  - GET `/api/statuses` → `[]`.
+  - GET `/api/payments` → `{ ok:true, items:[], totals:{ ... } }`.
+  - GET `/api/notify/templates` → `{ ok:true, items:[...] }`.
+  - GET `/api/notify/dev/outbox` → `404 NOT_AVAILABLE`.
+
 ## 2025-10-22 16:50 (Europe/Warsaw) | Phase 2 Final — Stock + Shop + Staff E2E
 - files: tests/stock.shop.staff.e2e.prodlike.test.js, CHANGELOG_TRAE.md, TECH_OVERVIEW.md
 - changes: добавлен PROD-like e2e-тест полного цикла: поступление товара (DEV API) → продажа (DEV Payments) → списание по заказу (Mongo-моки моделей) → начисление сотруднику (Mongo-моки PayrollAccrual). Тест выполняет `handleStatusActions` с действиями `stockIssue` и `payrollAccrual`, валидирует остатки, движения, начисление и аудит-лог.
@@ -210,3 +231,102 @@ Artifacts:
 2025-10-23T01:01:45+03:00 | client/src/pages/Orders.js, routes/orders.js, scripts/orderSwaggerSpec.js | feat(orders): add timeline API, Swagger path, and UI wiring
 2025-10-23T01:04:32+03:00 | CHANGELOG_TRAE.md, MVP_EPIC_PLAN.md, README.md, TECH_OVERVIEW.md, client/.env.local, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/Chart.js, client/src/components/ProtectedRoute.jsx, client/src/context/AuthContext.jsx, client/src/context/ThemeModeContext.tsx, client/src/custom.d.ts, client/src/index.js, client/src/layout/Sidebar.tsx, client/src/layout/sidebarConfig.ts, client/src/layout/useActiveMatch.ts, client/src/pages/Calendar.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Login.js, client/src/services/clientsService.js, client/src/services/format.js, client/src/services/itemsService.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, client/src/theme/tokens.ts, client/src/theme/useChartColors.ts, docs/ui-theme-rollback.md, middleware/auth.js, middleware/validate.js, mnt/data/CHANGELOG_TRAE.md, mnt/data/TECH_OVERVIEW.md, models/Order.js, routes/clients.js, routes/items.js, scripts/generateSwagger.js, server.js, server/models/Item.js, storage/docs/TECH_OVERVIEW.md, storage/reports/ui-preflight.md, storage/reports/ui-smoke-after-theme.md | feat(ui): implement MUI theme with light/dark mode toggle
 2025-10-23T02:09:13+03:00 | CHANGELOG_TRAE.md | feat(ui): implement MUI theme with light/dark mode toggle
+2025-10-23T02:10:44+03:00 | CHANGELOG_TRAE.md, PHASE2_EPIC_PLAN.md, TECH_OVERVIEW.md, contracts/apiContracts.js, middleware/auth.js, middleware/validate.js, routes/statuses.js, routes/stock.js, scripts/generateSwagger.js, server.js, server/models/PayrollAccrual.js, server/models/StockItem.js, server/models/StockMovement.js, services/devPayrollStore.js, services/orderStatusService.js, services/statusActionsHandler.js, storage/files/9e713900-5ea8-4237-b096-86fa51aad35b.bin, storage/files/db1ace7d-65e8-4248-8ce5-31a52255ad10.bin, storage/reports/migrateOrderStatuses-1761173211779.csv, storage/reports/migrateOrderStatuses-1761173211938.csv, storage/reports/migrateOrderStatuses-1761173212156.csv, storage/reports/migrateOrderStatuses-1761173212334.csv, storage/reports/migrateOrderStatuses-1761173212581.csv, storage/reports/migrateOrderStatuses-1761173212581.json, storage/reports/statusActionQueue-load-report-2025-10-22.md, tests/api.contracts.stock.test.js, tests/statusActions.chargeInit.dev.test.js, tests/statusActions.chargeInit.mongo.test.js, tests/stock.shop.staff.e2e.prodlike.test.js | Phase 2 Final: Stock → Shop → Staff E2E, docs and Mongo mocks
+
+## 2025-10-22 17:20 (Europe/Warsaw) | Phase 1 — Orders: Mongo-only status logs/timeline/files
+- files: routes/orders.js, CHANGELOG_TRAE.md
+- changes: удалены DEV-ветки и in-memory `memStatusLogs`; эндпоинты `/api/orders/:id/status-logs`, `/api/orders/:id/timeline`, `/api/orders/:id/files` работают только через Mongo (`OrderStatusLog`, `Order`), DEV‑фолбэки убраны; `/api/orders/:id/status` выполняет `changeOrderStatus` без DEV‑ветки; проверки `mongoReady()` в этих маршрутах удалены.
+- Acceptance:
+  - Mongo обязателен для чтения логов/таймлайна/файлов; при недоступном Mongo DEV‑данные не возвращаются.
+  - При доступном Mongo — ответы корректны и требуют авторизации; статус‑смена проходит через `changeOrderStatus`.
+  - Проверка: `curl` с `x-user-id`/`x-user-role` → health `{"status":"ok"}`, `status-logs`/`timeline` → `[]`, `files` → `{ ok:true, files:[] }`.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 2: RBAC guards для API платежей
+- server: `routes/payments.js`
+- docs: `TECH_OVERVIEW.md`
+- Маршруты: `POST /api/payments`, `POST /api/payments/refund` → `requirePermission('payments.write')`.
+- RBAC_MAP: `payments.write` уже определён (Admin|Finance).
+Acceptance:
+- Для пользователя без ролей `Admin|Finance` — `403 Недостаточно прав` на POST `/api/payments*`.
+- Для `Admin`/`Finance` — `200`/`201` по текущей логике, ошибки `PAYMENTS_LOCKED` сохранились.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 1: RBAC флаги и мидлвары
+- server: `middleware/auth.js`
+- client: `client/src/pages/RbacTest.js`
+- docs: `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- RBAC_MAP: добавлены `payments.read`, `payments.write`, `payments.lock`, `cash.read`, `cash.write`.
+- Роли: `Admin` → все; `Finance` → `payments.read|write|lock`, `cash.read`.
+- export: `requirePermission` экспортируется из `middleware/auth.js`.
+Acceptance:
+- На странице `/rbac-test` видны новые флаги: `payments.read|write|lock`, `cash.read|write`.
+- Роль `Finance` видит `payments.read|write|lock`, `cash.read`; роль `Admin` видит все.
+
+## 2025-10-21 23:59 (Europe/Warsaw) | 3.4 Payments — Этап 0: Preflight и каркас моделей
+- server: server/models/CashRegister.js, server/models/Payment.js
+- client: —
+- scripts/docs/tests: TECH_OVERVIEW.md, CHANGELOG_TRAE.md
+Acceptance:
+- Модели CashRegister/Payment созданы с требуемыми полями и валидацией.
+- Индексы: unique по code (CashRegister); Payment — cashRegisterId, orderId, type, createdAt, locationId.
+- Guard: запрет удаления кассы при наличии платежей (`CASH_REGISTER_HAS_PAYMENTS`).
+- Виртуал: `Payment.signedAmount` (income → +amount, expense/refund → -amount).
+Artifacts:
+- —
+
+## 2025-10-21 23:30 (Europe/Warsaw) | Swagger/OpenAPI: Auth Contracts Updated
+- swagger: описаны пути `POST /api/auth/register-first`, `POST /api/auth/bootstrap-admin`, `POST /api/auth/login`, `POST /api/auth/refresh`.
+- responses: коды `201/400/401/403/500` для соответствующих методов; публичные эндпоинты имеют `security: []`.
+- tokens: добавлены и задокументированы дубли `accessToken/access`, `refreshToken/refresh` (обратная совместимость).
+- artifacts: сгенерирован `artifacts/swagger.json`; добавлен экстрактор `scripts/extractAuthSpec.js` → `storage/reports/api-contracts/auth.json`.
+- docs: синхронизированы `TECH_OVERVIEW.md` (API артефакты/контракты) и `CHANGELOG_TRAE.md`.
+- Acceptance: swagger отражает новые поля и коды; примеры содержат дубли `access`/`refresh`.
+
+## 2025-10-21 22:55 (Europe/Warsaw) | UI/Auth: Bootstrap First
+- feat(auth): добавлены `GET`/`HEAD` для `/api/auth/register-first` (проверка наличия пользователей), унифицированы ответы.
+- feat(ui): создана страница `/bootstrap-first` с формой (email, имя, пароль), валидацией, авто‑логином и переходом на Дашборд.
+- client: на `/login` отображается ссылка «Первичная регистрация» только если пользователей нет (кэшируется `first_user_allowed`).
+- routes: `/bootstrap-first` доступен публично (вне `ProtectedRoute`), меню не содержит пункта для него.
+- docs: обновлены `TECH_OVERVIEW.md` раздел «Аутентификация: мини‑усиления безопасности и DX».
+- Acceptance: локальный прогон клиента `npm run client`, визуальная проверка `/bootstrap-first` и линка с `/login` — всё ок.
+
+## 2025-10-21 20:50 (Europe/Warsaw) | Auth Routes Unification
+- feat(auth): унифицированы ответы для `/api/auth/bootstrap-admin`, добавлен `/api/auth/register-first`, обновлён `/api/auth/login`.
+- Формат ответов: повсеместно `{ok:boolean}`; `login` возвращает `accessToken`/`refreshToken` (+ совместимые поля `access`/`refresh`), `refresh` возвращает `accessToken` (+ `access`).
+- DEV/PROD: согласованы коды ответов (201/200/400/401/403/500) и тела ошибок (`{ok:false,error:"..."}`).
+- client: обновлены `client/src/services/http.js` и `client/src/context/AuthContext.jsx` — поддержка `accessToken`/`refreshToken` при сохранении совместимости со старым форматом.
+- Acceptance: проверено `npm run bootstrap`, ручные `curl` для `/auth/login` и `/auth/refresh` — всё ок.
+
+## 2025-10-21 11:20 (Europe/Warsaw) | UI/Sidebar Linear
+- feat(ui): минималистичный сайдбар в стиле Relate/Linear
+- Компоненты: `client/src/components/sidebar/SidebarItem.jsx`, `client/src/components/sidebar/SidebarGroup.jsx`
+- Иконки: `lucide-react` (LayoutDashboard, Calendar, Briefcase, Folder, Zap, Wand2, CheckCircle2, ShoppingCart, CreditCard, Users, BarChart2, Settings)
+- Поведение: плавное раскрытие подпунктов (framer-motion), линия‑гид (`border-left: 1px rgba(--color-border, .2)`), активная полоса слева (`2px var(--color-primary)`), counters справа (badge)
+- Коллапс: при ширине <80px — только иконки + Tooltip по label
+- Layout: обновлён рендер меню и состояние `collapsed`, импорт lucide‑иконок
+- Конфиг: добавлена группа «Задачи» (Backlog 24, In progress 4, Validation 7, Done 13)
+- Маршруты: привязаны существующие `/tasks*`, `/orders*`, `/payments`, `/clients`, `/reports`, `/settings`
+
+## 2025-10-21 11:05 (Europe/Warsaw) | UI/Menu Compact
+- style(ui): уменьшены шрифты и межстрочные интервалы подпунктов
+- Добавлен левый вертикальный разделитель у групп подпунктов
+- Активный подпункт: `var(--color-primary)` + `font-weight: 700`
+- Файл: `client/src/components/Layout.js` (pl:4, py:0.5, minHeight:30; fontSize:13; lineHeight:20px)
+
+## 2025-10-21 10:45 (Europe/Warsaw) | UI/Menu
+- feat(ui): левое меню перестроено на секции с подпунктами
+- Секции: «Наш гараж», «Заказы», «Деньги», «Клиенты», «Маркетинг», «Услуги», «Товары», «Производство», «Склад», «Магазин», «Документы», «Отчёты», «Объявления», «Настройки»
+- Подпункты связаны с существующими маршрутами (orders/*, inventory/*, clients, payments, reports, settings)
+- Улучшена подсветка активных подпунктов: `var(--color-primary)` + `font-weight: 700`
+- Parent‑пункты подсвечиваются только для вложенных путей (без «двойной» подсветки на точных маршрутах)
+- RBAC: `/payments` теперь доступен для ролей `Admin` и `Finance`
+
+## 2025-10-21 09:30 (Europe/Warsaw) | UI/Login
+- feat(ui): redesign login page (glassmorphism, dark garage supercars background)
+- Header: «Вход в CRM Character», fields: Email/Пароль, button: Войти
+- Accent color uses `--color-primary`, consistent with theming tokens
+- Background moved to Pexels to avoid ORB blocks in preview
+2025-10-22T23:34:33+03:00 | client/src/components/Layout.js, client/src/pages/Payments.js | UI: корректировка ширины контента с учётом сайдбара; стабилизация сетки фильтров на странице Платежи для md; вынесение чипов статей в отдельную строку; плавные переходы. Визуально проверено на sm/md/lg.
+2025-10-23T01:01:45+03:00 | client/src/pages/Orders.js, routes/orders.js, scripts/orderSwaggerSpec.js | feat(orders): add timeline API, Swagger path, and UI wiring
+2025-10-23T01:04:32+03:00 | CHANGELOG_TRAE.md, MVP_EPIC_PLAN.md, README.md, TECH_OVERVIEW.md, client/.env.local, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/Chart.js, client/src/components/ProtectedRoute.jsx, client/src/context/AuthContext.jsx, client/src/context/ThemeModeContext.tsx, client/src/custom.d.ts, client/src/index.js, client/src/layout/Sidebar.tsx, client/src/layout/sidebarConfig.ts, client/src/layout/useActiveMatch.ts, client/src/pages/Calendar.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Login.js, client/src/services/clientsService.js, client/src/services/format.js, client/src/services/itemsService.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, client/src/theme/tokens.ts, client/src/theme/useChartColors.ts, docs/ui-theme-rollback.md, middleware/auth.js, middleware/validate.js, mnt/data/CHANGELOG_TRAE.md, mnt/data/TECH_OVERVIEW.md, models/Order.js, routes/clients.js, routes/items.js, scripts/generateSwagger.js, server.js, server/models/Item.js, storage/docs/TECH_OVERVIEW.md, storage/reports/ui-preflight.md, storage/reports/ui-smoke-after-theme.md | feat(ui): implement MUI theme with light/dark mode toggle
+2025-10-23T02:09:13+03:00 | CHANGELOG_TRAE.md | feat(ui): implement MUI theme with light/dark mode toggle
+2025-10-23T02:10:44+03:00 | CHANGELOG_TRAE.md, PHASE2_EPIC_PLAN.md, TECH_OVERVIEW.md, contracts/apiContracts.js, middleware/auth.js, middleware/validate.js, routes/statuses.js, routes/stock.js, scripts/generateSwagger.js, server.js, server/models/PayrollAccrual.js, server/models/StockItem.js, server/models/StockMovement.js, services/devPayrollStore.js, services/orderStatusService.js, services/statusActionsHandler.js, storage/files/9e713900-5ea8-4237-b096-86fa51aad35b.bin, storage/files/db1ace7d-65e8-4248-8ce5-31a52255ad10.bin, storage/reports/migrateOrderStatuses-1761173211779.csv, storage/reports/migrateOrderStatuses-1761173211938.csv, storage/reports/migrateOrderStatuses-1761173212156.csv, storage/reports/migrateOrderStatuses-1761173212334.csv, storage/reports/migrateOrderStatuses-1761173212581.csv, storage/reports/migrateOrderStatuses-1761173212581.json, storage/reports/statusActionQueue-load-report-2025-10-22.md, tests/api.contracts.stock.test.js, tests/statusActions.chargeInit.dev.test.js, tests/statusActions.chargeInit.mongo.test.js, tests/stock.shop.staff.e2e.prodlike.test.js | Phase 2 Final: Stock → Shop → Staff E2E, docs and Mongo mocks

@@ -46,9 +46,6 @@ function validateStartIncluded(patchOrDoc) {
 
 // GET /api/order-types — list (orderTypes.read)
 router.get('/', requirePermission('orderTypes.read'), async (req, res) => {
-  if (DEV_MODE && !mongoReady()) {
-    return res.json({ ok: true, items: memStore.items.slice() });
-  }
   if (!OrderType) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
     const populate = buildPopulate();
@@ -63,11 +60,6 @@ router.get('/', requirePermission('orderTypes.read'), async (req, res) => {
 
 // GET /api/order-types/:id — item (orderTypes.read)
 router.get('/:id', requirePermission('orderTypes.read'), async (req, res) => {
-  if (DEV_MODE && !mongoReady()) {
-    const item = memStore.items.find((i) => String(i._id) === String(req.params.id));
-    if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.json({ ok: true, item });
-  }
   if (!OrderType) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
     let q = OrderType.findById(req.params.id);
@@ -83,29 +75,6 @@ router.get('/:id', requirePermission('orderTypes.read'), async (req, res) => {
 
 // POST /api/order-types — create (orderTypes.write)
 router.post('/', requirePermission('orderTypes.write'), async (req, res) => {
-  if (DEV_MODE && !mongoReady()) {
-    const body = { ...(req.body || {}) };
-    const code = normalizeCode(body.code);
-    const name = body.name;
-    if (!code || !name) return res.status(400).json({ error: 'VALIDATION_ERROR' });
-    if (!validateStartIncluded(body)) return res.status(400).json({ error: 'ORDERTYPE_INVALID_START_STATUS' });
-    const dup = memStore.items.find((i) => i.code === code);
-    if (dup) return res.status(409).json({ error: 'CODE_EXISTS' });
-    const now = new Date();
-    const item = {
-      _id: new mongoose.Types.ObjectId(),
-      code,
-      name,
-      startStatusId: body.startStatusId || undefined,
-      allowedStatuses: Array.isArray(body.allowedStatuses) ? body.allowedStatuses.slice() : [],
-      fieldsSchemaId: body.fieldsSchemaId || undefined,
-      docTemplateIds: Array.isArray(body.docTemplateIds) ? body.docTemplateIds.slice() : [],
-      isSystem: !!body.isSystem,
-      createdAt: now,
-    };
-    memStore.items.push(item);
-    return res.json({ ok: true, item });
-  }
   if (!OrderType) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
     const body = req.body || {};
@@ -132,22 +101,6 @@ router.post('/', requirePermission('orderTypes.write'), async (req, res) => {
 
 // PATCH /api/order-types/:id — partial update (orderTypes.write)
 router.patch('/:id', requirePermission('orderTypes.write'), async (req, res) => {
-  if (DEV_MODE && !mongoReady()) {
-    const { id } = req.params;
-    const patch = { ...(req.body || {}) };
-    if (typeof patch.code === 'string') patch.code = normalizeCode(patch.code);
-    const idx = memStore.items.findIndex((i) => String(i._id) === String(id));
-    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' });
-    const current = memStore.items[idx];
-    const next = { ...current, ...patch };
-    if (!validateStartIncluded(next)) return res.status(400).json({ error: 'ORDERTYPE_INVALID_START_STATUS' });
-    if (typeof next.code === 'string') {
-      const dup = memStore.items.find((i) => i.code === next.code && String(i._id) !== String(id));
-      if (dup) return res.status(409).json({ error: 'CODE_EXISTS' });
-    }
-    memStore.items[idx] = next;
-    return res.json({ ok: true, item: next });
-  }
   if (!OrderType) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
     const { id } = req.params;
@@ -179,16 +132,6 @@ router.patch('/:id', requirePermission('orderTypes.write'), async (req, res) => 
 
 // DELETE /api/order-types/:id — delete (orderTypes.write)
 router.delete('/:id', requirePermission('orderTypes.write'), async (req, res) => {
-  if (DEV_MODE && !mongoReady()) {
-    const { id } = req.params;
-    const idx = memStore.items.findIndex((i) => String(i._id) === String(id));
-    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' });
-    const item = memStore.items[idx];
-    if (item.isSystem) return res.status(409).json({ error: 'SYSTEM_TYPE' });
-    // In dev fallback we skip Order.exists check
-    memStore.items.splice(idx, 1);
-    return res.json({ ok: true });
-  }
   if (!OrderType) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
     const { id } = req.params;
