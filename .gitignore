@@ -10,3 +10,7 @@ client/coverage/
 artifacts/
 storage/files/
 storage/reports/
+# Explicitly ignore OpenAPI duplicate path
+storage/reports/api-contracts/
+# Explicitly ignore Swagger artifact file
+artifacts/swagger.json

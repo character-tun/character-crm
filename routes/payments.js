@@ -23,6 +23,7 @@ const httpError = (statusCode, message) => {
 
 async function recordAudit(orderId, userId, note) {
   try {
+    if (!mongoReady()) return;
     const payload = {
       orderId: new mongoose.Types.ObjectId(String(orderId)),
       from: 'payments',
@@ -185,7 +186,7 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
         type: t,
         articlePath: ap,
         amount: amt,
-        cashRegisterId: cashRegisterId ? String(cashRegisterId) : 'dev-main',
+        cashRegisterId: cashRegisterId ? String(cashRegisterId) : (process.env.DEFAULT_CASH_REGISTER ? String(process.env.DEFAULT_CASH_REGISTER) : 'dev-main'),
         method: typeof method === 'string' ? method : 'manual',
         note,
         createdBy: req.user && req.user.id ? String(req.user.id) : undefined,
@@ -228,7 +229,17 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
       const cash = await CashRegister.findById(cashId).lean();
       if (!cash) return next(httpError(404, 'CASH_NOT_FOUND'));
     } else {
-      let cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      let cash = null;
+      const envDefault = process.env.DEFAULT_CASH_REGISTER;
+      if (envDefault) {
+        cash = await CashRegister.findById(envDefault).lean().catch(() => null);
+        if (!cash) {
+          cash = await CashRegister.findOne({ code: envDefault }).lean().catch(() => null);
+        }
+      }
+      if (!cash) {
+        cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      }
       if (!cash) {
         cash = await CashRegister.findOne({ isSystem: true, code: 'main' }).lean().catch(() => null);
       }
@@ -260,6 +271,8 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
 // POST /api/payments/refund — create refund (payments.write)
 router.post('/refund', requirePermission('payments.write'), validate(schemas.paymentRefundSchema), async (req, res, next) => {
   try {
+    const refundsEnabled = String(process.env.PAYMENTS_REFUND_ENABLED || '1') === '1';
+    if (!refundsEnabled) return next(httpError(403, 'REFUND_DISABLED'));
     // DEV fallback: minimal validation, no cash register lookup
     if (DEV_MODE && !mongoReady() && devStore) {
       const body = req.body || {};
@@ -281,7 +294,7 @@ router.post('/refund', requirePermission('payments.write'), validate(schemas.pay
         type: 'refund',
         articlePath: ap,
         amount: amt,
-        cashRegisterId: cashRegisterId ? String(cashRegisterId) : 'dev-main',
+        cashRegisterId: cashRegisterId ? String(cashRegisterId) : (process.env.DEFAULT_CASH_REGISTER ? String(process.env.DEFAULT_CASH_REGISTER) : 'dev-main'),
         method: typeof method === 'string' ? method : 'manual',
         note,
         createdBy: req.user && req.user.id ? String(req.user.id) : undefined,
@@ -321,7 +334,17 @@ router.post('/refund', requirePermission('payments.write'), validate(schemas.pay
       const cash = await CashRegister.findById(cashId).lean();
       if (!cash) return next(httpError(404, 'CASH_NOT_FOUND'));
     } else {
-      let cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      let cash = null;
+      const envDefault = process.env.DEFAULT_CASH_REGISTER;
+      if (envDefault) {
+        cash = await CashRegister.findById(envDefault).lean().catch(() => null);
+        if (!cash) {
+          cash = await CashRegister.findOne({ code: envDefault }).lean().catch(() => null);
+        }
+      }
+      if (!cash) {
+        cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+      }
       if (!cash) { cash = await CashRegister.findOne({ isSystem: true, code: 'main' }).lean().catch(() => null); }
       if (!cash) { cash = await CashRegister.findOne({}).lean().catch(() => null); }
       if (!cash || !cash._id) return next(httpError(404, 'CASH_NOT_FOUND'));
@@ -353,6 +376,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
   try {
     const { id } = req.params;
     const patch = req.body || {};
+    const strict = String(process.env.CASH_LOCK_STRICT || '0') === '1';
 
     // DEV fallback: update in-memory item
     if (DEV_MODE && !mongoReady() && devStore) {
@@ -360,7 +384,8 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
       const idx = items.findIndex((i) => String(i._id) === String(id));
       if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
       const current = items[idx];
-      if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
+      const strict = String(process.env.CASH_LOCK_STRICT || '0') === '1';
+      if (current.locked && (strict || !hasPermission(req, 'payments.lock'))) return next(httpError(403, 'PAYMENT_LOCKED'));
       if (typeof patch.type === 'string') return next(httpError(400, 'VALIDATION_ERROR'));
       if (typeof patch.locked !== 'undefined' || typeof patch.lockedAt !== 'undefined') return next(httpError(400, 'VALIDATION_ERROR'));
       items[idx] = { ...current, ...patch };
@@ -373,7 +398,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
     const current = await Payment.findById(id).lean();
     if (!current) return next(httpError(404, 'NOT_FOUND'));
 
-    if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
+    if (current.locked && (strict || !hasPermission(req, 'payments.lock'))) return next(httpError(403, 'PAYMENT_LOCKED'));
 
     if (current.orderId) {
       const order = await Order.findById(current.orderId).lean();

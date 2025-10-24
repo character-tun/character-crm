@@ -1228,5 +1228,10 @@ spec.paths['/api/stock/movements'] = {
 const outDir = path.join(__dirname, '..', 'artifacts');
 ensureDir(outDir);
 const outPath = path.join(outDir, 'swagger.json');
-fs.writeFileSync(outPath, JSON.stringify(spec, null, 2));
-console.log(`OpenAPI written: ${outPath}`);
+// prepare duplicate path for sharing/post-processing
+const duplicatePath = reportFile;
+ensureDir(path.dirname(duplicatePath));
+const payload = JSON.stringify(spec, null, 2);
+fs.writeFileSync(outPath, payload);
+fs.writeFileSync(duplicatePath, payload);
+console.log(`OpenAPI written: ${outPath} and ${duplicatePath}`);

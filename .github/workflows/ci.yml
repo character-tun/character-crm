@@ -84,6 +84,8 @@ jobs:
           cache: npm
       - name: Install root deps
         run: npm ci
+      - name: Pre-contracts artifacts
+        run: npm run precontracts
       - name: Run server tests (Jest)
         env:
           AUTH_DEV_MODE: "1"

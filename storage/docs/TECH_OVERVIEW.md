@@ -46,6 +46,7 @@
 
 ## Конфигурация
 - ENV: `AUTH_DEV_MODE=1` (включает DEV-ветки и in-memory), `MONGO_URI` (в прод-режиме), `PORT`.
+- ENV (Payments): `PAYMENTS_REFUND_ENABLED` (`0|1`) — включает/выключает возвраты; `DEFAULT_CASH_REGISTER` — id или `code` кассы по умолчанию для create/refund; `CASH_LOCK_STRICT` (`0|1`) — строгий запрет `PATCH` залоченных платежей (403 `PAYMENT_LOCKED`), даже при праве `payments.lock`.
 
 ## Безопасность
 - Запрет методов TRACE/TRACK.

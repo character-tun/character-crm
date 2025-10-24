@@ -47,6 +47,7 @@
 
 ## Конфигурация
 - ENV: `AUTH_DEV_MODE=1` (включает DEV-ветки и in-memory), `MONGO_URI` (в прод-режиме), `PORT`.
+- ENV (Payments): `PAYMENTS_REFUND_ENABLED` (`0|1`) — включает/выключает возвраты; `DEFAULT_CASH_REGISTER` — id или `code` кассы по умолчанию для create/refund; `CASH_LOCK_STRICT` (`0|1`) — строгий запрет `PATCH` залоченных платежей (403 `PAYMENT_LOCKED`), даже при праве `payments.lock`.
 
 ## Безопасность
 - Запрет методов TRACE/TRACK.
@@ -110,6 +111,8 @@
 ## CI / VC
 - Проверки линтеров и тестов перед мерджем.
 - Генерация Swagger-артефакта и отчётов по контрактам.
+- Перед контракт‑тестами CI выполняет `npm run precontracts` (генерация `artifacts/swagger.json` + экстракты `auth/fields/ordertype/payments`).
+- Локальный запуск: `npm run test:contracts` для последовательной регенерации и прогона `tests/api.contracts.*.test.js`.
 
 ## Data Sanity Checks
 - Валидация входных данных в моделях и контроллерах.
@@ -163,11 +166,12 @@
 
 В проекте поддерживаются артефакты OpenAPI (Swagger), а также выделенные контракты для отдельных доменов.
 
-- Генерация полного OpenAPI: `node scripts/generateSwagger.js` — пишет `artifacts/swagger.json`.
+- Генерация полного OpenAPI: `node scripts/generateSwagger.js` — пишет в два файла: `artifacts/swagger.json` (основной) и `storage/reports/api-contracts/swagger.json` (дублирующий для шаринга/пост‑обработок). Каталоги создаются автоматически при отсутствии.
 - Экстракция контрактов:
   - OrderType: `node scripts/extractOrderTypeSpec.js` — пишет `storage/reports/api-contracts/ordertype.json`.
   - Fields: `node scripts/extractFieldsSpec.js` — пишет `storage/reports/api-contracts/fields.json`.
   - Auth: `node scripts/extractAuthSpec.js` — пишет `storage/reports/api-contracts/auth.json`.
+  - Payments: `node scripts/extractPaymentsSpec.js` — пишет `storage/reports/api-contracts/payments.json`.
 
 Правила и ожидания:
 - Артефакты всегда должны соответствовать актуальному состоянию API.

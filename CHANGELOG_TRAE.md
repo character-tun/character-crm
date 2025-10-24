@@ -1,3 +1,17 @@
+## 2025-10-24 12:20 (Europe/Warsaw) | Server — Payments: ENV flags (refund/default cash/strict lock) + tests + docs
+- files: `routes/payments.js`, `services/paymentsService.js`, `services/configValidator.js`, `.env.example`, `tests/payments.flags.refund.e2e.test.js`, `tests/payments.flags.lock.strict.e2e.test.js`, `tests/payments.flags.defaultCash.e2e.test.js`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: добавлены ENV‑флаги платежей: `PAYMENTS_REFUND_ENABLED` (гейт возвратов), `DEFAULT_CASH_REGISTER` (автозаполнение кассы по id/code для create/refund), `CASH_LOCK_STRICT` (строгий запрет `PATCH` залоченных); обновлены валидатор и `.env.example`; добавлены e2e‑тесты и документация.
+- Acceptance:
+  - `PAYMENTS_REFUND_ENABLED=0` → `POST /api/payments/refund` → 403 `REFUND_DISABLED`
+  - `CASH_LOCK_STRICT=1` → `PATCH /api/payments/:id` залоченного → 403 `PAYMENT_LOCKED` даже при `payments.lock`
+  - `DEFAULT_CASH_REGISTER` (id или `code`) используется по умолчанию для create/refund; DEV‑ветка падает в `dev-main`, если не задано.
+
+## 2025-10-24 03:55 (Europe/Warsaw) | Artifacts — Payments spec extractor
+- files: `scripts/extractPaymentsSpec.js`, `storage/reports/api-contracts/payments.json`, `package.json`, `README.md`, `TECH_OVERVIEW.md`
+- changes: добавлен экстрактор подмножества OpenAPI для платежей; добавлен npm-скрипт `extract:payments`; документация обновлена; выполнен прогон генератора Swagger и экстрактора.
+- Paths (extracted): `/api/payments`, `/api/payments/refund`, `/api/payments/{id}`, `/api/payments/{id}/lock`.
+- Schemas (included): `PaymentCreateRequest`, `PaymentCreateResponse`, `Payment`, `PaymentItemResponse`, `PaymentsListResponse`, `PaymentRefundRequest`, `PaymentPatchRequest`.
+
 ## 2025-10-24 03:30 (Europe/Warsaw) | Server — Payments: Swagger/Contracts aligned (MVP Final)
 - files: `scripts/generateSwagger.js`, `artifacts/swagger.json`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`, `tests/api.contracts.payments.test.js`
 - changes: выровнены коды ответов и схемы для `POST /api/payments` и `POST /api/payments/refund`: `200 OK + PaymentCreateResponse { ok, id }`; удалён `201 Created` из Swagger; регенерирован `artifacts/swagger.json`; TECH_OVERVIEW отражает договорённости; тесты контрактов подтверждают `200`.
@@ -209,3 +223,14 @@
 2025-10-24T02:42:17+03:00 | CHANGELOG_TRAE.md, PHASE3_PLAN.md, TECH_OVERVIEW.md, middleware/auth.js, middleware/validate.js, routes/cash.js, routes/payments.js, scripts/generateSwagger.js, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/docs/TECH_OVERVIEW.md, tests/api.contracts.cash.test.js, tests/e2e/rbac.locations.reports.test.js, tests/payments.rbac.e2e.test.js | feat(payments): add delete endpoint and update RBAC rules
 2025-10-24T03:12:07+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/pages/Payments.js, client/src/services/paymentsService.js, routes/payments.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, tests/payments.rules.e2e.test.js | feat(payments): add remove method to payments service and update UI
 2025-10-24T11:14:17+03:00 | CHANGELOG_TRAE.md | feat(payments): add remove method to payments service and update UI
+2025-10-24T11:14:37+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/layout/AppShell.tsx, client/src/layout/sidebarConfig.ts, middleware/auth.js, scripts/generateSwagger.js, storage/docs/TECH_OVERVIEW.md | feat(rbac): update permissions for payments and cash access
+2025-10-24T11:45:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, .gitignore, scripts/generateSwagger.js | fix(swagger): enable double-write to artifacts/swagger.json and storage/reports/api-contracts/swagger.json; reuse reportFile; ensure ignore rules
+
+## 2025-10-24 12:05 (Europe/Warsaw) | CI — precontracts before contract tests
+- files: `.github/workflows/ci.yml`, `package.json`, `README.md`, `TECH_OVERVIEW.md`
+- changes:
+  - добавлены npm‑скрипты: `precontracts` (генерация swagger + экстракторы auth/fields/ordertype/payments) и `test:contracts` (последовательный запуск контракт‑тестов после регенерации);
+  - обновлён CI workflow: шаг `npm run precontracts` выполняется перед Jest;
+  - документация (README/TECH_OVERVIEW) описывает порядок регенерации артефактов перед контракт‑тестами.
+- Acceptance:
+  - локальный прогон `npm run precontracts` успешно генерирует `artifacts/swagger.json` и артефакты в `storage/reports/api-contracts/`

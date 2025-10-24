@@ -366,114 +366,6 @@
       }
     },
     "schemas": {
-      "OrderType": {
-        "type": "object",
-        "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "startStatusId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "object",
-                "additionalProperties": true
-              }
-            ]
-          },
-          "allowedStatuses": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "additionalProperties": true
-                }
-              ]
-            }
-          },
-          "fieldsSchemaId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "object",
-                "additionalProperties": true
-              }
-            ]
-          },
-          "docTemplateIds": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "$ref": "#/components/schemas/DocTemplate"
-                }
-              ]
-            }
-          },
-          "isSystem": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "code",
-          "name"
-        ],
-        "additionalProperties": true
-      },
-      "OrderTypesListResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderType"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "additionalProperties": true
-      },
-      "OrderTypeItemResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "item": {
-            "$ref": "#/components/schemas/OrderType"
-          }
-        },
-        "required": [
-          "item"
-        ],
-        "additionalProperties": true
-      },
       "ErrorResponse": {
         "type": "object",
         "properties": {
@@ -485,42 +377,16 @@
           "error"
         ]
       },
-      "DocTemplate": {
+      "DeleteResponse": {
         "type": "object",
         "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "bodyHtml": {
-            "type": "string"
-          },
-          "variables": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
+          "ok": {
+            "type": "boolean"
           }
         },
         "required": [
-          "code",
-          "name",
-          "bodyHtml"
-        ],
-        "additionalProperties": true
+          "ok"
+        ]
       }
     }
   }

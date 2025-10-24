@@ -55,9 +55,13 @@ npm run client      # http://localhost:3000 (UI)
 - `npm run client` — только клиент (`client/`)
 - `npm run build` — сборка клиента (CRA)
 - `npm test` — Jest (unit/e2e/контракты)
+- `npm run extract:payments` — экстракт payments → `storage/reports/api-contracts/payments.json`
+- `npm run test:contracts` — регенерация артефактов + контракт‑тесты (`tests/api.contracts.*.test.js`)
+- `npm run precontracts` — полная регенерация Swagger и экстрактов (auth/fields/ordertype/payments)
 
 Полезные утилиты (node):
 - `node scripts/generateSwagger.js` — обновить Swagger артефакт
+- `node scripts/extractPaymentsSpec.js` — выделение OpenAPI подмножества payments → `storage/reports/api-contracts/payments.json`
 - `node scripts/migrateOrderStatuses.js` — миграции статусов (CSV/JSON отчёты в `storage/reports/`)
 - `node health/dataSanity.js` — проверка инвариантов данных (Mongo)
 - `node scripts/seedCashRegisters.js` — создать системную кассу `code=main`
@@ -71,6 +75,7 @@ npm run client      # http://localhost:3000 (UI)
 
 ## Тестирование и покрытие
 - Запуск: `npm test` или `CI=true npm test -- --coverage --watchAll=false`
+- Контракты: перед запуском контракт‑тестов используйте `npm run precontracts` или `npm run test:contracts`. В CI шаг `precontracts` выполняется автоматически перед Jest.
 - Категории: `services`, `routes`, `queue`, `rbac`, `contracts`, `env`
 - Пороговая политика: целевой `70%`; если ниже, требуем рост ≥ текущий+5pp на следующий прогон
 

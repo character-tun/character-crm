@@ -24,6 +24,11 @@ const EnvSchema = z.object({
   NOTIFY_DRY_RUN: z.enum(['0', '1']).optional(),
   PRINT_DRY_RUN: z.enum(['0', '1']).optional(),
 
+  // Payments feature flags
+  PAYMENTS_REFUND_ENABLED: z.enum(['0', '1']).optional(),
+  DEFAULT_CASH_REGISTER: z.string().optional(),
+  CASH_LOCK_STRICT: z.enum(['0', '1']).optional(),
+
   // JWT for auth middleware fallback
   JWT_SECRET: z.string().optional(),
 });

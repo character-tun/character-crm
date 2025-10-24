@@ -34,7 +34,15 @@ async function ensureCashRegister(cashRegisterId) {
     if (!cash) throw httpError(404, 'CASH_NOT_FOUND');
     return cash._id;
   }
-  let cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null);
+  let cash = null;
+  const envDefault = process.env.DEFAULT_CASH_REGISTER;
+  if (envDefault) {
+    cash = await CashRegister.findById(envDefault).lean().catch(() => null);
+    if (!cash) {
+      cash = await CashRegister.findOne({ code: envDefault }).lean().catch(() => null);
+    }
+  }
+  if (!cash) { cash = await CashRegister.findOne({ defaultForLocation: true }).lean().catch(() => null); }
   if (!cash) { cash = await CashRegister.findOne({ isSystem: true, code: 'main' }).lean().catch(() => null); }
   if (!cash) { cash = await CashRegister.findOne({}).lean().catch(() => null); }
   if (!cash || !cash._id) throw httpError(404, 'CASH_NOT_FOUND');
@@ -86,6 +94,9 @@ async function updatePayment(id, dto, user) {
   const current = await Payment.findById(id).lean();
   if (!current) throw httpError(404, 'NOT_FOUND');
 
+  const strict = String(process.env.CASH_LOCK_STRICT || '0') === '1';
+  if (strict && current.locked === true) throw httpError(403, 'PAYMENT_LOCKED');
+
   if (current.orderId) {
     const order = await Order.findById(current.orderId).lean();
     if (!order) throw httpError(404, 'Order not found');
@@ -116,6 +127,8 @@ async function updatePayment(id, dto, user) {
 
 async function refundPayment(sourceId, dto, user) {
   if (!Payment || !Order) throw httpError(500, 'MODEL_NOT_AVAILABLE');
+  const refundsEnabled = String(process.env.PAYMENTS_REFUND_ENABLED || '1') === '1';
+  if (!refundsEnabled) throw httpError(403, 'REFUND_DISABLED');
   const body = dto || {};
   const { orderId, articlePath, amount, cashRegisterId, method, note, locationId } = body;
 

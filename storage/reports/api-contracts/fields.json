@@ -483,7 +483,21 @@
           "options": {
             "type": "array",
             "items": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ]
             }
           },
           "note": {
@@ -542,7 +556,9 @@
         },
         "required": [
           "scope",
-          "name"
+          "name",
+          "version",
+          "fields"
         ],
         "additionalProperties": true
       },

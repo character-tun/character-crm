@@ -12,11 +12,17 @@
     "build": "cd client && npm run build",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm run install-client && npm run build",
     "test": "jest",
+    "test:contracts": "npm run precontracts && jest tests/api.contracts.*.test.js --runInBand",
     "seed:orderTypes": "node scripts/seedOrderTypes.js",
     "setup:db": "bash scripts/setup-dev-db.sh",
     "bootstrap": "bash scripts/bootstrap-demo.sh",
     "server:bg": "node server.js > /tmp/trae-server.log 2>&1 & echo $! > /tmp/trae.pid",
-    "server:stop": "kill $(cat /tmp/trae.pid) || true"
+    "server:stop": "kill $(cat /tmp/trae.pid) || true",
+    "extract:auth": "node scripts/extractAuthSpec.js",
+    "extract:fields": "node scripts/extractFieldsSpec.js",
+    "extract:ordertype": "node scripts/extractOrderTypeSpec.js",
+    "extract:payments": "node scripts/extractPaymentsSpec.js",
+    "precontracts": "node scripts/generateSwagger.js && npm run extract:auth && npm run extract:fields && npm run extract:ordertype && npm run extract:payments"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
