@@ -11,6 +11,7 @@ let CashRegister; try { CashRegister = require('../server/models/CashRegister');
 
 const { requirePermission, hasPermission, requireRole } = require('../middleware/auth');
 const { isPaymentsLocked, getDevState } = require('../services/statusActionsHandler');
+const OrderStatusLog = require('../models/OrderStatusLog');
 
 
 
@@ -19,6 +20,21 @@ const httpError = (statusCode, message) => {
   err.statusCode = statusCode;
   return err;
 };
+
+async function recordAudit(orderId, userId, note) {
+  try {
+    const payload = {
+      orderId: new mongoose.Types.ObjectId(String(orderId)),
+      from: 'payments',
+      to: 'payments',
+      userId: userId ? new mongoose.Types.ObjectId(String(userId)) : undefined,
+      note,
+    };
+    await OrderStatusLog.create(payload);
+  } catch (e) {
+    console.warn('[payments] AuditLog failed:', e && e.message ? e.message : e);
+  }
+}
 
 // DEV mode helpers
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
@@ -177,6 +193,7 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
         createdAt: new Date().toISOString(),
         locked: false,
       });
+      await recordAudit(orderId, req.user && req.user.id, `PAYMENT_CREATE id=${id} type=${t} amount=${amt}`);
       return res.status(200).json({ ok: true, id });
     }
 
@@ -232,6 +249,7 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
       locationId: locationId ? new mongoose.Types.ObjectId(locationId) : (order.locationId ? new mongoose.Types.ObjectId(order.locationId) : undefined),
     };
     const created = await Payment.create(payload);
+    await recordAudit(orderId, req.user && req.user.id, `PAYMENT_CREATE id=${created._id} type=${t} amount=${amt}`);
     return res.status(200).json({ ok: true, id: created._id });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
@@ -271,6 +289,7 @@ router.post('/refund', requirePermission('payments.write'), validate(schemas.pay
         createdAt: new Date().toISOString(),
         locked: false,
       });
+      await recordAudit(orderId, req.user && req.user.id, `PAYMENT_REFUND id=${id} amount=${amt}`);
       return res.status(200).json({ ok: true, id });
     }
 
@@ -321,6 +340,7 @@ router.post('/refund', requirePermission('payments.write'), validate(schemas.pay
       locationId: locationId ? new mongoose.Types.ObjectId(locationId) : (order.locationId ? new mongoose.Types.ObjectId(order.locationId) : undefined),
     };
     const created = await Payment.create(payload);
+    await recordAudit(orderId, req.user && req.user.id, `PAYMENT_REFUND id=${created._id} amount=${amt}`);
     return res.status(200).json({ ok: true, id: created._id });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
@@ -342,7 +362,9 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
       const current = items[idx];
       if (current.locked && !hasPermission(req, 'payments.lock')) return next(httpError(403, 'PAYMENT_LOCKED'));
       if (typeof patch.type === 'string') return next(httpError(400, 'VALIDATION_ERROR'));
+      if (typeof patch.locked !== 'undefined' || typeof patch.lockedAt !== 'undefined') return next(httpError(400, 'VALIDATION_ERROR'));
       items[idx] = { ...current, ...patch };
+      await recordAudit(current.orderId, req.user && req.user.id, `PAYMENT_UPDATE id=${id} fields=${Object.keys(patch).join(',')}`);
       return res.json({ ok: true, item: items[idx] });
     }
 
@@ -368,6 +390,10 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
       return next(httpError(400, 'VALIDATION_ERROR'));
     }
 
+    if (typeof patch.locked !== 'undefined' || typeof patch.lockedAt !== 'undefined') {
+      return next(httpError(400, 'VALIDATION_ERROR'));
+    }
+
     if (patch.cashRegisterId) {
       const cash = await CashRegister.findById(patch.cashRegisterId).lean();
       if (!cash) return next(httpError(404, 'CASH_NOT_FOUND'));
@@ -379,6 +405,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
       { new: true, runValidators: true }
     ).lean();
     if (!item) return next(httpError(404, 'NOT_FOUND'));
+    await recordAudit(item.orderId, req.user && req.user.id, `PAYMENT_UPDATE id=${id} fields=${Object.keys(patch).join(',')}`);
     return res.json({ ok: true, item });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
@@ -400,16 +427,21 @@ router.post('/:id/lock', requirePermission('payments.lock'), async (req, res, ne
         item.locked = true;
         item.lockedAt = new Date().toISOString();
       }
+      await recordAudit(item.orderId, req.user && req.user.id, `PAYMENT_LOCK id=${id}`);
       return res.json({ ok: true, item });
     }
 
     if (!Payment) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
     const payment = await Payment.findById(id);
     if (!payment) return res.status(404).json({ error: 'NOT_FOUND' });
-    if (payment.locked) return res.json({ ok: true, item: payment });
+    if (payment.locked) {
+      await recordAudit(payment.orderId, req.user && req.user.id, `PAYMENT_LOCK id=${id}`);
+      return res.json({ ok: true, item: payment });
+    }
     payment.locked = true;
     payment.lockedAt = new Date();
     await payment.save();
+    await recordAudit(payment.orderId, req.user && req.user.id, `PAYMENT_LOCK id=${id}`);
     return res.json({ ok: true, item: payment });
   } catch (err) {
     return next(err);

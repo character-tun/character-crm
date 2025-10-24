@@ -1,3 +1,20 @@
+## 2025-10-24 00:10 (Europe/Warsaw) | Client — Payments UI: Location filter, row color coding, delete action
+- files: `client/src/pages/Payments.js`, `client/src/services/paymentsService.js`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: добавлен фильтр по локации (`locationId`), цветовая индикация строк в таблице (`income`/`expense`/`refund`), кнопка удаления платежа с подтверждением и RBAC (только Admin); сервис `paymentsService` расширен методом `remove(id)`; технический обзор обновлён.
+- Acceptance:
+  - Фильтр по локации влияет на загрузку платежей и мини‑отчёт по кассам
+  - В таблице Payments строки подсвечены по типу операции
+  - Кнопка удаления доступна только для разблокированных платежей и роли Admin
+  - Превью клиента открывается без ошибок, UI в рабочем состоянии
+
+## 2025-10-23 23:59 (Europe/Warsaw) | Server — Payments: Business Rules (refund/lock) + Audit
+- files: `services/paymentsService.js`, `routes/payments.js`, `storage/docs/TECH_OVERVIEW.md`, `tests/payments.rules.e2e.test.js`, `CHANGELOG_TRAE.md`
+- changes: реализованы бизнес‑правила для платежей: `create/update/refund/lock` с ограничениями — запрещено добавлять для закрытых/заблокированных заказов; PATCH запрещает поля `locked/lockedAt` и смену `type`; блокировка доступна только через `POST /api/payments/:id/lock`; все операции пишут Audit в `OrderStatusLog`. Refund: `type='refund'`, сумма учитывается как отрицательная в своде (`totals.balance` уменьшается).
+- Acceptance:
+  - `POST /api/payments/refund` → `200 + { ok, id }`; итоговый баланс уменьшается на сумму возврата.
+  - `PATCH /api/payments/:id { locked: true }` → `400 VALIDATION_ERROR`; `POST /api/payments/:id/lock` → `200` устанавливает `locked=true`, `lockedAt`.
+  - `storage/docs/TECH_OVERVIEW.md` обновлён (Business Rules → Payments).
+
 ## 2025-10-23 23:58 (Europe/Warsaw) | Server — Payments: RBAC + Swagger DELETE
 - files: `routes/payments.js`, `scripts/generateSwagger.js`, `storage/docs/TECH_OVERVIEW.md`, `artifacts/swagger.json`, `CHANGELOG_TRAE.md`
 - changes: документирован и добавлен в Swagger `DELETE /api/payments/{id}` (Admin only), проверка `PAYMENT_LOCKED` → `400`; обновлены RBAC-правила: `cash.read`/`payments.read` включают роль `Manager`, `cash.write` включает роль `Finance`; `TECH_OVERVIEW.md` обновлён.
@@ -171,3 +188,4 @@
 ## 2025-10-22 16:50 (Europe/Warsaw) | Phase 2 Final — Stock + Shop + Staff E2E
 - files: tests/stock.shop.staff.e2e.prodlike.test.js, CHANGELOG_TRAE.md, TECH_OVERVIEW.md
 2025-10-24T01:53:01+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/eslint-rules/index.js, client/eslint-rules/no-hardcoded-ui.js, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/DataGridBase.tsx, client/src/components/FormField.tsx, client/src/components/Layout.js, client/src/components/ModalBase.tsx, client/src/components/ModalConfirm.tsx, client/src/components/NotifyProvider.tsx, client/src/components/OrdersTable.js, client/src/context/ThemeContext.tsx, client/src/index.css, client/src/index.js, client/src/layout/AppShell.tsx, client/src/layout/Sidebar.tsx, client/src/pages/Clients.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Services.js, client/src/pages/TaskDetails.js, client/src/pages/TasksBoard.js, client/src/pages/TasksList.js, client/src/pages/inventory/Orders.js, client/src/pages/inventory/Products.js, client/src/pages/inventory/Suppliers.js, client/src/pages/settings/Company.js, client/src/pages/settings/DocumentEditor.js, client/src/pages/settings/Documents.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/Roles.js, client/src/pages/settings/UiTheme.tsx, client/src/pages/settings/Users.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, docs/theme_master_prompt.md, docs/ui-kit.md | feat: migrate UI components to MUI v5 and implement theme system
+2025-10-24T02:42:17+03:00 | CHANGELOG_TRAE.md, PHASE3_PLAN.md, TECH_OVERVIEW.md, middleware/auth.js, middleware/validate.js, routes/cash.js, routes/payments.js, scripts/generateSwagger.js, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/docs/TECH_OVERVIEW.md, tests/api.contracts.cash.test.js, tests/e2e/rbac.locations.reports.test.js, tests/payments.rbac.e2e.test.js | feat(payments): add delete endpoint and update RBAC rules

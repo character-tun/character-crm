@@ -25,5 +25,10 @@ export const paymentsService = {
   async lock(id) {
     if (!id) throw new Error('paymentsService.lock: id is required');
     return http.post(`/payments/${id}/lock`).then(r => r.data);
+  },
+
+  async remove(id) {
+    if (!id) throw new Error('paymentsService.remove: id is required');
+    return http.delete(`/payments/${id}`).then(r => r.data);
   }
 };

@@ -178,7 +178,7 @@
 - Services:
   - `client/src/services/fieldsService.js`: методы `list`, `get`, `listVersions(scope,name)`, `create`, `importSchema`, `patch`, `activate`, `deactivate`, `remove`.
   - `client/src/services/dictsService.js`: методы `list`, `get`, `getByCode(code)`, `create`, `update`, `remove`.
-  - `client/src/services/paymentsService.js`: методы `list`, `create`, `update`, `lock`, `refund` (возвращают `response.data`; ошибки не перехватываются).
+  - `client/src/services/paymentsService.js`: методы `list`, `create`, `update`, `lock`, `refund`, `remove` (возвращают `response.data`; ошибки не перехватываются).
   - `client/src/services/cashService.js`: методы `list`, `create`, `update`, `remove` (возвращают `response.data`; ошибки не перехватываются).
   - `client/src/services/reportsService.js`: метод `cashflow(params)` — мини‑отчёт по кассам; возвращает `{ ok, groups[], balance }`.
 - UI:

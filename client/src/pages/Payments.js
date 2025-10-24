@@ -6,6 +6,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import EditIcon from '@mui/icons-material/Edit';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { paymentsService } from '../services/paymentsService';
 import { cashService } from '../services/cashService';
 import { useAuth } from '../context/AuthContext';
@@ -73,6 +74,7 @@ export default function PaymentsPage() {
   const { hasAnyRole } = useAuth();
   const canPaymentsWrite = hasAnyRole(['Admin','Finance']);
   const canPaymentsLock = hasAnyRole(['Admin','Finance']);
+  const canPaymentsDelete = hasAnyRole(['Admin']);
 
   // toasts
   const [toast, setToast] = useState({ open: false, severity: 'success', message: '' });
@@ -85,6 +87,11 @@ export default function PaymentsPage() {
     const m = new Map();
     cash.forEach((c) => m.set(String(c._id || c.id), c));
     return m;
+  }, [cash]);
+  const locations = useMemo(() => {
+    const s = new Set();
+    cash.forEach((c) => { if (c.locationId) s.add(String(c.locationId)); });
+    return Array.from(s);
   }, [cash]);
 
   // server items
@@ -103,6 +110,7 @@ export default function PaymentsPage() {
   const [cashRegisterId, setCashRegisterId] = useState('');
   const [noteQuery, setNoteQuery] = useState('');
   const [lockedFilter, setLockedFilter] = useState('all'); // 'all' | 'locked' | 'unlocked'
+  const [locationId, setLocationId] = useState('');
   const categoriesTree = useMemo(() => readCategoriesTree(), []);
   const allArticlePaths = useMemo(() => {
     const roots = type === 'expense' ? categoriesTree.expense : type === 'income' ? categoriesTree.income : [...(categoriesTree.income||[]), ...(categoriesTree.expense||[])];
@@ -131,6 +139,7 @@ export default function PaymentsPage() {
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
       if (selectedArticles.length === 1) params.articlePath = selectedArticles[0];
+      if (locationId) params.locationId = locationId;
       const data = await paymentsService.list(params);
       const arr = Array.isArray(data?.items) ? data.items : [];
       setItems(arr.map((it) => ({
@@ -154,13 +163,13 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, openToast]);
+  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, locationId, openToast]);
   // Load cashflow report
   const loadCashflow = useCallback(async () => {
     setCfLoading(true);
     setCfError('');
     try {
-      const data = await reportsService.cashflow({ dateFrom, dateTo });
+      const data = await reportsService.cashflow({ dateFrom, dateTo, locationId });
       setCashflowGroups(Array.isArray(data?.groups) ? data.groups : []);
       setCashflowBalance(Number(data?.balance || 0));
     } catch (e) {
@@ -169,7 +178,7 @@ export default function PaymentsPage() {
     } finally {
       setCfLoading(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, locationId]);
 
   useEffect(() => { loadCash(); }, []);
   useEffect(() => { loadPayments(); }, [loadPayments]);
@@ -285,6 +294,23 @@ export default function PaymentsPage() {
     }
   };
 
+  const deletePayment = async (row) => {
+    try {
+      const ok = window.confirm('Удалить платёж? Это действие необратимо.');
+      if (!ok) return;
+      const resp = await paymentsService.remove(String(row._id || row.id));
+      if (resp?.ok) {
+        openToast('success', 'Платёж удалён');
+        await loadPayments();
+      } else {
+        throw new Error(resp?.error || 'Не удалось удалить платёж');
+      }
+    } catch (e) {
+      const msg = e?.response?.data?.error || e?.message || 'Ошибка удаления';
+      openToast('error', String(msg));
+    }
+  };
+
   const columns = [
     { field: 'createdAt', headerName: 'Дата', width: 180, valueGetter: (params) => params.row.createdAt, valueFormatter: (params) => formatDateTime(params.value) },
     { field: 'type', headerName: 'Тип', width: 120, valueFormatter: (p) => ({ income: 'Приход', expense: 'Расход', refund: 'Рефанд' }[p.value] || p.value) },
@@ -316,6 +342,11 @@ export default function PaymentsPage() {
         <Tooltip title={params.row.locked ? 'Платёж закрыт' : (canPaymentsWrite ? 'Редактировать' : 'Нет прав')}>
           <span>
             <IconButton size="small" disabled={params.row.locked || !canPaymentsWrite} onClick={() => openEdit(params.row)}><EditIcon fontSize="small" /></IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={params.row.locked ? 'Платёж закрыт' : (canPaymentsDelete ? 'Удалить' : 'Нет прав')}>
+          <span>
+            <IconButton size="small" disabled={params.row.locked || !canPaymentsDelete} onClick={() => deletePayment(params.row)}><DeleteIcon fontSize="small" /></IconButton>
           </span>
         </Tooltip>
       </Stack>
@@ -437,6 +468,17 @@ export default function PaymentsPage() {
               </Select>
             </FormControl>
           </Grid>
+          <Grid item xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel id="location-label">Локация</InputLabel>
+              <Select labelId="location-label" label="Локация" value={locationId} onChange={(e)=>setLocationId(e.target.value)}>
+                <MenuItem value="">Все</MenuItem>
+                {locations.map((loc) => (
+                  <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
           <Grid item xs={12} md={3}>
             <TextField label="Поиск по заметке" value={noteQuery} onChange={(e)=>setNoteQuery(e.target.value)} fullWidth />
           </Grid>
@@ -489,6 +531,18 @@ export default function PaymentsPage() {
             initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
             loading={loading}
             getRowId={(row) => row.id}
+            getRowClassName={(params) => {
+              const t = params.row.type;
+              if (t === 'income') return 'row-income';
+              if (t === 'expense') return 'row-expense';
+              if (t === 'refund') return 'row-refund';
+              return '';
+            }}
+            sx={{
+              '& .row-income': { bgcolor: 'rgba(76, 175, 80, 0.10)' },
+              '& .row-expense': { bgcolor: 'rgba(244, 67, 54, 0.10)' },
+              '& .row-refund': { bgcolor: 'rgba(255, 152, 0, 0.10)' }
+            }}
           />
         </div>
 
