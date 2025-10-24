@@ -8,6 +8,7 @@ const StockLedgerSchema = new Schema({
   qty: { type: Number, required: true },
   cost: { type: Number, default: 0 },
   refType: { type: String, enum: ['movement', 'transfer', 'inventory', 'manual'], default: 'movement' },
+  op: { type: String },
   refId: { type: Schema.Types.ObjectId },
   ts: { type: Date, default: () => new Date() },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },

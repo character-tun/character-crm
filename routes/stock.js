@@ -184,20 +184,20 @@ router.post('/transfer', requirePermission('warehouse.write'), validate(schemas.
     const qty = Number(body.qty || 0);
     const cost = typeof body.cost === 'number' ? body.cost : undefined;
     const ts = body.ts ? new Date(body.ts) : new Date();
-    const refId = `transfer-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    const refId = new mongoose.Types.ObjectId();
 
     if (qty <= 0) return next(httpError(400, 'QTY_MUST_BE_POSITIVE'));
 
     if (DEV_MODE && !mongoReady()) {
-      const out = { _id: nextSL(), itemId, locationId: fromLocationId, qty: -Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id };
-      const inc = { _id: nextSL(), itemId, locationId: toLocationId, qty: Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id };
+      const out = { _id: nextSL(), itemId, locationId: fromLocationId, qty: -Math.abs(qty), cost, refType: 'transfer', op: 'transfer_out', refId, ts, createdBy: req.user && req.user.id };
+      const inc = { _id: nextSL(), itemId, locationId: toLocationId, qty: Math.abs(qty), cost, refType: 'transfer', op: 'transfer_in', refId, ts, createdBy: req.user && req.user.id };
       devLedger.push(out, inc);
       return res.status(201).json({ ok: true, items: [out, inc] });
     }
 
     if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
-    const out = await StockLedger.create({ itemId, locationId: fromLocationId, qty: -Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id });
-    const inc = await StockLedger.create({ itemId, locationId: toLocationId, qty: Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id });
+    const out = await StockLedger.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: mongoose.Types.ObjectId(fromLocationId), qty: -Math.abs(qty), cost, refType: 'transfer', op: 'transfer_out', refId, ts, createdBy: req.user && req.user.id });
+    const inc = await StockLedger.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: mongoose.Types.ObjectId(toLocationId), qty: Math.abs(qty), cost, refType: 'transfer', op: 'transfer_in', refId, ts, createdBy: req.user && req.user.id });
     return res.status(201).json({ ok: true, items: [out, inc] });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
@@ -218,7 +218,7 @@ router.post('/inventory', requirePermission('warehouse.write'), validate(schemas
     if (DEV_MODE && !mongoReady()) {
       const current = currentQtyDev(itemId, locationId);
       const diff = countedQty - current;
-      const led = { _id: nextSL(), itemId, locationId, qty: diff, cost, refType: 'inventory', refId: `inv-${Date.now()}`, ts, createdBy: req.user && req.user.id };
+      const led = { _id: nextSL(), itemId, locationId, qty: diff, cost, refType: 'inventory', op: 'inventory', refId: `inv-${Date.now()}`, ts, createdBy: req.user && req.user.id };
       devLedger.push(led);
       const bal = { _id: nextSB(), itemId, locationId, qty: countedQty, adjustment: true, ts, createdBy: req.user && req.user.id };
       devBalance.push(bal);
@@ -226,16 +226,16 @@ router.post('/inventory', requirePermission('warehouse.write'), validate(schemas
     }
 
     if (!StockLedger || !StockBalance) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
-    const match = { itemId };
-    if (locationId) match.locationId = locationId;
+    const match = { itemId: mongoose.Types.ObjectId(itemId) };
+    if (locationId) match.locationId = mongoose.Types.ObjectId(locationId);
     const agg = await StockLedger.aggregate([
       { $match: match },
       { $group: { _id: null, qty: { $sum: '$qty' } } },
     ]);
     const current = agg && agg[0] ? agg[0].qty : 0;
     const diff = countedQty - current;
-    const led = await StockLedger.create({ itemId, locationId, qty: diff, cost, refType: 'inventory', refId: `inv-${Date.now()}`, ts, createdBy: req.user && req.user.id });
-    const bal = await StockBalance.create({ itemId, locationId, qty: countedQty, adjustment: true, ts, createdBy: req.user && req.user.id });
+    const led = await StockLedger.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: locationId ? mongoose.Types.ObjectId(locationId) : undefined, qty: diff, cost, refType: 'inventory', op: 'inventory', refId: new mongoose.Types.ObjectId(), ts, createdBy: req.user && req.user.id });
+    const bal = await StockBalance.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: locationId ? mongoose.Types.ObjectId(locationId) : undefined, qty: countedQty, adjustment: true, ts, createdBy: req.user && req.user.id });
     return res.status(201).json({ ok: true, ledgerId: led._id, balanceId: bal._id });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
@@ -263,8 +263,8 @@ router.get('/ledger', requirePermission('warehouse.read'), async (req, res, next
 
     if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
     const match = {};
-    if (itemId) match.itemId = itemId;
-    if (locationId) match.locationId = locationId;
+    if (itemId) match.itemId = mongoose.Types.ObjectId(itemId);
+    if (locationId) match.locationId = mongoose.Types.ObjectId(locationId);
     if (refType) match.refType = refType;
     const items = await StockLedger.find(match).sort({ ts: -1 }).skip(offset).limit(limit).lean();
     return res.json({ ok: true, items });
@@ -299,8 +299,8 @@ router.get('/balance', requirePermission('warehouse.read'), async (req, res, nex
 
     if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
     const match = {};
-    if (itemId) match.itemId = itemId;
-    if (locationId) match.locationId = locationId;
+    if (itemId) match.itemId = mongoose.Types.ObjectId(itemId);
+    if (locationId) match.locationId = mongoose.Types.ObjectId(locationId);
     const agg = await StockLedger.aggregate([
       { $match: match },
       { $group: { _id: { itemId: '$itemId', locationId: '$locationId' }, qty: { $sum: '$qty' } } },
