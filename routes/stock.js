@@ -7,6 +7,8 @@ const { requirePermission } = require('../middleware/auth');
 
 let StockItem; try { StockItem = require('../server/models/StockItem'); } catch (e) {}
 let StockMovement; try { StockMovement = require('../server/models/StockMovement'); } catch (e) {}
+let StockLedger; try { StockLedger = require('../server/models/StockLedger'); } catch (e) {}
+let StockBalance; try { StockBalance = require('../server/models/StockBalance'); } catch (e) {}
 let Item; try { Item = require('../server/models/Item'); } catch (e) {}
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
@@ -17,14 +19,25 @@ const httpError = (statusCode, message) => { const err = new Error(message); err
 // DEV in-memory store
 const devStockItems = []; // { _id, itemId, qtyOnHand, unit, minQty, maxQty, createdBy, createdAt, updatedAt }
 const devStockMovements = []; // { _id, itemId, type, qty, note, source, createdBy, createdAt }
+const devLedger = []; // { _id, itemId, locationId, qty, cost, refType, refId, ts, createdBy }
+const devBalance = []; // { _id, itemId, locationId, qty, adjustment, ts, createdBy }
 let seqSI = 1; const nextSI = () => `si-${seqSI++}`;
 let seqSM = 1; const nextSM = () => `sm-${seqSM++}`;
+let seqSL = 1; const nextSL = () => `sl-${seqSL++}`;
+let seqSB = 1; const nextSB = () => `sb-${seqSB++}`;
 
 function listDevItems(q) {
   const s = String(q || '').trim().toLowerCase();
   const arr = devStockItems.slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
   if (!s) return arr;
   return arr.filter(it => String(it.itemId || '').toLowerCase().includes(s));
+}
+
+function currentQtyDev(itemId, locationId) {
+  const sum = devLedger
+    .filter(l => String(l.itemId) === String(itemId) && String(l.locationId || '') === String(locationId || ''))
+    .reduce((acc, l) => acc + Number(l.qty || 0), 0);
+  return sum;
 }
 
 // GET /api/stock/items
@@ -110,6 +123,9 @@ router.post('/movements', requirePermission('warehouse.write'), validate(schemas
     const type = String(body.type || '').trim();
     const qty = Number(body.qty || 0);
     const note = String(body.note || '');
+    const locationId = String(body.locationId || '').trim() || undefined;
+    const cost = typeof body.cost === 'number' ? body.cost : undefined;
+    const ts = body.ts ? new Date(body.ts) : new Date();
 
     // Normalize sign: receipt => +qty, issue => -qty
     const signed = type === 'receipt' ? qty : (type === 'issue' ? -Math.abs(qty) : qty);
@@ -124,7 +140,10 @@ router.post('/movements', requirePermission('warehouse.write'), validate(schemas
       si.updatedAt = new Date().toISOString();
       const mv = { _id: nextSM(), itemId, type, qty: signed, note, source: body.source || { kind: 'manual' }, createdBy: req.user && req.user.id, createdAt: new Date().toISOString() };
       devStockMovements.push(mv);
-      return res.status(201).json({ ok: true, item: mv });
+      // Also record to ledger
+      const led = { _id: nextSL(), itemId, locationId, qty: signed, cost, refType: 'movement', op: type, refId: mv._id, ts, createdBy: req.user && req.user.id };
+      devLedger.push(led);
+      return res.status(201).json({ ok: true, item: mv, ledgerId: led._id });
     }
 
     if (!StockItem || !StockMovement) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
@@ -144,9 +163,154 @@ router.post('/movements', requirePermission('warehouse.write'), validate(schemas
       source: body.source || { kind: 'manual' },
       createdBy: req.user && req.user.id,
     });
+    // Also record to ledger
+    if (StockLedger) {
+      await StockLedger.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: locationId ? mongoose.Types.ObjectId(locationId) : undefined, qty: signed, cost, refType: 'movement', op: type, refId: mv._id, ts, createdBy: req.user && req.user.id });
+    }
     return res.status(201).json({ ok: true, item: mv });
   } catch (err) {
     if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
+    return next(err);
+  }
+});
+
+// POST /api/stock/transfer — move stock between locations
+router.post('/transfer', requirePermission('warehouse.write'), validate(schemas.stockTransferSchema), async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const itemId = String(body.itemId || '').trim();
+    const fromLocationId = String(body.fromLocationId || '').trim();
+    const toLocationId = String(body.toLocationId || '').trim();
+    const qty = Number(body.qty || 0);
+    const cost = typeof body.cost === 'number' ? body.cost : undefined;
+    const ts = body.ts ? new Date(body.ts) : new Date();
+    const refId = `transfer-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+
+    if (qty <= 0) return next(httpError(400, 'QTY_MUST_BE_POSITIVE'));
+
+    if (DEV_MODE && !mongoReady()) {
+      const out = { _id: nextSL(), itemId, locationId: fromLocationId, qty: -Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id };
+      const inc = { _id: nextSL(), itemId, locationId: toLocationId, qty: Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id };
+      devLedger.push(out, inc);
+      return res.status(201).json({ ok: true, items: [out, inc] });
+    }
+
+    if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const out = await StockLedger.create({ itemId, locationId: fromLocationId, qty: -Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id });
+    const inc = await StockLedger.create({ itemId, locationId: toLocationId, qty: Math.abs(qty), cost, refType: 'transfer', refId, ts, createdBy: req.user && req.user.id });
+    return res.status(201).json({ ok: true, items: [out, inc] });
+  } catch (err) {
+    if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
+    return next(err);
+  }
+});
+
+// POST /api/stock/inventory — snapshot and ledger adjust
+router.post('/inventory', requirePermission('warehouse.write'), validate(schemas.stockInventorySchema), async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const itemId = String(body.itemId || '').trim();
+    const locationId = String(body.locationId || '').trim();
+    const countedQty = Number(body.qty || 0);
+    const cost = typeof body.cost === 'number' ? body.cost : undefined;
+    const ts = body.ts ? new Date(body.ts) : new Date();
+
+    if (DEV_MODE && !mongoReady()) {
+      const current = currentQtyDev(itemId, locationId);
+      const diff = countedQty - current;
+      const led = { _id: nextSL(), itemId, locationId, qty: diff, cost, refType: 'inventory', refId: `inv-${Date.now()}`, ts, createdBy: req.user && req.user.id };
+      devLedger.push(led);
+      const bal = { _id: nextSB(), itemId, locationId, qty: countedQty, adjustment: true, ts, createdBy: req.user && req.user.id };
+      devBalance.push(bal);
+      return res.status(201).json({ ok: true, ledgerId: led._id, balanceId: bal._id });
+    }
+
+    if (!StockLedger || !StockBalance) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const match = { itemId };
+    if (locationId) match.locationId = locationId;
+    const agg = await StockLedger.aggregate([
+      { $match: match },
+      { $group: { _id: null, qty: { $sum: '$qty' } } },
+    ]);
+    const current = agg && agg[0] ? agg[0].qty : 0;
+    const diff = countedQty - current;
+    const led = await StockLedger.create({ itemId, locationId, qty: diff, cost, refType: 'inventory', refId: `inv-${Date.now()}`, ts, createdBy: req.user && req.user.id });
+    const bal = await StockBalance.create({ itemId, locationId, qty: countedQty, adjustment: true, ts, createdBy: req.user && req.user.id });
+    return res.status(201).json({ ok: true, ledgerId: led._id, balanceId: bal._id });
+  } catch (err) {
+    if (err && err.name === 'ValidationError') return next(httpError(400, 'VALIDATION_ERROR'));
+    return next(err);
+  }
+});
+
+// GET /api/stock/ledger
+router.get('/ledger', requirePermission('warehouse.read'), async (req, res, next) => {
+  try {
+    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+    const itemId = req.query.itemId ? String(req.query.itemId).trim() : undefined;
+    const locationId = req.query.locationId ? String(req.query.locationId).trim() : undefined;
+    const refType = req.query.refType ? String(req.query.refType).trim() : undefined;
+
+    if (DEV_MODE && !mongoReady()) {
+      let arr = devLedger.slice();
+      if (itemId) arr = arr.filter(l => String(l.itemId) === itemId);
+      if (locationId) arr = arr.filter(l => String(l.locationId || '') === locationId);
+      if (refType) arr = arr.filter(l => String(l.refType || '') === refType);
+      arr = arr.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(offset, offset+limit);
+      return res.json({ ok: true, items: arr });
+    }
+
+    if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const match = {};
+    if (itemId) match.itemId = itemId;
+    if (locationId) match.locationId = locationId;
+    if (refType) match.refType = refType;
+    const items = await StockLedger.find(match).sort({ ts: -1 }).skip(offset).limit(limit).lean();
+    return res.json({ ok: true, items });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /api/stock/balance
+router.get('/balance', requirePermission('warehouse.read'), async (req, res, next) => {
+  try {
+    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+    const itemId = req.query.itemId ? String(req.query.itemId).trim() : undefined;
+    const locationId = req.query.locationId ? String(req.query.locationId).trim() : undefined;
+
+    if (DEV_MODE && !mongoReady()) {
+      let map = new Map();
+      for (const l of devLedger) {
+        if (itemId && String(l.itemId) !== itemId) continue;
+        if (locationId && String(l.locationId || '') !== locationId) continue;
+        const key = `${l.itemId}|${l.locationId || ''}`;
+        map.set(key, (map.get(key) || 0) + Number(l.qty || 0));
+      }
+      const all = Array.from(map.entries()).map(([key, qty]) => {
+        const [it, loc] = key.split('|');
+        return { itemId: it, locationId: loc || undefined, qty };
+      }).sort((a,b)=>b.qty - a.qty);
+      const items = all.slice(offset, offset+limit);
+      return res.json({ ok: true, items });
+    }
+
+    if (!StockLedger) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
+    const match = {};
+    if (itemId) match.itemId = itemId;
+    if (locationId) match.locationId = locationId;
+    const agg = await StockLedger.aggregate([
+      { $match: match },
+      { $group: { _id: { itemId: '$itemId', locationId: '$locationId' }, qty: { $sum: '$qty' } } },
+      { $sort: { qty: -1 } },
+      { $skip: offset },
+      { $limit: limit },
+    ]);
+    const items = agg.map(a => ({ itemId: a._id.itemId, locationId: a._id.locationId, qty: a.qty }));
+    return res.json({ ok: true, items });
+  } catch (err) {
     return next(err);
   }
 });

@@ -45,6 +45,12 @@
 - e2e: DEV-ветки роутов (in-memory сторадж), RBAC (роль `Admin|Manager`), валидация ошибок.
 - Контракты: Swagger `artifacts/swagger.json` сверяется тестами.
 
+## Tests/Thresholds
+- Глобальные пороги покрытия: линии 60%, стейтменты 60%, ветвления 45%, функции 50%.
+- Политика зафиксирована в `jest.config.js` через `coverageThreshold`.
+- Локально: `npm run test:cov` — собирает покрытие и применяет гейты.
+- CI: отдельный шаг `npm run test:cov` блокирует билд при недостающем покрытии.
+
 ## Конфигурация
 - ENV: `AUTH_DEV_MODE=1` (включает DEV-ветки и in-memory), `MONGO_URI` (в прод-режиме), `PORT`.
 - ENV (Payments): `PAYMENTS_REFUND_ENABLED` (`0|1`) — включает/выключает возвраты; `DEFAULT_CASH_REGISTER` — id или `code` кассы по умолчанию для create/refund; `CASH_LOCK_STRICT` (`0|1`) — строгий запрет `PATCH` залоченных платежей (403 `PAYMENT_LOCKED`), даже при праве `payments.lock`.

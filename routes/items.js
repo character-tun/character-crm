@@ -62,7 +62,12 @@ router.post('/', requirePermission('catalog.write'), validate(schemas.itemCreate
         name: String(body.name || '').trim(),
         price: Number(body.price || 0),
         unit: String(body.unit || ''),
+        uom: String(body.uom || body.unit || ''),
+        type: String(body.type || 'good'),
         sku: String(body.sku || ''),
+        brand: String(body.brand || ''),
+        group: String(body.group || ''),
+        attributes: typeof body.attributes === 'object' && body.attributes !== null ? body.attributes : {},
         tags: Array.isArray(body.tags) ? body.tags : [],
         note: String(body.note || ''),
         createdBy: req.user && req.user.id,
@@ -80,7 +85,12 @@ router.post('/', requirePermission('catalog.write'), validate(schemas.itemCreate
       name: body.name,
       price: typeof body.price === 'number' ? body.price : 0,
       unit: body.unit,
+      uom: body.uom || body.unit,
+      type: body.type || 'good',
       sku: body.sku,
+      brand: body.brand,
+      group: body.group,
+      attributes: typeof body.attributes === 'object' && body.attributes !== null ? body.attributes : {},
       tags: Array.isArray(body.tags) ? body.tags : [],
       note: body.note,
       createdBy: req.user && req.user.id,
@@ -102,13 +112,15 @@ router.patch('/:id', requirePermission('catalog.write'), validate(schemas.itemPa
       const idx = devItems.findIndex((it) => String(it._id) === id);
       if (idx === -1) return next(httpError(404, 'NOT_FOUND'));
       const it = devItems[idx];
-      const nextIt = { ...it, ...body, updatedAt: new Date().toISOString() };
+      const nextIt = { ...it, ...body, uom: String(body.uom || body.unit || it.uom || it.unit || ''), updatedAt: new Date().toISOString() };
       devItems[idx] = nextIt;
       return res.json({ ok: true, item: nextIt });
     }
 
     if (!Item) return next(httpError(500, 'MODEL_NOT_AVAILABLE'));
-    const updated = await Item.findByIdAndUpdate(id, { $set: body }, { new: true }).lean();
+    const patch = { ...body };
+    if (patch.unit && !patch.uom) patch.uom = patch.unit;
+    const updated = await Item.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean();
     if (!updated) return next(httpError(404, 'NOT_FOUND'));
     return res.json({ ok: true, item: updated });
   } catch (err) {

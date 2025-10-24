@@ -51,7 +51,12 @@ const itemCreateSchema = Joi.object({
   name: Joi.string().trim().min(1).required(),
   price: Joi.number().min(0).optional(),
   unit: Joi.string().trim().optional(),
+  uom: Joi.string().trim().optional(),
+  type: Joi.string().valid('good', 'service').optional(),
   sku: Joi.string().trim().optional(),
+  brand: Joi.string().trim().optional(),
+  group: Joi.string().trim().optional(),
+  attributes: Joi.object().unknown(true).optional(),
   tags: Joi.array().items(Joi.string().trim()).optional(),
   note: Joi.string().trim().optional(),
 }).unknown(true);
@@ -60,7 +65,12 @@ const itemPatchSchema = Joi.object({
   name: Joi.string().trim().min(1),
   price: Joi.number().min(0),
   unit: Joi.string().trim(),
+  uom: Joi.string().trim(),
+  type: Joi.string().valid('good', 'service'),
   sku: Joi.string().trim(),
+  brand: Joi.string().trim(),
+  group: Joi.string().trim(),
+  attributes: Joi.object().unknown(true),
   tags: Joi.array().items(Joi.string().trim()),
   note: Joi.string().trim(),
 }).min(1).unknown(true);
@@ -78,11 +88,37 @@ const stockMovementCreateSchema = Joi.object({
   itemId: Joi.string().trim().required(),
   type: Joi.string().valid('receipt', 'issue', 'adjust').required(),
   qty: Joi.number().not(0).required(),
+  locationId: Joi.string().trim().optional(),
+  cost: Joi.number().min(0).optional(),
+  ts: Joi.date().optional(),
   note: Joi.string().trim().optional(),
   source: Joi.object({
     kind: Joi.string().valid('order', 'manual', 'supplier', 'system').optional(),
     id: Joi.string().optional(),
   }).optional(),
+}).unknown(true);
+
+const stockTransferSchema = Joi.object({
+  itemId: Joi.string().trim().required(),
+  fromLocationId: Joi.string().trim().required(),
+  toLocationId: Joi.string().trim().required(),
+  qty: Joi.number().greater(0).required(),
+  cost: Joi.number().min(0).optional(),
+  ts: Joi.date().optional(),
+  note: Joi.string().trim().optional(),
+  source: Joi.object({
+    kind: Joi.string().valid('order', 'manual', 'supplier', 'system').optional(),
+    id: Joi.string().optional(),
+  }).optional(),
+}).unknown(true);
+
+const stockInventorySchema = Joi.object({
+  itemId: Joi.string().trim().required(),
+  locationId: Joi.string().trim().required(),
+  qty: Joi.number().min(0).required(),
+  cost: Joi.number().min(0).optional(),
+  ts: Joi.date().optional(),
+  note: Joi.string().trim().optional(),
 }).unknown(true);
 
 module.exports = {
@@ -97,5 +133,7 @@ module.exports = {
     itemPatchSchema,
     stockItemCreateSchema,
     stockMovementCreateSchema,
+    stockTransferSchema,
+    stockInventorySchema,
   },
 };

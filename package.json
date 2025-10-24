@@ -12,6 +12,7 @@
     "build": "cd client && npm run build",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm run install-client && npm run build",
     "test": "jest",
+    "test:cov": "jest --coverage --runInBand",
     "test:contracts": "npm run precontracts && jest tests/api.contracts.*.test.js --runInBand",
     "seed:orderTypes": "node scripts/seedOrderTypes.js",
     "setup:db": "bash scripts/setup-dev-db.sh",

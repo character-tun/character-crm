@@ -1,3 +1,11 @@
+## 2025-10-24 13:15 (Europe/Warsaw) | CI — Jest coverage gates (60/60/45/50)
+- files: `jest.config.js`, `package.json`, `.github/workflows/ci.yml`, `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: добавлены пороги покрытия в Jest (`coverageThreshold`), скрипт `test:cov`, и отдельный CI‑шаг; документация обновлена (раздел Tests/Thresholds).
+- Acceptance:
+  - `npm run test:cov` запускает Jest с покрытием и падает при нарушении порогов.
+  - В CI шаг `Coverage gates (Jest)` блокирует пайплайн при недостающем покрытии.
+  - Раздел TECH_OVERVIEW.md → Tests/Thresholds отражает текущую политику порогов.
+
 ## 2025-10-24 12:20 (Europe/Warsaw) | Server — Payments: ENV flags (refund/default cash/strict lock) + tests + docs
 - files: `routes/payments.js`, `services/paymentsService.js`, `services/configValidator.js`, `.env.example`, `tests/payments.flags.refund.e2e.test.js`, `tests/payments.flags.lock.strict.e2e.test.js`, `tests/payments.flags.defaultCash.e2e.test.js`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
 - changes: добавлены ENV‑флаги платежей: `PAYMENTS_REFUND_ENABLED` (гейт возвратов), `DEFAULT_CASH_REGISTER` (автозаполнение кассы по id/code для create/refund), `CASH_LOCK_STRICT` (строгий запрет `PATCH` залоченных); обновлены валидатор и `.env.example`; добавлены e2e‑тесты и документация.
@@ -234,3 +242,4 @@
   - документация (README/TECH_OVERVIEW) описывает порядок регенерации артефактов перед контракт‑тестами.
 - Acceptance:
   - локальный прогон `npm run precontracts` успешно генерирует `artifacts/swagger.json` и артефакты в `storage/reports/api-contracts/`
+2025-10-24T14:42:26+03:00 | .env.example, .github/workflows/ci.yml, .gitignore, CHANGELOG_TRAE.md, README.md, TECH_OVERVIEW.md, package.json, routes/orders.js, routes/payments.js, scripts/extractPaymentsSpec.js, scripts/generateSwagger.js, services/configValidator.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, storage/reports/api-contracts/fields.json, storage/reports/api-contracts/ordertype.json, tests/core.flow.e2e.test.js, tests/payments.flags.defaultCash.e2e.test.js, tests/payments.flags.lock.strict.e2e.test.js, tests/payments.flags.refund.e2e.test.js | feat(payments): add ENV flags for refunds, default cash and strict lock

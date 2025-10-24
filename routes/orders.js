@@ -11,11 +11,22 @@ const { getDevState, setDevState } = require('../services/statusActionsHandler')
 let OrderStatus; try { OrderStatus = require('../models/OrderStatus'); } catch (e) { /* optional in DEV */ }
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 let Item; try { Item = require('../server/models/Item'); } catch (e) {}
-const Client = require('../models/Client');
+let Client; try { Client = require('../models/Client'); } catch (e) {}
 const { getActiveSchema } = require('../services/fieldSchemaProvider');
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
-// DEV in-memory status logs removed; Mongo OrderStatusLog is authoritative
+// DEV in-memory status logs
+const __devStatusLogs = new Map();
+function addDevLog(orderId, log) {
+  const key = String(orderId);
+  const list = __devStatusLogs.get(key) || [];
+  list.push(log);
+  __devStatusLogs.set(key, list);
+}
+function getDevLogs(orderId) {
+  const list = __devStatusLogs.get(String(orderId)) || [];
+  return list.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
 
 const httpError = (statusCode, message) => {
   const err = new Error(message);
@@ -225,11 +236,30 @@ router.get('/:id/status-logs', async (req, res, next) => {
   try {
     const orderId = req.params.id;
     const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+    if (!mongoReady && DEV_MODE) {
+      const logs = getDevLogs(orderId);
+      return res.json(logs);
+    }
     if (!mongoReady) return next(httpError(503, 'MongoDB is required'));
     const logs = await OrderStatusLog.find({ orderId }).sort({ createdAt: -1 }).lean();
     return res.json(logs);
   } catch (err) {
     return next(err);
+  }
+});
+
+// DEV-only: introspect in-memory status logs
+router.get('/dev/status-logs', requireRoles('Admin'), async (req, res) => {
+  try {
+    if (!DEV_MODE) return res.status(404).json({ error: 'NOT_AVAILABLE' });
+    const orderId = String(req.query.orderId || '').trim();
+    if (orderId) {
+      return res.json({ ok: true, items: getDevLogs(orderId) });
+    }
+    const items = Array.from(__devStatusLogs.keys()).map((k) => ({ orderId: k, logs: getDevLogs(k) }));
+    return res.json({ ok: true, items });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 });
 
@@ -404,6 +434,16 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
     if (!mongoReady && DEV_MODE) {
       const nowIso = new Date().toISOString();
       const prev = getDevState(orderId) || {};
+      const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : ((req.user && req.user.role) ? [req.user.role] : []);
+      const fromBody = (req.body && req.body.from) || prev.status || null;
+
+      // DEV reopen guard: require orders.reopen when reopening from closed_success
+      if (fromBody === 'closed_paid' || fromBody === 'done') {
+        if (!roles.includes('orders.reopen')) {
+          return next(httpError(403, 'REOPEN_FORBIDDEN'));
+        }
+      }
+
       let actions = [];
       let closed = undefined;
       if (finalCode === 'closed_unpaid') {
@@ -432,6 +472,19 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
         // ignore enqueue errors in DEV
       }
 
+      // Record DEV in-memory status log for contracts
+      const log = {
+        _id: `dev-${orderId}-${Date.now()}`,
+        orderId: String(orderId),
+        from: fromBody || null,
+        to: finalCode,
+        userId: String(userId),
+        note: finalCode === 'closed_paid' ? 'STATUS_ACTION_PAYROLL dev stub' : String(note || ''),
+        actionsEnqueued: [],
+        createdAt: nowIso,
+      };
+      addDevLog(orderId, log);
+
       // DEV: ensure timeline contains a payroll audit entry even if queue fails
       if (finalCode === 'closed_paid') {
         try {
@@ -441,14 +494,16 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
             to: finalCode,
             userId: new mongoose.Types.ObjectId(userId),
             note: 'STATUS_ACTION_PAYROLL dev stub',
-            actionsEnqueued: actions,
+            actionsEnqueued: [],
           });
         } catch (e) {
           // ignore in DEV
         }
       }
 
-      return res.json({ ok: true });
+      const payload = { ok: true, log };
+      if (closed) payload.closed = closed;
+      return res.json(payload);
     }
 
     if (!mongoReady) return next(httpError(503, 'MongoDB is required'));

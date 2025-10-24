@@ -91,6 +91,11 @@ jobs:
           AUTH_DEV_MODE: "1"
           JWT_SECRET: "dev_secret"
         run: npm test -- --ci --runInBand
+      - name: Coverage gates (Jest)
+        env:
+          AUTH_DEV_MODE: "1"
+          JWT_SECRET: "dev_secret"
+        run: npm run test:cov
       - name: Install client deps
         run: npm ci
         working-directory: client
