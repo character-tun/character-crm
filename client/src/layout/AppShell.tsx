@@ -57,7 +57,11 @@ export default function AppShell() {
       </AppBar>
 
       {/* Sidebar: persistent on md+, temporary on sm- */}
-      <Sidebar mobileOpen={mobileOpen} onClose={handleCloseSidebar} hasRole={(role) => hasAnyRole([role])} />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onClose={handleCloseSidebar}
+        hasRole={(role) => hasAnyRole([role]) || hasAnyRole(['Admin'])}
+      />
 
       {/* Content area */}
       <Box

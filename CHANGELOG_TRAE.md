@@ -1,3 +1,21 @@
+## 2025-10-24 03:30 (Europe/Warsaw) | Server — Payments: Swagger/Contracts aligned (MVP Final)
+- files: `scripts/generateSwagger.js`, `artifacts/swagger.json`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`, `tests/api.contracts.payments.test.js`
+- changes: выровнены коды ответов и схемы для `POST /api/payments` и `POST /api/payments/refund`: `200 OK + PaymentCreateResponse { ok, id }`; удалён `201 Created` из Swagger; регенерирован `artifacts/swagger.json`; TECH_OVERVIEW отражает договорённости; тесты контрактов подтверждают `200`.
+- Acceptance:
+  - Swagger: `POST /api/payments` и `POST /api/payments/refund` → `200` с `PaymentCreateResponse`.
+  - Тесты контрактов платежей проходят и ожидают `200`.
+  - `POST /api/cash` остаётся `201 Created` — документация и реализация совпадают.
+
+
+## 2025-10-24 00:35 (Europe/Warsaw) | RBAC — Payments: Map + UI visibility
+- files: `middleware/auth.js`, `client/src/layout/sidebarConfig.ts`, `client/src/layout/AppShell.tsx`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: обновлён серверный `RBAC_MAP` (Payments/Cash): `payments.read` включает `Manager`, `cash.write` ограничен `Admin`, `cash.read` для `Admin|Finance`; на клиенте скрыт пункт меню «Деньги → Платежи» для `Manager` (виден `Admin|Finance`), а для `Admin` добавлена суперакция на все role‑гейты; документация TECH_OVERVIEW обновлена.
+- Acceptance:
+  - Меню «Деньги → Платежи» отображается только для `Admin|Finance`
+  - `Manager` видит `payments.read` в API, но не видит пункт меню
+  - Сервер строго применяет новые права `cash.read`/`cash.write`
+  - Превью клиента открывается без ошибок
+
 ## 2025-10-24 00:10 (Europe/Warsaw) | Client — Payments UI: Location filter, row color coding, delete action
 - files: `client/src/pages/Payments.js`, `client/src/services/paymentsService.js`, `TECH_OVERVIEW.md`, `storage/docs/TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
 - changes: добавлен фильтр по локации (`locationId`), цветовая индикация строк в таблице (`income`/`expense`/`refund`), кнопка удаления платежа с подтверждением и RBAC (только Admin); сервис `paymentsService` расширен методом `remove(id)`; технический обзор обновлён.
@@ -98,7 +116,7 @@
 - changes: создан стабильный каркас приложения с `AppBar + Drawer + Content`; Drawer `persistent` на `md+`, `temporary` на `sm-`; ширины/высоты: `drawerWidth=280`, `appBarHeight=64`; контент в `Box` `maxWidth=1440, mx:auto, px:2`; подключены текущее меню и маршруты; отключён mini-режим сайдбара, чтобы исключить «прыжки`.
 - Acceptance:
   - хедер и сайдбар единообразны на всех страницах
-  - при переходах контент не «прыгает»
+  - при переходах контент не «прыгает`
   - превью клиента открывается без критических ошибок
 
 ## 2025-10-23 17:10 (Europe/Warsaw) | UI — Этап 2: Подключён базовый MUI
@@ -190,3 +208,4 @@
 2025-10-24T01:53:01+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/eslint-rules/index.js, client/eslint-rules/no-hardcoded-ui.js, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/DataGridBase.tsx, client/src/components/FormField.tsx, client/src/components/Layout.js, client/src/components/ModalBase.tsx, client/src/components/ModalConfirm.tsx, client/src/components/NotifyProvider.tsx, client/src/components/OrdersTable.js, client/src/context/ThemeContext.tsx, client/src/index.css, client/src/index.js, client/src/layout/AppShell.tsx, client/src/layout/Sidebar.tsx, client/src/pages/Clients.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Services.js, client/src/pages/TaskDetails.js, client/src/pages/TasksBoard.js, client/src/pages/TasksList.js, client/src/pages/inventory/Orders.js, client/src/pages/inventory/Products.js, client/src/pages/inventory/Suppliers.js, client/src/pages/settings/Company.js, client/src/pages/settings/DocumentEditor.js, client/src/pages/settings/Documents.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/Roles.js, client/src/pages/settings/UiTheme.tsx, client/src/pages/settings/Users.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, docs/theme_master_prompt.md, docs/ui-kit.md | feat: migrate UI components to MUI v5 and implement theme system
 2025-10-24T02:42:17+03:00 | CHANGELOG_TRAE.md, PHASE3_PLAN.md, TECH_OVERVIEW.md, middleware/auth.js, middleware/validate.js, routes/cash.js, routes/payments.js, scripts/generateSwagger.js, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/docs/TECH_OVERVIEW.md, tests/api.contracts.cash.test.js, tests/e2e/rbac.locations.reports.test.js, tests/payments.rbac.e2e.test.js | feat(payments): add delete endpoint and update RBAC rules
 2025-10-24T03:12:07+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/pages/Payments.js, client/src/services/paymentsService.js, routes/payments.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, tests/payments.rules.e2e.test.js | feat(payments): add remove method to payments service and update UI
+2025-10-24T11:14:17+03:00 | CHANGELOG_TRAE.md | feat(payments): add remove method to payments service and update UI

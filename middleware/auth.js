@@ -48,8 +48,8 @@ const RBAC_MAP = {
   'payments.read': ['Admin', 'Finance', 'Manager'],
   'payments.write': ['Admin', 'Finance'],
   'payments.lock': ['Admin', 'Finance'],
-  'cash.read': ['Admin', 'Finance', 'Manager'],
-  'cash.write': ['Admin', 'Finance'],
+  'cash.read': ['Admin', 'Finance'],
+  'cash.write': ['Admin'],
 
   // Clients
   'clients.read': ['Admin', 'Manager', 'Detailing', 'Production', 'Finance'],

@@ -44,6 +44,7 @@ export const nav: NavItem[] = [
     label: 'Деньги',
     icon: React.createElement(CreditCard),
     path: '/payments',
+    role: 'Finance',
     children: [
       { id: 'income-add',  label: 'Добавить доход',  icon: React.createElement(AddCircle),   path: '/payments' },
       { id: 'expense-add', label: 'Добавить расход', icon: React.createElement(RemoveCircle), path: '/payments' },

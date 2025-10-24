@@ -22,14 +22,18 @@
     - `orderTypes.write` → `Admin`
     - `uiTheme.read` → `Admin|Manager`
     - `uiTheme.write` → `Admin`
-    - `payments.read` → `Admin|Finance`
+-    - `payments.read` → `Admin|Finance|Manager`
++    - `payments.read` → `Admin|Finance|Manager`
     - `payments.write` → `Admin|Finance`
     - `payments.lock` → `Admin|Finance`
     - `cash.read` → `Admin|Finance`
-    - `cash.write` → `Admin`
+-    - `cash.write` → `Admin`
++    - `cash.write` → `Admin`
   - Роли:
     - `Admin` → доступ ко всем флагам выше
-    - `Finance` → `payments.read|write|lock`, `cash.read`
+-    - `Finance` → `payments.read|write|lock`, `cash.read`
++    - `Finance` → `payments.read|write|lock`, `cash.read`
++    - `Manager` → `payments.read`
   - Унификация Auth: ответы `{ ok:boolean }`; `login`/`refresh` возвращают `accessToken`/`refreshToken` и дубли `access`/`refresh` для совместимости.
   - UI: публичная страница `/bootstrap-first` (Первичная регистрация) с авто‑логином и редиректом на Дашборд.
 - Валидация полей (FieldSpec): серверные валидаторы типов: `text`, `number`, `date`, `bool`, `list`, `multilist` (для `list/multilist` — `options` обязательны).

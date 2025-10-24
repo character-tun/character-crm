@@ -500,7 +500,7 @@ const spec = {
       security: [{ bearerAuth: [] }],
       requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } } },
       responses: {
-        '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+        '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
         '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
         '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
@@ -514,7 +514,7 @@ const spec = {
         security: [{ bearerAuth: [] }],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentRefundRequest' } } } },
         responses: {
-          '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentItemResponse' } } } },
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
           '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
