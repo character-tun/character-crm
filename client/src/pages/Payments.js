@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Box, Typography, Paper, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Select, MenuItem, FormControl, FormControlLabel, InputLabel, Chip, Divider, IconButton, Tooltip, Alert, Snackbar, Skeleton, Checkbox } from '@mui/material';
+import { Box, Typography, Paper, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Select, MenuItem, FormControl, FormControlLabel, InputLabel, Chip, Divider, IconButton, Tooltip, Alert, Skeleton, Checkbox } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
 import UndoIcon from '@mui/icons-material/Undo';
@@ -188,7 +188,7 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, locationId, openToast]);
+  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, locationId]);
   // Load cashflow report
   const loadCashflow = useCallback(async () => {
     setCfLoading(true);
@@ -641,11 +641,6 @@ export default function PaymentsPage() {
          </DialogActions>
        </Dialog>
  
-       <Snackbar open={toast.open} autoHideDuration={2500} onClose={closeToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-         <Alert onClose={closeToast} severity={toast.severity} sx={{ width: '100%' }}>
-           {toast.message}
-         </Alert>
-       </Snackbar>
-     </Box>
+       </Box>
    );
  }
