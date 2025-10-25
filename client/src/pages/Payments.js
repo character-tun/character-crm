@@ -17,7 +17,10 @@ import DataGridBase from '../components/DataGridBase';
 
 import PaymentDialog from '../components/PaymentDialog.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import FiltersBar from '../components/FiltersBar.jsx';
+import { useSearchParams } from 'react-router-dom';
 
+import { useNotify } from '../components/NotifyProvider';
 const currency = (v) => `₽${Number(v || 0).toLocaleString('ru-RU')}`;
 const formatDateTime = (iso) => {
   const d = iso ? new Date(iso) : null;
@@ -79,9 +82,8 @@ export default function PaymentsPage() {
   const canPaymentsDelete = hasAnyRole(['Admin']);
 
   // toasts
-  const [toast, setToast] = useState({ open: false, severity: 'success', message: '' });
-  const openToast = (severity, message) => setToast({ open: true, severity, message });
-  const closeToast = () => setToast((t) => ({ ...t, open: false }));
+  const notify = useNotify();
+  // using centralized notifications
 
   // cash registers
   const [cash, setCash] = useState([]);
@@ -120,6 +122,27 @@ export default function PaymentsPage() {
   }, [categoriesTree, type]);
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  React.useEffect(() => {
+    const p = Object.fromEntries(searchParams.entries());
+    if (p.dateFrom) setDateFrom(p.dateFrom);
+    if (p.dateTo) setDateTo(p.dateTo);
+    if (p.cashRegisterId) setCashRegisterId(p.cashRegisterId);
+    if (p.locationId) setLocationId(p.locationId);
+    if (p.q) setNoteQuery(p.q);
+    if (p.articlePath) setSelectedArticles([p.articlePath]);
+  }, []);
+  React.useEffect(() => {
+    const q = {};
+    if (dateFrom) q.dateFrom = dateFrom;
+    if (dateTo) q.dateTo = dateTo;
+    if (cashRegisterId) q.cashRegisterId = cashRegisterId;
+    if (locationId) q.locationId = locationId;
+    if (noteQuery) q.q = noteQuery;
+    if (selectedArticles.length === 1) q.articlePath = selectedArticles[0];
+    setSearchParams(q, { replace: true });
+  }, [dateFrom, dateTo, cashRegisterId, locationId, noteQuery, selectedArticles]);
 
   const loadCash = async () => {
     try {
@@ -161,7 +184,7 @@ export default function PaymentsPage() {
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка загрузки платежей';
       setError(String(msg));
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -246,7 +269,7 @@ export default function PaymentsPage() {
       if (modalMode === 'create') {
         const resp = await paymentsService.create({ ...payload, type: formType });
         if (resp?.ok) {
-          openToast('success', 'Платёж создан');
+          notify('Платёж создан', { severity: 'success' });
           await loadPayments();
           setModalOpen(false);
         } else {
@@ -258,7 +281,7 @@ export default function PaymentsPage() {
         const patch = { amount: Number(amount || 0), method: method || undefined, note: note || undefined, cashRegisterId: cashRegisterId || undefined, articlePath: Array.isArray(articlePath) ? articlePath : [] };
         const resp = await paymentsService.update(id, patch);
         if (resp?.ok) {
-          openToast('success', 'Платёж обновлён');
+          notify('Платёж обновлён', { severity: 'success' });
           await loadPayments();
           setModalOpen(false);
         } else {
@@ -267,7 +290,7 @@ export default function PaymentsPage() {
       } else if (modalMode === 'refund') {
         const resp = await paymentsService.refund(payload);
         if (resp?.ok) {
-          openToast('success', 'Рефанд создан');
+          notify('Рефанд создан', { severity: 'success' });
           await loadPayments();
           setModalOpen(false);
         } else {
@@ -276,7 +299,7 @@ export default function PaymentsPage() {
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка операции';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
 
@@ -284,14 +307,14 @@ export default function PaymentsPage() {
     try {
       const resp = await paymentsService.lock(String(row._id || row.id));
       if (resp?.ok) {
-        openToast('success', 'Платёж заблокирован');
+        notify('Платёж заблокирован', { severity: 'success' });
         await loadPayments();
       } else {
         throw new Error(resp?.error || 'Не удалось заблокировать');
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка блокировки';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
 
@@ -301,14 +324,14 @@ export default function PaymentsPage() {
       if (!ok) return;
       const resp = await paymentsService.remove(String(row._id || row.id));
       if (resp?.ok) {
-        openToast('success', 'Платёж удалён');
+        notify('Платёж удалён', { severity: 'success' });
         await loadPayments();
       } else {
         throw new Error(resp?.error || 'Не удалось удалить платёж');
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка удаления';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
 
@@ -363,9 +386,21 @@ export default function PaymentsPage() {
           <Stack direction="row" spacing={1}>
              {canPaymentsWrite && (
                <>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')} data-tour="payments-new-income">Новый приход</Button>
-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')} data-tour="payments-new-expense">Новый расход</Button>
-                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund} data-tour="payments-refund">Рефанд</Button>
+                <Tooltip title="Создать приход">
+                  <span>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')} data-tour="payments-new-income">Новый приход</Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Создать расход">
+                  <span>
+                    <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')} data-tour="payments-new-expense">Новый расход</Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Оформить рефанд">
+                  <span>
+                    <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund} data-tour="payments-refund">Рефанд</Button>
+                  </span>
+                </Tooltip>
                </>
              )}
            </Stack>
@@ -429,25 +464,31 @@ export default function PaymentsPage() {
            </Grid>
          </Box>
  
-         <Grid container spacing={2}>
-           <Grid item xs={12} md={2}>
-             <DatePicker
-               label="С даты"
-               value={dateFrom ? new Date(dateFrom) : null}
-               onChange={(newValue) => setDateFrom(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
-               renderInput={(params) => <TextField {...params} fullWidth inputProps={{ ...(params.inputProps||{}), 'data-tour': 'payments-date-from' }} />}
-               inputFormat="dd.MM.yyyy"
-             />
-           </Grid>
-           <Grid item xs={12} md={2}>
-             <DatePicker
-               label="По дату"
-               value={dateTo ? new Date(dateTo) : null}
-               onChange={(newValue) => setDateTo(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
-               renderInput={(params) => <TextField {...params} fullWidth inputProps={{ ...(params.inputProps||{}), 'data-tour': 'payments-date-to' }} />}
-               inputFormat="dd.MM.yyyy"
-             />
-           </Grid>
+         {/* FiltersBar: unified filters */}
+         <FiltersBar
+           value={{
+             dateFrom,
+             dateTo,
+             cashRegisterId,
+             article: selectedArticles.length === 1 ? selectedArticles[0] : '',
+             locationId,
+             q: noteQuery,
+           }}
+           onChange={(next) => {
+             if (Object.prototype.hasOwnProperty.call(next, 'dateFrom')) setDateFrom(next.dateFrom || '');
+             if (Object.prototype.hasOwnProperty.call(next, 'dateTo')) setDateTo(next.dateTo || '');
+             if (Object.prototype.hasOwnProperty.call(next, 'cashRegisterId')) setCashRegisterId(next.cashRegisterId || '');
+             if (Object.prototype.hasOwnProperty.call(next, 'locationId')) setLocationId(next.locationId || '');
+             if (Object.prototype.hasOwnProperty.call(next, 'q')) setNoteQuery(next.q || '');
+             if (Object.prototype.hasOwnProperty.call(next, 'article')) setSelectedArticles(next.article ? [next.article] : []);
+           }}
+           cashRegisters={cash}
+           locations={locations}
+           articles={allArticlePaths}
+         />
+
+         {/* Additional non-unified filters */}
+         <Grid container spacing={2} sx={{ mt: 1 }}>
            <Grid item xs={12} md={2}>
               <FormControl fullWidth data-tour="payments-type-filter">
                 <InputLabel id="type-label">Тип</InputLabel>
@@ -458,31 +499,6 @@ export default function PaymentsPage() {
                   <MenuItem value="refund">Рефанд</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth data-tour="payments-cash-filter">
-                <InputLabel id="cash-label">Касса</InputLabel>
-                <Select labelId="cash-label" label="Касса" value={cashRegisterId} onChange={(e)=>setCashRegisterId(e.target.value)}>
-                  <MenuItem value="">Все</MenuItem>
-                  {cash.map((c) => (
-                    <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth data-tour="payments-location-filter">
-                <InputLabel id="location-label">Локация</InputLabel>
-                <Select labelId="location-label" label="Локация" value={locationId} onChange={(e)=>setLocationId(e.target.value)}>
-                  <MenuItem value="">Все</MenuItem>
-                  {locations.map((loc) => (
-                    <MenuItem key={loc} value={loc}>{loc}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField label="Поиск по заметке" value={noteQuery} onChange={(e)=>setNoteQuery(e.target.value)} fullWidth inputProps={{ 'data-tour': 'payments-note-filter' }} />
             </Grid>
             <Grid item xs={12} md={2}>
               <FormControl fullWidth data-tour="payments-status-filter">

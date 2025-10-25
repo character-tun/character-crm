@@ -11,6 +11,8 @@ import PaymentDialog from '../../components/PaymentDialog.jsx';
 import { cashService } from '../../services/cashService';
 import { paymentsService } from '../../services/paymentsService';
 import { useAuth } from '../../context/AuthContext';
+import EmptyState from '../../components/EmptyState.jsx';
+import { useNotify } from '../../components/NotifyProvider';
 
 const currency = (v) => `₽${Number(v || 0).toLocaleString('ru-RU')}`;
 
@@ -44,9 +46,7 @@ export default function CashRegistersPage() {
   const { hasAnyRole } = useAuth();
   const canManageCash = hasAnyRole(['Admin','Finance']);
 
-  const [toast, setToast] = useState({ open: false, severity: 'success', message: '' });
-  const openToast = (severity, message) => setToast({ open: true, severity, message });
-  const closeToast = () => setToast((t) => ({ ...t, open: false }));
+  const notify = useNotify();
 
   const [cash, setCash] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -89,7 +89,7 @@ export default function CashRegistersPage() {
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка загрузки касс';
       setError(String(msg));
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -119,6 +119,7 @@ export default function CashRegistersPage() {
     } catch (e) {
       // silent fail for balances; show badge as 0
       console.warn('Ошибка загрузки баланса касс', e);
+      notify('Ошибка загрузки баланса касс', { severity: 'error' });
     } finally {
       setBalLoading(false);
     }
@@ -142,7 +143,7 @@ export default function CashRegistersPage() {
     try {
       const resp = await paymentsService.create({ ...payload, type: pType });
       if (resp?.ok) {
-        openToast('success', 'Платёж создан');
+        notify('Платёж создан', { severity: 'success' });
         setPOpen(false);
         await loadBalances();
       } else {
@@ -150,7 +151,7 @@ export default function CashRegistersPage() {
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка операции';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
 
@@ -166,7 +167,7 @@ export default function CashRegistersPage() {
       if (editItem._id) resp = await cashService.update(String(editItem._id), payload);
       else resp = await cashService.create(payload);
       if (resp?.ok || resp?._id || resp?.id || resp?.name) {
-        openToast('success', editItem._id ? 'Касса обновлена' : 'Касса создана');
+        notify(editItem._id ? 'Касса обновлена' : 'Касса создана', { severity: 'success' });
         setEditOpen(false);
         await loadCash();
         await loadBalances();
@@ -175,7 +176,7 @@ export default function CashRegistersPage() {
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка сохранения кассы';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
   const deleteCashRegister = async (row) => {
@@ -184,7 +185,7 @@ export default function CashRegistersPage() {
       if (!ok) return;
       const resp = await cashService.remove(String(row._id || row.id));
       if (resp?.ok || resp?.deleted || resp === true) {
-        openToast('success', 'Касса удалена');
+        notify('Касса удалена', { severity: 'success' });
         await loadCash();
         await loadBalances();
       } else {
@@ -192,7 +193,7 @@ export default function CashRegistersPage() {
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка удаления кассы';
-      openToast('error', String(msg));
+      notify(String(msg), { severity: 'error' });
     }
   };
 
@@ -232,7 +233,11 @@ export default function CashRegistersPage() {
           <Typography variant="h6">Кассы</Typography>
           <Stack direction="row" spacing={1}>
             {canManageCash && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={startCreate}>+ Касса</Button>
+              <Tooltip title="Создать кассу">
+                <span>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={startCreate}>+ Касса</Button>
+                </span>
+              </Tooltip>
             )}
           </Stack>
         </Stack>
@@ -266,6 +271,15 @@ export default function CashRegistersPage() {
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
+        {cash.length === 0 && !loading && (
+          <EmptyState
+            title="Нет касс"
+            description="Создайте кассу для учёта платежей."
+            actionLabel={canManageCash ? '+ Касса' : undefined}
+            onAction={canManageCash ? startCreate : undefined}
+          />
         )}
 
         <div style={{ height: 520, width: '100%' }}>
@@ -311,11 +325,6 @@ export default function CashRegistersPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={toast.open} autoHideDuration={2500} onClose={closeToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert onClose={closeToast} severity={toast.severity} sx={{ width: '100%' }}>
-          {toast.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

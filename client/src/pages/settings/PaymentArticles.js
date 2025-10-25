@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography, Paper, Stack, Button, Grid, TextField, Divider, List, ListItem, ListItemText, IconButton, Tooltip } from '@mui/material';
+import EmptyState from '../../components/EmptyState.jsx';
+import { useNotify } from '../../components/NotifyProvider';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -68,6 +70,7 @@ const migrateArrayToTree = (arr = []) => {
 
 export default function PaymentArticlesPage() {
   const fileRef = useRef(null);
+  const notify = useNotify();
 
   const [categories, setCategories] = useState(() => {
     try {
@@ -92,7 +95,7 @@ export default function PaymentArticlesPage() {
     localStorage.setItem(LS_KEY, JSON.stringify(categories));
   }, [categories]);
 
-  const resetDefault = () => setCategories(DEFAULT_TREE);
+  const resetDefault = () => { setCategories(DEFAULT_TREE); notify('Список статей сброшен', { severity: 'success' }); };
 
   const exportJSON = () => {
     const data = JSON.stringify(categories, null, 2);
@@ -103,6 +106,7 @@ export default function PaymentArticlesPage() {
     a.download = 'payment_categories.json';
     a.click();
     URL.revokeObjectURL(url);
+    notify('Экспортировано в JSON', { severity: 'success' });
   };
 
   const importJSON = () => fileRef.current?.click();
@@ -115,16 +119,22 @@ export default function PaymentArticlesPage() {
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
         setCategories(migrateArrayToTree(parsed));
+        notify('Импорт из JSON выполнен', { severity: 'success' });
       } else if (parsed && typeof parsed === 'object') {
         if (Array.isArray(parsed.income) && parsed.income.some((x) => typeof x === 'object')) {
           setCategories(parsed);
+          notify('Импорт из JSON выполнен', { severity: 'success' });
         } else {
           const inc = Array.isArray(parsed.income) ? parsed.income : [];
           const exp = Array.isArray(parsed.expense) ? parsed.expense : [];
           setCategories(wrapFlatToTree(inc, exp));
+          notify('Импорт из JSON выполнен', { severity: 'success' });
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      notify('Ошибка импорта JSON', { severity: 'error' });
+    }
     e.target.value = '';
   };
 
@@ -133,6 +143,12 @@ export default function PaymentArticlesPage() {
 
   return (
     <Box sx={{ p: 2 }}>
+      {incomeCats.length === 0 && expenseCats.length === 0 && (
+        <Box sx={{ mb: 2 }}>
+          <EmptyState title="Нет статей" description="Добавьте категории для прихода и расхода."
+            actionLabel="Сбросить" onAction={resetDefault} />
+        </Box>
+      )}
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="h5">Статьи движения денежных средств</Typography>
@@ -141,9 +157,21 @@ export default function PaymentArticlesPage() {
           </Tooltip>
         </Stack>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" onClick={resetDefault}>Сбросить</Button>
-          <Button variant="outlined" onClick={exportJSON}>Экспорт JSON</Button>
-          <Button variant="outlined" onClick={importJSON}>Импорт JSON</Button>
+          <Tooltip title="Сбросить к стандартному списку">
+            <span>
+              <Button variant="outlined" onClick={resetDefault}>Сбросить</Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Экспорт категорий в JSON">
+            <span>
+              <Button variant="outlined" onClick={exportJSON}>Экспорт JSON</Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Импорт категорий из JSON">
+            <span>
+              <Button variant="outlined" onClick={importJSON}>Импорт JSON</Button>
+            </span>
+          </Tooltip>
           <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }} onChange={handleImportFile} />
         </Stack>
       </Stack>
