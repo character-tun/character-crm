@@ -111,7 +111,16 @@ export const nav: NavItem[] = [
       { id: 'wh-move',  label: 'Перемещения',  icon: React.createElement(SwapHoriz), path: '/inventory/orders' }
     ]
   },
-  { id: 'shop',  label: 'Магазин',   icon: React.createElement(Storefront),   path: '/shop' },
+  {
+    id: 'shop',
+    label: 'Магазин',
+    icon: React.createElement(Storefront),
+    path: '/shop',
+    children: [
+      { id: 'shop-sale',    label: 'Продажа',        icon: React.createElement(Storefront), path: '/shop' },
+      { id: 'shop-history', label: 'История продаж', icon: React.createElement(History),    path: '/shop/history' },
+    ]
+  },
   {
     id: 'docs',
     label: 'Документы',
@@ -122,7 +131,16 @@ export const nav: NavItem[] = [
       { id: 'photobank', label: 'Фотобанк',          icon: React.createElement(PhotoLibrary), path: '/settings/documents/photobank' }
     ]
   },
-  { id: 'reports',    label: 'Отчёты',     icon: React.createElement(Equalizer), path: '/reports' },
+  {
+    id: 'reports',
+    label: 'Отчёты',
+    icon: React.createElement(Equalizer),
+    path: '/reports',
+    children: [
+      { id: 'reports-payroll', label: 'Начисления', icon: React.createElement(Equalizer), path: '/reports/payroll' },
+      { id: 'reports-stock', label: 'Оборот склада', icon: React.createElement(Equalizer), path: '/reports/stock-turnover' }
+    ]
+  },
   { id: 'ads',        label: 'Объявления', icon: React.createElement(CampaignOutlined), path: '/marketing' },
   { id: 'settings',   label: 'Настройки',  icon: React.createElement(Settings), path: '/settings' },
 ];

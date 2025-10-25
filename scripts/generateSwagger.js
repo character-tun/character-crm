@@ -1028,7 +1028,7 @@ const spec = {
         security: [{ bearerAuth: [] }],
         responses: {
           '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
-          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
         },
       },
     },
@@ -1039,7 +1039,7 @@ const spec = {
         security: [{ bearerAuth: [] }],
         responses: {
           '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
-          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/FieldSchemaItemResponse' } } } },
         },
       },
     },

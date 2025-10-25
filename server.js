@@ -94,8 +94,16 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/fields', require('./routes/fields'));
 app.use('/api/dicts', require('./routes/dicts'));
 
+// Employees & Payroll
+app.use('/api/employees', require('./routes/employees'));
+app.use('/api/payroll', require('./routes/payrollRules'));
+app.use('/api/payroll', require('./routes/payrollAccruals'));
+
 // Warehouse stock routes
 app.use('/api/stock', require('./routes/stock'));
+app.use('/api/doc-templates', require('./routes/docTemplates'));
+// Shop
+app.use('/api/shop', require('./routes/shop'));
 
 // Error handler
 app.use(errorHandler);

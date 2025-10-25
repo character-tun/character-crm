@@ -1,3 +1,12 @@
+## 2025-10-24 14:30 (Europe/Warsaw) | Client — Payroll: Service + UI + routes + sidebar
+
+- files: `client/src/services/payrollService.js`, `client/src/pages/settings/PayrollRules.js`, `client/src/pages/reports/Payroll.js`, `client/src/App.js`, `client/src/pages/Settings.js`, `client/src/layout/sidebarConfig.ts`, `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: добавлен клиентский сервис Payroll (правила/начисления), страницы UI для правил начислений (CRUD) и реестр начислений, маршруты `/settings/payroll/rules` и `/reports/payroll`, пункт сайдбара «Отчёты → Начисления», обновлена документация.
+- Acceptance:
+  - `/settings/payroll/rules` доступна `Admin|Finance`, отображает список правил, создание/удаление работает.
+  - `/reports/payroll` доступен `Admin|Manager|Finance`, загружает реестр начислений, кнопка «Обновить» перезагружает данные.
+  - Сайдбар показывает «Отчёты → Начисления»; переход работает.
+
 ## 2025-10-24 13:15 (Europe/Warsaw) | CI — Jest coverage gates (60/60/45/50)
 - files: `jest.config.js`, `package.json`, `.github/workflows/ci.yml`, `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
 - changes: добавлены пороги покрытия в Jest (`coverageThreshold`), скрипт `test:cov`, и отдельный CI‑шаг; документация обновлена (раздел Tests/Thresholds).
@@ -244,3 +253,5 @@
   - локальный прогон `npm run precontracts` успешно генерирует `artifacts/swagger.json` и артефакты в `storage/reports/api-contracts/`
 2025-10-24T14:42:26+03:00 | .env.example, .github/workflows/ci.yml, .gitignore, CHANGELOG_TRAE.md, README.md, TECH_OVERVIEW.md, package.json, routes/orders.js, routes/payments.js, scripts/extractPaymentsSpec.js, scripts/generateSwagger.js, services/configValidator.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, storage/reports/api-contracts/fields.json, storage/reports/api-contracts/ordertype.json, tests/core.flow.e2e.test.js, tests/payments.flags.defaultCash.e2e.test.js, tests/payments.flags.lock.strict.e2e.test.js, tests/payments.flags.refund.e2e.test.js | feat(payments): add ENV flags for refunds, default cash and strict lock
 2025-10-25T00:32:04+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, TECH_OVERVIEW.md, jest.config.js, middleware/validate.js, package.json, routes/items.js, routes/orders.js, routes/stock.js, server/models/Item.js, server/models/StockBalance.js, server/models/StockLedger.js | feat(orders): add dev mode status logs and coverage thresholds
+2025-10-25T01:06:17+03:00 | CHANGELOG_TRAE.md, routes/stock.js, server/models/StockLedger.js | feat(stock): add operation type to stock ledger entries
+2025-10-24T16:20:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, routes/shop.js, server.js, server/models/ShopSale.js, middleware/validate.js, client/src/services/shopSalesService.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/App.js, client/src/layout/sidebarConfig.ts | feat(shop): scaffold shop sales API, model, client UI and routing

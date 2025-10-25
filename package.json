@@ -23,7 +23,10 @@
     "extract:fields": "node scripts/extractFieldsSpec.js",
     "extract:ordertype": "node scripts/extractOrderTypeSpec.js",
     "extract:payments": "node scripts/extractPaymentsSpec.js",
-    "precontracts": "node scripts/generateSwagger.js && npm run extract:auth && npm run extract:fields && npm run extract:ordertype && npm run extract:payments"
+    "extract:items": "node scripts/extractItemsSpec.js",
+    "extract:shop": "node scripts/extractShopSalesSpec.js",
+    "extract:payroll": "node scripts/extractPayrollSpec.js",
+    "precontracts": "node scripts/generateSwagger.js && npm run extract:auth && npm run extract:fields && npm run extract:ordertype && npm run extract:payments && npm run extract:items && npm run extract:shop && npm run extract:payroll"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -193,13 +193,16 @@
   - `client/src/services/fieldsService.js`: методы `list`, `get`, `listVersions(scope,name)`, `create`, `importSchema`, `patch`, `activate`, `deactivate`, `remove`.
   - `client/src/services/dictsService.js`: методы `list`, `get`, `getByCode(code)`, `create`, `update`, `remove`.
   - `client/src/services/paymentsService.js`: методы `list`, `create`, `update`, `lock`, `refund`, `remove` (возвращают `response.data`; ошибки не перехватываются).
-  - `client/src/services/cashService.js`: методы `list`, `create`, `update`, `remove` (возвращают `response.data`; ошибки не перехватываются).
-  - `client/src/services/reportsService.js`: метод `cashflow(params)` — мини‑отчёт по кассам; возвращает `{ ok, groups[], balance }`.
+- `client/src/services/cashService.js`: методы `list`, `create`, `update`, `remove` (возвращают `response.data`; ошибки не перехватываются).
+- `client/src/services/reportsService.js`: метод `cashflow(params)` — мини‑отчёт по кассам; возвращает `{ ok, groups[], balance }`.
+- `client/src/services/payrollService.js`: методы `rules.list/create/update/remove`, `accruals.list/create`.
 - UI:
   - Полевая страница `client/src/pages/settings/FieldsBuilderPage.js` — импорт схем из локального хранилища, список версий (карточки), «Активировать» версию, ошибки/успехи, скрытие действий без ролей.
   - Справочники — базовые CRUD-страницы.
   - Базовая MUI-тема (без переключателей), единые радиусы/рамки/типографика.
   - App wrapped with ThemeProvider + CssBaseline.
+- `client/src/pages/settings/PayrollRules.js` — CRUD правил начислений (list/create/delete), `ProtectedRoute roles=[Admin,Finance]`.
+- `client/src/pages/reports/Payroll.js` — реестр начислений (list/refresh), `ProtectedRoute roles=[Admin,Manager,Finance]`.
 
 ## Server: Warehouse / Stock
 - Endpoints: `/api/stock/items` (GET, POST), `/api/stock/movements` (GET, POST).
@@ -381,6 +384,18 @@
 - `POST /api/payments/refund` — 200 + `{ ok:true, id }`; ограничения по состоянию заказа аналогичны create.
 - `GET /api/cash` — 200; `POST /api/cash` — 201; `PATCH /api/cash/{id}` — 200 с защитой `SYSTEM_CODE_PROTECTED`; `DELETE /api/cash/{id}` — 409 `CASH_IN_USE` при платежах (Mongo).
 
+
+## Версия 3.5 — Shop Sales (MVP scaffolding) — (2025-10-24 13:00 CEST)
+- API: `/api/shop/sales` — list/create/refund/get; RBAC: `Admin|Manager`.
+- DEV: in-memory `devSales` + связка с `devPaymentsStore` (`income`/`refund` платежи).
+- Mongo: модель `ShopSale` (items/totals/refunds); валидация через Joi `shopSaleCreateSchema`/`shopSaleRefundSchema`.
+- Server: зарегистрирован маршрут `/api/shop` в `server.js`.
+- Client: страницы `SaleForm` (`/shop`) и `ShopHistory` (`/shop/history`), сервис `client/src/services/shopSalesService.js`, роутинг и сайдбар обновлены.
+
+### Acceptance
+- UI: страницы открываются, форма продажи создаёт запись и отображается в истории.
+- RBAC: доступ к `/api/shop/sales*` только для ролей `Admin|Manager`; прочие роли получают `403`.
+- DEV: при `AUTH_DEV_MODE=1` список/создание/возврат работают через in‑memory store; платежи создаются в `devPaymentsStore`.
 
 ## UI Preflight (темизация)
 - Глобальные стили: `client/src/assets/theme-overrides.css` (в `index.js`), `react-big-calendar/lib/css/react-big-calendar.css` (в `Calendar.js`)

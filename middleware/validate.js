@@ -121,6 +121,29 @@ const stockInventorySchema = Joi.object({
   note: Joi.string().trim().optional(),
 }).unknown(true);
 
+// Shop
+const shopSaleItemSchema = Joi.object({
+  itemId: Joi.string().trim().optional(),
+  name: Joi.string().trim().min(1).required(),
+  sku: Joi.string().trim().optional(),
+  unit: Joi.string().trim().optional(),
+  price: Joi.number().min(0).required(),
+  qty: Joi.number().greater(0).required(),
+}).unknown(true);
+
+const shopSaleCreateSchema = Joi.object({
+  items: Joi.array().items(shopSaleItemSchema).min(1).required(),
+  locationId: Joi.string().trim().optional(),
+  method: Joi.string().trim().optional(),
+  cashRegisterId: Joi.string().trim().optional(),
+  note: Joi.string().trim().optional(),
+}).unknown(true);
+
+const shopSaleRefundSchema = Joi.object({
+  amount: Joi.number().greater(0).optional(),
+  reason: Joi.string().trim().optional(),
+}).unknown(true);
+
 module.exports = {
   validate,
   schemas: {
@@ -135,5 +158,7 @@ module.exports = {
     stockMovementCreateSchema,
     stockTransferSchema,
     stockInventorySchema,
+    shopSaleCreateSchema,
+    shopSaleRefundSchema,
   },
 };

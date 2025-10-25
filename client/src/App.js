@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import OrderTypesSettingsPage from './pages/settings/OrderTypes';
 import PaymentArticlesPage from './pages/settings/PaymentArticles';
 import OrderStatusesSettingsPage from './pages/settings/OrderStatuses';
+import StockTurnoverReport from './pages/reports/StockTurnover';
 
 // Layout components
 import AppShell from './layout/AppShell';
@@ -43,6 +44,10 @@ import BootstrapFirst from './pages/BootstrapFirst';
 import RbacTest from './pages/RbacTest';
 import UiThemePage from './pages/settings/UiTheme';
 // Тема импортируется из отдельного файла theme.js
+import SaleFormPage from './pages/shop/SaleForm';
+import ShopHistoryPage from './pages/shop/ShopHistory';
+import PayrollRules from './pages/settings/PayrollRules';
+import PayrollReport from './pages/reports/Payroll';
 
 function App() {
   // removed: const { mode } = useThemeMode();
@@ -75,8 +80,12 @@ function App() {
           <Route path="inventory/products" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryProducts /></ProtectedRoute>} />
           <Route path="inventory/orders" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryOrders /></ProtectedRoute>} />
           <Route path="inventory/suppliers" element={<ProtectedRoute roles={["Admin","Production"]}><InventorySuppliers /></ProtectedRoute>} />
-          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Магазин</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
+-          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Магазин</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
++          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><SaleFormPage /></ProtectedRoute>} />
++          <Route path="shop/history" element={<ProtectedRoute roles={["Admin","Manager"]}><ShopHistoryPage /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Отчеты</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
++          <Route path="reports/payroll" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PayrollReport /></ProtectedRoute>} />
+          <Route path="reports/stock-turnover" element={<ProtectedRoute roles={["Admin","Production"]}><StockTurnoverReport /></ProtectedRoute>} />
           <Route path="announcements" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Объявления</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute roles={["Admin","Manager"]}><Settings /></ProtectedRoute>} />
           <Route path="settings/company" element={<ProtectedRoute roles={["Admin","Manager"]}><Company /></ProtectedRoute>} />
@@ -97,6 +106,7 @@ function App() {
           <Route path="settings/forms/client-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля клиента" storageKey="settings_client_fields" /></ProtectedRoute>} />
           <Route path="settings/forms/directories" element={<ProtectedRoute roles={["Admin","Manager"]}><ListSettingsPage title="Справочники" storageKey="settings_directories" initialItems={["Единицы измерения","Марки авто","Модели авто"]} /></ProtectedRoute>} />
           <Route path="settings/ui-theme" element={<ProtectedRoute roles={["Admin","Manager"]}><UiThemePage /></ProtectedRoute>} />
+          <Route path="settings/payroll/rules" element={<ProtectedRoute roles={["Admin","Finance"]}><PayrollRules /></ProtectedRoute>} />
           <Route path="knowledge" element={<div><h2>База знаний</h2><p>Страница в разработке</p></div>} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="rbac-test" element={<ProtectedRoute><RbacTest /></ProtectedRoute>} />
