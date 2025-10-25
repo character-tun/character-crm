@@ -286,6 +286,7 @@ export default function CashRegistersPage() {
         mode="create"
         type={pType}
         cashOptions={cash}
+        categoriesTree={categoriesTree}
         articlePaths={articlePaths}
         initialPayment={pInitial || undefined}
         canSave={canManageCash}

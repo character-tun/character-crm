@@ -1,6 +1,9 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Box, Stack, Typography, TextField, Select, MenuItem, Button, Chip, FormControl, InputLabel, Radio, FormControlLabel } from '@mui/material';
+import { TreeView, TreeItem } from '@mui/lab';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // Local formatter for article breadcrumbs
 function formatArticleBreadcrumbs(path) {
@@ -16,13 +19,14 @@ function formatArticleBreadcrumbs(path) {
  * - mode: 'create' | 'edit' | 'refund'
  * - type: 'income' | 'expense' | 'refund'
  * - cashOptions: Array<{ _id?: string; id?: string; name?: string; code?: string }>
- * - articlePaths?: string[] // список путей вида "Приход/Продажи/Онлайн" (хлебные крошки)
+ * - articlePaths?: string[] // список путей (fallback)
+ * - categoriesTree?: { income: Array<{ name: string; children: string[] }>; expense: Array<{ name: string; children: string[] }> }
  * - initialPayment?: { orderId?: string; amount?: number; method?: string; note?: string; cashRegisterId?: string; articlePath?: string[]; locked?: boolean }
- * - canSave?: boolean // управляет доступностью кнопки сохранения
+ * - canSave?: boolean
  * - onClose: () => void
  * - onSubmit: (payload: { orderId: string; amount: number; method?: string; note?: string; cashRegisterId?: string; articlePath: string[]; type: string }) => void
  */
-export default function PaymentDialog({ open, mode = 'create', type = 'income', cashOptions = [], articlePaths = [], initialPayment, canSave = true, onClose, onSubmit }) {
+export default function PaymentDialog({ open, mode = 'create', type = 'income', cashOptions = [], articlePaths = [], categoriesTree, initialPayment, canSave = true, onClose, onSubmit }) {
   const [local, setLocal] = React.useState(() => ({
     orderId: String(initialPayment?.orderId || ''),
     amount: Number(initialPayment?.amount || 0),
@@ -35,7 +39,6 @@ export default function PaymentDialog({ open, mode = 'create', type = 'income', 
   const locked = !!initialPayment?.locked;
 
   React.useEffect(() => {
-    // reset when initialPayment changes
     setLocal({
       orderId: String(initialPayment?.orderId || ''),
       amount: Number(initialPayment?.amount || 0),
@@ -63,6 +66,57 @@ export default function PaymentDialog({ open, mode = 'create', type = 'income', 
       type,
     };
     onSubmit && onSubmit(payload);
+  };
+
+  const renderTreePicker = () => {
+    if (!categoriesTree || typeof categoriesTree !== 'object') return null;
+    const roots = type === 'expense' ? (categoriesTree.expense || []) : type === 'income' ? (categoriesTree.income || []) : [ ...(categoriesTree.income||[]), ...(categoriesTree.expense||[]) ];
+    const color = type === 'expense' ? '#d32f2f' : type === 'income' ? '#2e7d32' : undefined;
+
+    const onSelectLeaf = (pathArr) => {
+      setLocal((f) => ({ ...f, articlePath: pathArr }));
+    };
+
+    return (
+      <Stack>
+        <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>Выберите одну статью</Typography>
+        <TreeView defaultExpandIcon={<ChevronRightIcon />} defaultCollapseIcon={<ExpandMoreIcon />}>
+          {roots.map((cat, idx) => (
+            <TreeItem
+              key={`${cat.name}-${idx}`}
+              nodeId={`cat-${idx}`}
+              label={<Typography sx={{ color }}>{cat.name}</Typography>}
+            >
+              {(cat.children || []).map((leaf, j) => (
+                <TreeItem
+                  key={`${cat.name}-${leaf}-${j}`}
+                  nodeId={`leaf-${idx}-${j}`}
+                  label={
+                    <Typography
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => onSelectLeaf([cat.name, leaf])}
+                    >
+                      {leaf}
+                    </Typography>
+                  }
+                />
+              ))}
+              {Array.isArray(cat.children) && cat.children.length === 0 && (
+                <TreeItem
+                  key={`${cat.name}-self`}
+                  nodeId={`leaf-${idx}-self`}
+                  label={
+                    <Typography sx={{ cursor: 'pointer' }} onClick={() => onSelectLeaf([cat.name])}>
+                      (выбрать категорию)
+                    </Typography>
+                  }
+                />
+              )}
+            </TreeItem>
+          ))}
+        </TreeView>
+      </Stack>
+    );
   };
 
   return (
@@ -147,23 +201,27 @@ export default function PaymentDialog({ open, mode = 'create', type = 'income', 
       <Dialog open={articlePickerOpen} onClose={() => setArticlePickerOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Выбор статьи</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>Выберите одну статью</Typography>
-          <Stack spacing={0.5}>
-            {articlePaths.length === 0 ? (
-              <Typography sx={{ opacity: 0.7 }}>Здесь пока пусто</Typography>
-            ) : null}
-            {articlePaths.map((p) => (
-              <FormControl key={p}>
-                <FormControlLabel
-                  control={<Radio checked={formatArticleBreadcrumbs(local.articlePath) === p} onChange={() => {
-                    const segs = String(p).split('/').map((t) => t.trim()).filter(Boolean);
-                    setLocal((f) => ({ ...f, articlePath: segs }));
-                  }} />}
-                  label={p}
-                />
-              </FormControl>
-            ))}
-          </Stack>
+          {categoriesTree ? (
+            renderTreePicker()
+          ) : (
+            <Stack spacing={0.5}>
+              <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>Выберите одну статью</Typography>
+              {articlePaths.length === 0 ? (
+                <Typography sx={{ opacity: 0.7 }}>Здесь пока пусто</Typography>
+              ) : null}
+              {articlePaths.map((p) => (
+                <FormControl key={p}>
+                  <FormControlLabel
+                    control={<Radio checked={formatArticleBreadcrumbs(local.articlePath) === p} onChange={() => {
+                      const segs = String(p).split('/').map((t) => t.trim()).filter(Boolean);
+                      setLocal((f) => ({ ...f, articlePath: segs }));
+                    }} />}
+                    label={p}
+                  />
+                </FormControl>
+              ))}
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setArticlePickerOpen(false)}>Готово</Button>

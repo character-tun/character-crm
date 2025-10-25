@@ -1,3 +1,31 @@
+## 2025-10-26 00:10 (Europe/Warsaw) | Client — Дашборд: финансовый виджет (5.5 — Finance UX)
+
+- files: `client/src/components/widgets/FinanceWidget.jsx`, `client/src/pages/Dashboard.js`, `client/src/pages/reports/Cashflow.js`, `client/src/App.js`, `CHANGELOG_TRAE.md`
+- changes: добавлен финансовый виджет на дашборде — суммы за 7 дней (Приход/Расход/Сальдо), мини‑график тренда; кнопка «К отчётам» ведёт на `/reports/cashflow` с предзаполненным периодом.
+- Acceptance:
+  - Дашборд рендерится быстро; виджет не блокирует основной поток, показывает Skeleton при ожидании данных.
+  - «Приход», «Расход», «Сальдо» соответствуют данным отчёта за последнюю неделю; при отсутствии бэкенда отображаются нули.
+  - Кнопка «К отчётам» переносит фильтры (`dateFrom/dateTo`) и открывает страницу `/reports/cashflow`, период показан в Chip.
+
+## 2025-10-25 23:58 (Europe/Warsaw) | Client — Payments: Articles Tree editor (5.4 — Finance UX)
+
+- files: `client/src/pages/settings/PaymentArticles.js`, `client/src/components/TreeEditor.jsx`, `client/src/components/PaymentDialog.jsx`, `client/src/pages/Payments.js`, `client/src/pages/settings/CashRegisters.js`, `client/package.json`, `CHANGELOG_TRAE.md`
+- changes: реализован редактор дерева статей ДДС (иерархия категорий/подстатей) на MUI TreeView с drag‑n‑drop, inline‑редактированием и добавлением/удалением; страница «Статьи» переведена на новый компонент; модалка платежа поддерживает выбор из дерева; страницы «Платежи» и «Кассы» передают дерево в модалку; сохранён формат хранения `payment_categories` и миграции; порядок узлов сохраняется (без сортировки).
+- Acceptance:
+  - `http://localhost:3002/settings/payments/articles` открывается; видны две колонки (Приход/Расход) c TreeView; drag‑n‑drop, переименование, добавление/удаление работают; «Сбросить», импорт/экспорт JSON работают.
+  - На странице `http://localhost:3002/payments` модалка «Создать приход/расход» → «Выбрать из дерева» показывает дерево статей; выбор листа/категории обновляет Chip с хлебными крошками; сохранение проходит.
+  - На странице `http://localhost:3002/settings/cash-registers` быстрый платёж открывает модалку с деревом статей; выбор и сохранение проходят.
+
+## 2025-10-25 23:59 (Europe/Warsaw) | Client — Settings: Cash Registers route + card + page (5.x — Finance UX)
+
+- files: `client/src/App.js`, `client/src/pages/Settings.js`, `client/src/pages/settings/CashRegisters.js`, `CHANGELOG_TRAE.md`
+- changes: добавлен маршрут `/settings/cash-registers` (доступ для Admin|Manager|Finance), карточка «Кассы» на странице настроек, страница «Кассы» (список/создание/редактирование/удаление, балансы по данным платежей, быстрый платёж через модалку);
+- Acceptance:
+  - Превью клиента открывается по `http://localhost:3001/`; переход на `/settings/cash-registers` работает без ошибок.
+  - Список касс загружается; баланс считается по фильтрам даты/локации.
+  - Доступные действия: создать/редактировать/удалить кассу (в рамках ролей), быстрый платёж из строки.
+  - Карточка «Кассы» на `/settings` ведёт на страницу настроек касс.
+
 ## 2025-10-25 10:45 (Europe/Warsaw) | Client — Payments UI: Modal refactor + EmptyState + routes cleanup
 
 - files: `client/src/pages/Payments.js`, `client/src/components/PaymentDialog.jsx`, `client/src/components/EmptyState.jsx`, `client/src/App.js`, `client/src/pages/Settings.js`, `CHANGELOG_TRAE.md`
@@ -341,3 +369,4 @@
 2025-10-25T19:23:32+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/layout/sidebarConfig.ts, client/src/pages/Settings.js, client/src/pages/reports/Payroll.js, client/src/pages/reports/StockTurnover.js, client/src/pages/settings/PayrollRules.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/services/payrollService.js, client/src/services/reportsService.js, client/src/services/shopSalesService.js, jest.config.js, middleware/validate.js, package.json, routes/employees.js, routes/payrollAccruals.js, routes/payrollRules.js, routes/reports.js, routes/shop.js, scripts/extractItemsSpec.js, scripts/extractPayrollSpec.js, scripts/extractShopSalesSpec.js, scripts/generateSwagger.js, server.js, server/models/Employee.js, server/models/PayrollAccrual.js, server/models/PayrollRule.js, server/models/ShopSale.js, services/telegramNotify.js, storage/reports/api-contracts/fields.json, tests/e2e/items.e2e.test.js, tests/e2e/payroll.summary.e2e.test.js, tests/e2e/shop.sales.e2e.test.js | feat(payroll): add payroll rules, accruals, reports and UI components
 2025-10-25T22:00:16+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/pages/Landing.js, client/src/pages/OnboardingChecklist.js, client/src/pages/OnboardingWizard.js, client/src/pages/Payments.js, client/src/pages/reports/Payroll.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/theme/index.ts, client/src/theme/theme.ts, routes/public.js | feat(onboarding): implement onboarding wizard, checklist and landing page
 2025-10-25T23:55:53+03:00 | CHANGELOG_TRAE.md, README.md | docs: update readme with test coverage command and thresholds
+2025-10-25T23:56:17+03:00 | CHANGELOG_TRAE.md, client/src/App.js, client/src/components/EmptyState.jsx, client/src/components/PaymentDialog.jsx, client/src/components/SubscriptionStatusWidget.jsx, client/src/layout/AppShell.tsx, client/src/layout/sidebarConfig.ts, client/src/pages/Landing.js, client/src/pages/Payments.js, client/src/pages/Pricing.js, client/src/pages/Settings.js, client/src/pages/settings/CashRegisters.js, client/src/services/billingService.js, phase5_finance_ux.json | feat(finance): implement pricing, subscriptions and cash registers

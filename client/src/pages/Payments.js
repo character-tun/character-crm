@@ -586,6 +586,7 @@ export default function PaymentsPage() {
         mode={modalMode}
         type={formType}
         cashOptions={cash}
+        categoriesTree={categoriesTree}
         articlePaths={allArticlePaths}
         initialPayment={modalMode === 'edit' ? currentRow : undefined}
         canSave={modalMode !== 'edit' || canPaymentsWrite}

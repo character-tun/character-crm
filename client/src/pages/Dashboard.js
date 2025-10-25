@@ -7,6 +7,7 @@ import { formatCurrencyRu } from '../services/format';
 import { formatNumberRu } from '../services/format';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
+import FinanceWidget from '../components/widgets/FinanceWidget';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -166,6 +167,11 @@ const Dashboard = () => {
               </Stack>
             </CardContent>
           </Card>
+        </Grid>
+
+        {/* Финансовый виджет (неделя) */}
+        <Grid item xs={12}>
+          <FinanceWidget />
         </Grid>
         
         {/* Графики */}

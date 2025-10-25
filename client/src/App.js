@@ -7,6 +7,7 @@ import PaymentArticlesPage from './pages/settings/PaymentArticles';
 import CashRegistersPage from './pages/settings/CashRegisters';
 import OrderStatusesSettingsPage from './pages/settings/OrderStatuses';
 import StockTurnoverReport from './pages/reports/StockTurnover';
+import CashflowReport from './pages/reports/Cashflow';
 
 // Layout components
 import AppShell from './layout/AppShell';
@@ -88,6 +89,7 @@ function App() {
           <Route path="shop/history" element={<ProtectedRoute roles={["Admin","Manager"]}><ShopHistoryPage /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Отчеты</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
           <Route path="pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+          <Route path="reports/cashflow" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><CashflowReport /></ProtectedRoute>} />
           <Route path="reports/payroll" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PayrollReport /></ProtectedRoute>} />
           <Route path="reports/stock-turnover" element={<ProtectedRoute roles={["Admin","Production"]}><StockTurnoverReport /></ProtectedRoute>} />
           <Route path="announcements" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Объявления</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
