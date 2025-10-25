@@ -10,6 +10,7 @@ import Sidebar from './Sidebar';
 import logo from '../assets/logo.svg';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
+import SubscriptionStatusWidget from '../components/SubscriptionStatusWidget.jsx';
 
 const drawerWidth = 280;
 const appBarHeight = 64;
@@ -42,6 +43,7 @@ export default function AppShell() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SubscriptionStatusWidget />
             <Tooltip title={mode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}>
               <IconButton aria-label="Переключить режим темы" onClick={toggle} sx={{ mr: 1 }}>
                 {mode === 'dark' ? <DarkModeIcon /> : <LightModeIcon />}

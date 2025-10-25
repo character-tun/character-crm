@@ -1,3 +1,13 @@
+## 2025-10-25 10:45 (Europe/Warsaw) | Client — Payments UI: Modal refactor + EmptyState + routes cleanup
+
+- files: `client/src/pages/Payments.js`, `client/src/components/PaymentDialog.jsx`, `client/src/components/EmptyState.jsx`, `client/src/App.js`, `client/src/pages/Settings.js`, `CHANGELOG_TRAE.md`
+- changes: заменены легаси-диалоги платежей на универсальный `PaymentDialog` (create/edit/refund) с внутренним выбором статьи; добавлен `EmptyState` для пустых выборок; очищены дифф-маркеры, исправлен `onRowClick` в `DataGridBase`, удалено устаревшее состояние `form`; в `App.js` очищены маршруты `shop`/`shop/history`, добавлен `pricing`; в `Settings.js` исправлен пункт «Правила начислений».
+- Acceptance:
+  - `/payments` открывается без ошибок; создание/редактирование/возврат работают в унифицированной модалке.
+  - Выбор статьи работает внутри модалки; список выбранных статей (Chip) отображается корректно.
+  - Фильтры (дата/тип/касса/локация/статьи/заметка/блокировка) влияют на список; итоги пересчитываются.
+  - Превью клиента доступно по `http://localhost:3001/payments`.
+
 ## 2025-10-24 14:30 (Europe/Warsaw) | Client — Payroll: Service + UI + routes + sidebar
 
 - files: `client/src/services/payrollService.js`, `client/src/pages/settings/PayrollRules.js`, `client/src/pages/reports/Payroll.js`, `client/src/App.js`, `client/src/pages/Settings.js`, `client/src/layout/sidebarConfig.ts`, `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
@@ -330,3 +340,4 @@
 2025-10-24T16:20:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, routes/shop.js, server.js, server/models/ShopSale.js, middleware/validate.js, client/src/services/shopSalesService.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/App.js, client/src/layout/sidebarConfig.ts | feat(shop): scaffold shop sales API, model, client UI and routing
 2025-10-25T19:23:32+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/layout/sidebarConfig.ts, client/src/pages/Settings.js, client/src/pages/reports/Payroll.js, client/src/pages/reports/StockTurnover.js, client/src/pages/settings/PayrollRules.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/services/payrollService.js, client/src/services/reportsService.js, client/src/services/shopSalesService.js, jest.config.js, middleware/validate.js, package.json, routes/employees.js, routes/payrollAccruals.js, routes/payrollRules.js, routes/reports.js, routes/shop.js, scripts/extractItemsSpec.js, scripts/extractPayrollSpec.js, scripts/extractShopSalesSpec.js, scripts/generateSwagger.js, server.js, server/models/Employee.js, server/models/PayrollAccrual.js, server/models/PayrollRule.js, server/models/ShopSale.js, services/telegramNotify.js, storage/reports/api-contracts/fields.json, tests/e2e/items.e2e.test.js, tests/e2e/payroll.summary.e2e.test.js, tests/e2e/shop.sales.e2e.test.js | feat(payroll): add payroll rules, accruals, reports and UI components
 2025-10-25T22:00:16+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/pages/Landing.js, client/src/pages/OnboardingChecklist.js, client/src/pages/OnboardingWizard.js, client/src/pages/Payments.js, client/src/pages/reports/Payroll.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/theme/index.ts, client/src/theme/theme.ts, routes/public.js | feat(onboarding): implement onboarding wizard, checklist and landing page
+2025-10-25T23:55:53+03:00 | CHANGELOG_TRAE.md, README.md | docs: update readme with test coverage command and thresholds

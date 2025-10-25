@@ -83,7 +83,8 @@ const Settings = () => {
       items: [
         { title: 'Статьи (категории)', subtitle: 'Доходы и расходы', icon: <CategoryIcon />, to: '/settings/payments/articles' },
         { title: 'Способы оплаты', subtitle: 'Наличные, карта, перевод', icon: <PaymentIcon />, to: '/settings/payments/methods' },
-+        { title: 'Правила начислений', subtitle: 'Проценты, базы, условия', icon: <AssignmentIndIcon />, to: '/settings/payroll/rules' },
+        { title: 'Кассы', subtitle: 'Создание касс, быстрые платежи', icon: <PaymentIcon />, to: '/settings/cash-registers' },
+        { title: 'Правила начислений', subtitle: 'Проценты, базы, условия', icon: <AssignmentIndIcon />, to: '/settings/payroll/rules' },
       ]
     },
     {

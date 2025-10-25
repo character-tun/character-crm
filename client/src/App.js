@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrderTypesSettingsPage from './pages/settings/OrderTypes';
 import PaymentArticlesPage from './pages/settings/PaymentArticles';
+import CashRegistersPage from './pages/settings/CashRegisters';
 import OrderStatusesSettingsPage from './pages/settings/OrderStatuses';
 import StockTurnoverReport from './pages/reports/StockTurnover';
 
@@ -49,6 +50,7 @@ import SaleFormPage from './pages/shop/SaleForm';
 import ShopHistoryPage from './pages/shop/ShopHistory';
 import PayrollRules from './pages/settings/PayrollRules';
 import PayrollReport from './pages/reports/Payroll';
+import PricingPage from './pages/Pricing';
 
 function App() {
   // removed: const { mode } = useThemeMode();
@@ -82,11 +84,11 @@ function App() {
           <Route path="inventory/products" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryProducts /></ProtectedRoute>} />
           <Route path="inventory/orders" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryOrders /></ProtectedRoute>} />
           <Route path="inventory/suppliers" element={<ProtectedRoute roles={["Admin","Production"]}><InventorySuppliers /></ProtectedRoute>} />
--          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Магазин</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
-+          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><SaleFormPage /></ProtectedRoute>} />
-+          <Route path="shop/history" element={<ProtectedRoute roles={["Admin","Manager"]}><ShopHistoryPage /></ProtectedRoute>} />
+          <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><SaleFormPage /></ProtectedRoute>} />
+          <Route path="shop/history" element={<ProtectedRoute roles={["Admin","Manager"]}><ShopHistoryPage /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Отчеты</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
-+          <Route path="reports/payroll" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PayrollReport /></ProtectedRoute>} />
+          <Route path="pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+          <Route path="reports/payroll" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PayrollReport /></ProtectedRoute>} />
           <Route path="reports/stock-turnover" element={<ProtectedRoute roles={["Admin","Production"]}><StockTurnoverReport /></ProtectedRoute>} />
           <Route path="announcements" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Объявления</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute roles={["Admin","Manager"]}><Settings /></ProtectedRoute>} />
@@ -101,6 +103,7 @@ function App() {
           <Route path="settings/orders/sms" element={<ProtectedRoute roles={["Admin","Manager"]}><OrdersSMS /></ProtectedRoute>} />
           <Route path="settings/payments/articles" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><PaymentArticlesPage /></ProtectedRoute>} />
           <Route path="settings/payments/methods" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><ListSettingsPage title="Способы оплаты" storageKey="payment_methods" initialItems={["Наличные","Карта","Банковский перевод"]} /></ProtectedRoute>} />
+          <Route path="settings/cash-registers" element={<ProtectedRoute roles={["Admin","Manager","Finance"]}><CashRegistersPage /></ProtectedRoute>} />
           <Route path="settings/clients/notifications" element={<ProtectedRoute roles={["Admin","Manager"]}><ClientsNotifications /></ProtectedRoute>} />
           <Route path="settings/forms/order-types" element={<ProtectedRoute roles={["Admin"]}><OrderTypesSettingsPage /></ProtectedRoute>} />
           <Route path="settings/forms/order-fields" element={<ProtectedRoute roles={["Admin","Manager"]}><FieldsBuilderPage title="Поля заказа" storageKey="settings_order_fields" /></ProtectedRoute>} />

@@ -39,7 +39,7 @@ export default function Landing() {
   const y = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.9, 0.8]);
 
-  const goOnboarding = () => navigate('/bootstrap');
+  const goOnboarding = () => navigate('/pricing');
   const goTryFree = () => navigate('/bootstrap');
 
   return (
@@ -73,11 +73,12 @@ export default function Landing() {
                 </Typography>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <Button size="large" variant="contained" color="primary" onClick={goTryFree}>
-                    Попробовать бесплатно
+                    Попробовать 14 дней
                   </Button>
                   <Button size="large" variant="outlined" color="primary" onClick={goOnboarding}>
-                    Начать бесплатно
+                    Посмотреть тарифы
                   </Button>
+                
                 </Stack>
               </Stack>
             </Grid>
@@ -246,8 +247,8 @@ export default function Landing() {
               Начните бесплатно — загрузим демо‑данные и покажем ключевые модули.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button size="large" variant="contained" onClick={goTryFree}>Попробовать бесплатно</Button>
-              <Button size="large" variant="outlined" onClick={goOnboarding}>Начать бесплатно</Button>
+              
+              <Button size="large" variant="outlined" onClick={goOnboarding}>Посмотреть тарифы</Button>
             </Stack>
           </Stack>
         </Container>

@@ -141,6 +141,7 @@ export const nav: NavItem[] = [
       { id: 'reports-stock', label: 'Оборот склада', icon: React.createElement(Equalizer), path: '/reports/stock-turnover' }
     ]
   },
-  { id: 'ads',        label: 'Объявления', icon: React.createElement(CampaignOutlined), path: '/marketing' },
-  { id: 'settings',   label: 'Настройки',  icon: React.createElement(Settings), path: '/settings' },
+  { id: 'pricing',   label: 'Тарифы',   icon: React.createElement(CreditCard), path: '/pricing' },
+   { id: 'ads',        label: 'Объявления', icon: React.createElement(CampaignOutlined), path: '/marketing' },
+   { id: 'settings',   label: 'Настройки',  icon: React.createElement(Settings), path: '/settings' },
 ];

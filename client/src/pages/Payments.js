@@ -14,7 +14,9 @@ import { reportsService } from '../services/reportsService';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
 import DataGridBase from '../components/DataGridBase';
-import FormField from '../components/FormField';
+
+import PaymentDialog from '../components/PaymentDialog.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 const currency = (v) => `₽${Number(v || 0).toLocaleString('ru-RU')}`;
 const formatDateTime = (iso) => {
@@ -214,36 +216,35 @@ export default function PaymentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit' | 'refund'
   const [currentId, setCurrentId] = useState('');
+  const [currentRow, setCurrentRow] = useState(null);
   const [formType, setFormType] = useState('income');
-  const [form, setForm] = useState({ orderId: '', amount: 0, method: '', note: '', cashRegisterId: '', articlePath: [] });
 
   const openCreate = (t) => {
     setModalMode('create');
     setFormType(t);
-    setForm({ orderId: '', amount: 0, method: '', note: '', cashRegisterId: '', articlePath: [] });
     setCurrentId('');
+    setCurrentRow(null);
     setModalOpen(true);
   };
   const openEdit = (row) => {
     setModalMode('edit');
     setFormType(row.type);
-    setForm({ orderId: String(row.orderId || ''), amount: Number(row.amount || 0), method: row.method || '', note: row.note || '', cashRegisterId: String(row.cashRegisterId || ''), articlePath: Array.isArray(row.articlePath) ? row.articlePath : [] });
     setCurrentId(String(row._id || row.id || ''));
+    setCurrentRow(row);
     setModalOpen(true);
   };
   const openRefund = () => {
     setModalMode('refund');
     setFormType('refund');
-    setForm({ orderId: '', amount: 0, method: '', note: '', cashRegisterId: '', articlePath: [] });
     setCurrentId('');
+    setCurrentRow(null);
     setModalOpen(true);
   };
 
-  const submitModal = async () => {
+  const submitModal = async (payload) => {
     try {
       if (modalMode === 'create') {
-        const payload = { orderId: form.orderId, type: formType, amount: Number(form.amount || 0), method: form.method || undefined, note: form.note || undefined, cashRegisterId: form.cashRegisterId || undefined, articlePath: Array.isArray(form.articlePath) ? form.articlePath : [] };
-        const resp = await paymentsService.create(payload);
+        const resp = await paymentsService.create({ ...payload, type: formType });
         if (resp?.ok) {
           openToast('success', 'Платёж создан');
           await loadPayments();
@@ -253,7 +254,8 @@ export default function PaymentsPage() {
         }
       } else if (modalMode === 'edit') {
         const id = currentId;
-        const patch = { amount: Number(form.amount || 0), method: form.method || undefined, note: form.note || undefined, cashRegisterId: form.cashRegisterId || undefined, articlePath: Array.isArray(form.articlePath) ? form.articlePath : [] };
+        const { amount, method, note, cashRegisterId, articlePath } = payload || {};
+        const patch = { amount: Number(amount || 0), method: method || undefined, note: note || undefined, cashRegisterId: cashRegisterId || undefined, articlePath: Array.isArray(articlePath) ? articlePath : [] };
         const resp = await paymentsService.update(id, patch);
         if (resp?.ok) {
           openToast('success', 'Платёж обновлён');
@@ -263,7 +265,6 @@ export default function PaymentsPage() {
           throw new Error(resp?.error || 'Не удалось обновить платёж');
         }
       } else if (modalMode === 'refund') {
-        const payload = { orderId: form.orderId, amount: Number(form.amount || 0), method: form.method || undefined, note: form.note || undefined, cashRegisterId: form.cashRegisterId || undefined, articlePath: Array.isArray(form.articlePath) ? form.articlePath : [] };
         const resp = await paymentsService.refund(payload);
         if (resp?.ok) {
           openToast('success', 'Рефанд создан');
@@ -326,6 +327,7 @@ export default function PaymentsPage() {
       return code && name ? `${name} (${code})` : (name || code || id);
     } },
     { field: 'orderId', headerName: 'Заказ', width: 160 },
+    { field: 'note', headerName: 'Комментарий', width: 240 },
     { field: 'locked', headerName: 'Замок', width: 100, renderCell: (params) => (
       params.row.locked ? (
         <Tooltip title="Платёж закрыт"><LockIcon fontSize="small" /></Tooltip>
@@ -361,12 +363,9 @@ export default function PaymentsPage() {
           <Stack direction="row" spacing={1}>
              {canPaymentsWrite && (
                <>
--                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')}>Новый приход</Button>
--                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')}>Новый расход</Button>
--                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund}>Рефанд</Button>
-+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')} data-tour="payments-new-income">Новый приход</Button>
-+                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')} data-tour="payments-new-expense">Новый расход</Button>
-+                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund} data-tour="payments-refund">Рефанд</Button>
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')} data-tour="payments-new-income">Новый приход</Button>
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')} data-tour="payments-new-expense">Новый расход</Button>
+                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund} data-tour="payments-refund">Рефанд</Button>
                </>
              )}
            </Stack>
@@ -500,8 +499,7 @@ export default function PaymentsPage() {
          <Grid container spacing={2} sx={{ mt: 1 }}>
            <Grid item xs={12}>
              <Stack direction="row" spacing={1} alignItems="center">
--              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)}>Статьи</Button>
-+              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)} data-tour="payments-articles-filter">Статьи</Button>
+              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)} data-tour="payments-articles-filter">Статьи</Button>
                <Typography variant="body2" sx={{ opacity: 0.8 }}>Выбранные: {selectedArticles.length || 0}</Typography>
              </Stack>
            </Grid>
@@ -513,8 +511,7 @@ export default function PaymentsPage() {
                {selectedArticles.length > 0 ? (
                  <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                    {selectedArticles.map((p) => (
--                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} />
-+                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} data-tour="payments-selected-articles" />
+                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} data-tour="payments-selected-articles" />
                    ))}
                  </Stack>
                ) : (
@@ -531,10 +528,13 @@ export default function PaymentsPage() {
          )}
  
          {filteredItems.length === 0 && !loading && (
-           <Box sx={{ p: 3, textAlign: 'center', color: 'var(--color-textMuted)' }}>
-             <Typography>Нет данных</Typography>
-           </Box>
-         )}
+          <EmptyState
+            title="Нет данных"
+            description="Измените фильтры или создайте платёж."
+            actionLabel={canPaymentsWrite ? (type === 'expense' ? 'Новый расход' : 'Новый приход') : undefined}
+            onAction={canPaymentsWrite ? () => openCreate(type === 'expense' ? 'expense' : 'income') : undefined}
+          />
+        )}
  
          <div style={{ height: 520, width: '100%' }} data-tour="payments-grid">
            <DataGridBase
@@ -544,6 +544,7 @@ export default function PaymentsPage() {
              initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
              loading={loading}
              getRowId={(row) => row.id}
+             onRowClick={(params) => openEdit(params.row)}
              getRowClassName={(params) => {
                const t = params.row.type;
                if (t === 'income') return 'row-income';
@@ -580,44 +581,17 @@ export default function PaymentsPage() {
          </Stack>
        </Paper>
  
-       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm">
-         <DialogTitle>
-           {modalMode === 'create' ? (formType === 'income' ? 'Создать приход' : 'Создать расход') : (modalMode === 'edit' ? 'Редактировать платёж' : 'Создать рефанд')}
-         </DialogTitle>
-         <DialogContent>
-           <Stack spacing={2} sx={{ mt: 1 }}>
-             <TextField label="Заказ (orderId)" value={form.orderId} onChange={(e)=>setForm((f)=>({ ...f, orderId: e.target.value }))} fullWidth />
-             <TextField label="Сумма" type="number" value={form.amount} onChange={(e)=>setForm((f)=>({ ...f, amount: Number(e.target.value) }))} fullWidth />
-             <FormField label="Метод">
-               <TextField label={undefined} value={form.method} onChange={(e)=>setForm((f)=>({ ...f, method: e.target.value }))} fullWidth />
-             </FormField>
-             <FormField label="Касса">
-               <Select value={form.cashRegisterId} onChange={(e)=>setForm((f)=>({ ...f, cashRegisterId: e.target.value }))} fullWidth>
-                 <MenuItem value="">Не выбрано</MenuItem>
-                 {cash.map((c) => (
-                   <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
-                 ))}
-               </Select>
-             </FormField>
-             <FormField label="Заметка">
-               <TextField label={undefined} value={form.note} onChange={(e)=>setForm((f)=>({ ...f, note: e.target.value }))} fullWidth />
-             </FormField>
-             <Stack>
-               <Typography variant="body2" sx={{ mb: 1 }}>Статья (хлебные крошки)</Typography>
-               <Stack direction="row" spacing={1} alignItems="center">
-                 <Button size="small" variant="outlined" onClick={() => setArticleDialogOpen(true)}>Выбрать из дерева</Button>
-                 {Array.isArray(form.articlePath) && form.articlePath.length > 0 && (
-                   <Chip label={formatArticleBreadcrumbs(form.articlePath)} />
-                 )}
-               </Stack>
-             </Stack>
-           </Stack>
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={() => setModalOpen(false)}>Отмена</Button>
-           <Button variant="contained" onClick={submitModal} disabled={modalMode==='edit' && !canPaymentsWrite}>{modalMode==='edit' ? 'Сохранить' : 'Создать'}</Button>
-         </DialogActions>
-       </Dialog>
+       <PaymentDialog
+        open={modalOpen}
+        mode={modalMode}
+        type={formType}
+        cashOptions={cash}
+        articlePaths={allArticlePaths}
+        initialPayment={modalMode === 'edit' ? currentRow : undefined}
+        canSave={modalMode !== 'edit' || canPaymentsWrite}
+        onClose={() => setModalOpen(false)}
+        onSubmit={submitModal}
+      />
  
        <Dialog open={articleDialogOpen} onClose={() => setArticleDialogOpen(false)} fullWidth maxWidth="sm">
          <DialogTitle>Выбор статей</DialogTitle>
@@ -637,10 +611,7 @@ export default function PaymentsPage() {
                        if (checked) s.add(p); else s.delete(p);
                        return Array.from(s);
                      });
-                     if (modalOpen) {
-                       const segs = p.split('/').map((t)=>t.trim()).filter(Boolean);
-                       setForm((f)=>({ ...f, articlePath: segs }));
-                     }
+                     // модалка использует собственный выбор статьи; фильтры — только в этой панели
                    }} />}
                    label={p}
                  />
