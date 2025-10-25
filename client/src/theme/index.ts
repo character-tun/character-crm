@@ -1,101 +1,10 @@
 import { createTheme, alpha } from '@mui/material/styles';
 import '@mui/x-data-grid/themeAugmentation';
 import { tokens, ThemeMode } from './tokens';
+import { createCharacterTheme } from './theme';
 
-export const makeTheme = (mode: ThemeMode) => createTheme({
-  palette: { mode, ...tokens.palette },
-  shape: { borderRadius: tokens.shape.radius },
-  typography: {
-    fontFamily: '"Inter","Roboto","Helvetica","Arial",sans-serif',
-    h6: { fontWeight: 600 },
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundColor: mode === 'dark' ? '#0f1216' : '#fafafa',
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: 'var(--mui-shadow-2)',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: tokens.shape.radius,
-        },
-      },
-    },
-    MuiAppBar: {
-      defaultProps: { elevation: 0 },
-    },
-    MuiPaper: {
-      defaultProps: { elevation: 1 },
-    },
-    MuiCardHeader: {
-      defaultProps: {
-        titleTypographyProps: { variant: 'subtitle1', fontWeight: 600 },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: 8,
-          '&.Mui-selected': { backgroundColor: theme.palette.action.selected },
-        }),
-      },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: ({ theme }) => ({
-          borderRight: 0,
-          backgroundColor:
-            theme.palette.mode === 'dark' ? '#111418' : theme.palette.background.paper,
-        }),
-      },
-    },
-    // Unified look for DataGrid across the app
-    MuiDataGrid: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: theme.shape.borderRadius,
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          '--DataGrid-rowBorderColor': theme.palette.divider,
-        }),
-        columnHeaders: ({ theme }) => ({
-          backgroundColor:
-            theme.palette.mode === 'dark'
-              ? alpha(theme.palette.background.paper, 0.9)
-              : theme.palette.background.paper,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }),
-        row: ({ theme }) => ({
-          '&:hover': { backgroundColor: theme.palette.action.hover },
-        }),
-        cell: ({ theme }) => ({
-          borderColor: theme.palette.divider,
-        }),
-        footerContainer: ({ theme }) => ({
-          borderTop: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper,
-        }),
-        toolbarContainer: ({ theme }) => ({
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }),
-      },
-    },
-  },
-});
+export const makeTheme = (mode: ThemeMode) => createCharacterTheme(mode);
 
-// Stage 10 API: expose createAppTheme(mode) used by the app to switch light/dark
 export const createAppTheme = (mode: ThemeMode) => makeTheme(mode);
 
 export type Theme = {

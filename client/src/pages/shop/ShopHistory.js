@@ -53,9 +53,9 @@ export default function ShopHistoryPage() {
   ]), []);
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h5" gutterBottom>История продаж</Typography>
-      <Paper sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%' }} data-tour="shop-history-root">
+      <Typography variant="h5" gutterBottom data-tour="shop-history-title">История продаж</Typography>
+      <Paper sx={{ width: '100%' }} data-tour="shop-history-grid">
         <DataGridBase
           autoHeight
           rows={items}

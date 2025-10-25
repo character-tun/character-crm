@@ -236,6 +236,79 @@
 
 ## 2025-10-22 16:50 (Europe/Warsaw) | Phase 2 Final — Stock + Shop + Staff E2E
 - files: tests/stock.shop.staff.e2e.prodlike.test.js, CHANGELOG_TRAE.md, TECH_OVERVIEW.md
+## 2025-10-24 01:53:01+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/eslint-rules/index.js, client/eslint-rules/no-hardcoded-ui.js, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/DataGridBase.tsx, client/src/components/FormField.tsx, client/src/components/Layout.js, client/src/components/ModalBase.tsx, client/src/components/ModalConfirm.tsx, client/src/components/NotifyProvider.tsx, client/src/components/OrdersTable.js, client/src/context/ThemeContext.tsx, client/src/index.css, client/src/index.js, client/src/layout/AppShell.tsx, client/src/layout/Sidebar.tsx, client/src/pages/Clients.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Services.js, client/src/pages/TaskDetails.js, client/src/pages/TasksBoard.js, client/src/pages/TasksList.js, client/src/pages/inventory/Orders.js, client/src/pages/inventory/Products.js, client/src/pages/inventory/Suppliers.js, client/src/pages/settings/Company.js, client/src/pages/settings/DocumentEditor.js, client/src/pages/settings/Documents.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/Roles.js, client/src/pages/settings/UiTheme.tsx, client/src/pages/settings/Users.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, docs/theme_master_prompt.md, docs/ui-kit.md | feat: migrate UI components to MUI v5 and implement theme system
+2025-10-24T02:42:17+03:00 | CHANGELOG_TRAE.md, PHASE3_PLAN.md, TECH_OVERVIEW.md, middleware/auth.js, middleware/validate.js, routes/cash.js, routes/payments.js, scripts/generateSwagger.js, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/docs/TECH_OVERVIEW.md, tests/api.contracts.cash.test.js, tests/e2e/rbac.locations.reports.test.js, tests/payments.rbac.e2e.test.js | feat(payments): add delete endpoint and update RBAC rules
+2025-10-24T03:12:07+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/pages/Payments.js, client/src/services/paymentsService.js, routes/payments.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, tests/payments.rules.e2e.test.js | feat(payments): add remove method to payments service and update UI
+2025-10-24T11:14:17+03:00 | CHANGELOG_TRAE.md | feat(payments): add remove method to payments service and update UI
+2025-10-24T11:14:37+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/layout/AppShell.tsx, client/src/layout/sidebarConfig.ts, middleware/auth.js, scripts/generateSwagger.js, storage/docs/TECH_OVERVIEW.md | feat(rbac): update permissions for payments and cash access
+2025-10-24T11:45:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, .gitignore, scripts/generateSwagger.js | fix(swagger): enable double-write to artifacts/swagger.json and storage/reports/api-contracts/swagger.json; reuse reportFile; ensure ignore rules
+
+## 2025-10-24 12:05 (Europe/Warsaw) | CI — precontracts before contract tests
+- files: `.github/workflows/ci.yml`, `package.json`, `README.md`, `TECH_OVERVIEW.md`
+- changes:
+  - добавлены npm‑скрипты: `precontracts` (генерация swagger + экстракторы auth/fields/ordertype/payments) и `test:contracts` (последовательный запуск контракт‑тестов после регенерации);
+  - обновлён CI workflow: шаг `npm run precontracts` выполняется перед Jest;
+  - документация (README/TECH_OVERVIEW) описывает порядок регенерации артефактов перед контракт‑тестами.
+- Acceptance:
+  - локальный прогон `npm run precontracts` успешно генерирует `artifacts/swagger.json` и артефакты в `storage/reports/api-contracts/`
+2025-10-24T14:42:26+03:00 | .env.example, .github/workflows/ci.yml, .gitignore, CHANGELOG_TRAE.md, README.md, TECH_OVERVIEW.md, package.json, routes/orders.js, routes/payments.js, scripts/extractPaymentsSpec.js, scripts/generateSwagger.js, services/configValidator.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, storage/reports/api-contracts/fields.json, storage/reports/api-contracts/ordertype.json, tests/core.flow.e2e.test.js, tests/payments.flags.defaultCash.e2e.test.js, tests/payments.flags.lock.strict.e2e.test.js, tests/payments.flags.refund.e2e.test.js | feat(payments): add ENV flags for refunds, default cash and strict lock
+2025-10-25T00:32:04+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, TECH_OVERVIEW.md, jest.config.js, middleware/validate.js, package.json, routes/items.js, routes/orders.js, routes/stock.js, server/models/Item.js, server/models/StockBalance.js, server/models/StockLedger.js | feat(orders): add dev mode status logs and coverage thresholds
+2025-10-25T01:06:17+03:00 | CHANGELOG_TRAE.md, routes/stock.js, server/models/StockLedger.js | feat(stock): add operation type to stock ledger entries
+2025-10-24T16:20:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, routes/shop.js, server.js, server/models/ShopSale.js, middleware/validate.js, client/src/services/shopSalesService.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/App.js, client/src/layout/sidebarConfig.ts | feat(shop): scaffold shop sales API, model, client UI and routing
+2025-10-25T19:23:32+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/layout/sidebarConfig.ts, client/src/pages/Settings.js, client/src/pages/reports/Payroll.js, client/src/pages/reports/StockTurnover.js, client/src/pages/settings/PayrollRules.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/services/payrollService.js, client/src/services/reportsService.js, client/src/services/shopSalesService.js, jest.config.js, middleware/validate.js, package.json, routes/employees.js, routes/payrollAccruals.js, routes/payrollRules.js, routes/reports.js, routes/shop.js, scripts/extractItemsSpec.js, scripts/extractPayrollSpec.js, scripts/extractShopSalesSpec.js, scripts/generateSwagger.js, server.js, server/models/Employee.js, server/models/PayrollAccrual.js, server/models/PayrollRule.js, server/models/ShopSale.js, services/telegramNotify.js, storage/reports/api-contracts/fields.json, tests/e2e/items.e2e.test.js, tests/e2e/payroll.summary.e2e.test.js, tests/e2e/shop.sales.e2e.test.js | feat(payroll): add payroll rules, accruals, reports and UI components
+
+## 2025-10-25 20:00 (Europe/Warsaw) | Docs — Jest coverage thresholds synced (65/65/50/55)
+- files: `TECH_OVERVIEW.md`, `CHANGELOG_TRAE.md`
+- changes: обновлён раздел Tests/Thresholds в TECH_OVERVIEW.md на пороги `65/65/50/55`; добавлена текущая запись в changelog; подтверждена согласованность значений с `jest.config.js` и CI‑шагом «Coverage gates (Jest)».
+- Acceptance:
+  - TECH_OVERVIEW.md отражает пороги 65/65/50/55.
+  - `jest.config.js` содержит `coverageThreshold` с теми же значениями.
+  - В CI шаг «Coverage gates (Jest)» запускает `npm run test:cov` и гейт проходит при достижении порогов.
+
+## 2025-10-23 13:45 (Europe/Warsaw) | Tests — Docs + Notify E2E (DRY)
+- Added `tests/e2e/docs.notify.test.js` covering order `ready` status notify+doc flow.
+- Ensures DRY mode: `NOTIFY_DRY_RUN=1` and `PRINT_DRY_RUN=1` skip SMTP/PDF.
+- Asserts `nodemailer` and `puppeteer` not called; no `fileStore.saveBuffer` writes.
+- Updated `TECH_OVERVIEW.md` (Test Runs) and regenerated `artifacts/swagger.json`.
+
+## 2025-10-23 13:05 (Europe/Warsaw) | Tests — Payroll Accrual 10% E2E
+- Added `tests/e2e/payroll.accrual.test.js` validating 10% accrual on `closed_paid`.
+- Ensures single `PayrollAccrual` creation (no duplication).
+- Added report `storage/reports/payroll-e2e.md`.
+
+## 2025-10-23 12:20 (Europe/Warsaw) | Tests — Core flow E2E (Orders/Payments/Statuses/Timeline)
+- files: tests/core.flow.e2e.test.js, storage/reports/e2e-mvp-flow-report.md, CHANGELOG_TRAE.md
+- changes: added an end-to-end test that exercises the core flow across DB and DEV branches: create order (DB), create payment (DEV), patch status to `in_work` → `closed_paid` (DEV), assert `ORDER_CLOSED` for subsequent payment, verify aggregated payments, read timeline (DB) and assert payroll accrual audit. The test toggles Mongo readiness per route and runs status actions inline in the test environment.
+- env: `AUTH_DEV_MODE=1`, `NOTIFY_DRY_RUN=1`, `PRINT_DRY_RUN=1`; status actions run inline in tests unless `ENABLE_STATUS_QUEUE=1`.
+- Acceptance:
+  - POST `/api/orders` initializes status from `startStatusId` (DB branch).
+  - POST `/api/payments` succeeds before close; after `closed_paid` returns `ORDER_CLOSED` (DEV branch).
+  - PATCH `/api/orders/:id/status` to `in_work` then `closed_paid` enqueues `payrollAccrual` and `stockIssue` and applies them inline (DEV branch).
+  - GET `/api/orders/:id/timeline` includes `STATUS_ACTION_PAYROLL` audit (DB branch).
+  - Test suite passes: `tests/core.flow.e2e.test.js`.
+
+## 2025-10-23 12:00 (Europe/Warsaw) | Tests — Quiet statusActionQueue in Jest
+- files: queues/statusActionQueue.js, CHANGELOG_TRAE.md
+- changes: в тестовой среде (`NODE_ENV=test`) очередь статусов не планирует таймеры, обрабатывает задания синхронно, логи очереди по умолчанию выключены. Добавлены флаги: `ENABLE_STATUS_QUEUE=1` (включает планирование таймеров в тестах) и `ENABLE_QUEUE_LOGS=1` (включает логи очереди).
+- Acceptance:
+  - e2e notify+print (dev/prodlike) — без ошибок "Cannot log after tests are done".
+  - Mongoose buffering таймауты не возникают, так как обработка выполняется в контексте моков теста.
+
+## 2025-10-22 17:05 (Europe/Warsaw) | Phase 1.2 — Remove DEV branches, Mongo-only Status Actions
+- files: services/statusActionsHandler.js, routes/notifyDev.js, routes/notifyTemplates.js, CHANGELOG_TRAE.md
+- changes: удалены DEV-ветки, memFlags/devOutbox, TemplatesStore; notify/print и выбор шаблонов теперь строго Mongo; issueStockFromOrder требует Mongo‑модели; убраны экспорты DEV‑хелперов (getOutbox, getDevState, __devReset, isPaymentsLocked). В routes/notifyTemplates.js удалён TemplatesStore и DEV endpoint `/__dev/outbox`; `/api/notify/dev/outbox` выключен (404). Аудит и fileStore остаются Mongo‑only.
+- scripts: добавлен scripts/run-dev-memory.js — поднимает in-memory Mongo + DEV‑авторизацию и mem‑очередь; удобен для проверки API без реальной Mongo/Redis.
+- Acceptance:
+  - Сервер поднят через `node scripts/run-dev-memory.js`; публичный `/api/public/status` отвечает `ok`.
+  - DEV‑логин `/api/auth/login` возвращает `accessToken`.
+  - GET `/api/order-types` → `{ ok:true, items:[] }`.
+  - GET `/api/statuses` → `[]`.
+  - GET `/api/payments` → `{ ok:true, items:[], totals:{ ... } }`.
+  - GET `/api/notify/templates` → `{ ok:true, items:[...] }`.
+  - GET `/api/notify/dev/outbox` → `404 NOT_AVAILABLE`.
+
+## 2025-10-22 16:50 (Europe/Warsaw) | Phase 2 Final — Stock + Shop + Staff E2E
+- files: tests/stock.shop.staff.e2e.prodlike.test.js, CHANGELOG_TRAE.md, TECH_OVERVIEW.md
 2025-10-24T01:53:01+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/eslint-rules/index.js, client/eslint-rules/no-hardcoded-ui.js, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/App.js, client/src/components/DataGridBase.tsx, client/src/components/FormField.tsx, client/src/components/Layout.js, client/src/components/ModalBase.tsx, client/src/components/ModalConfirm.tsx, client/src/components/NotifyProvider.tsx, client/src/components/OrdersTable.js, client/src/context/ThemeContext.tsx, client/src/index.css, client/src/index.js, client/src/layout/AppShell.tsx, client/src/layout/Sidebar.tsx, client/src/pages/Clients.js, client/src/pages/Dashboard.js, client/src/pages/DetailingOrders.js, client/src/pages/Orders.js, client/src/pages/Payments.js, client/src/pages/Services.js, client/src/pages/TaskDetails.js, client/src/pages/TasksBoard.js, client/src/pages/TasksList.js, client/src/pages/inventory/Orders.js, client/src/pages/inventory/Products.js, client/src/pages/inventory/Suppliers.js, client/src/pages/settings/Company.js, client/src/pages/settings/DocumentEditor.js, client/src/pages/settings/Documents.js, client/src/pages/settings/Employees.js, client/src/pages/settings/FieldsBuilderPage.js, client/src/pages/settings/ListSettingsPage.js, client/src/pages/settings/OrderStatuses.js, client/src/pages/settings/OrderTypes.js, client/src/pages/settings/Roles.js, client/src/pages/settings/UiTheme.tsx, client/src/pages/settings/Users.js, client/src/theme.js, client/src/theme/index.js, client/src/theme/index.ts, docs/theme_master_prompt.md, docs/ui-kit.md | feat: migrate UI components to MUI v5 and implement theme system
 2025-10-24T02:42:17+03:00 | CHANGELOG_TRAE.md, PHASE3_PLAN.md, TECH_OVERVIEW.md, middleware/auth.js, middleware/validate.js, routes/cash.js, routes/payments.js, scripts/generateSwagger.js, server.js, server/models/CashRegister.js, server/models/Payment.js, storage/docs/TECH_OVERVIEW.md, tests/api.contracts.cash.test.js, tests/e2e/rbac.locations.reports.test.js, tests/payments.rbac.e2e.test.js | feat(payments): add delete endpoint and update RBAC rules
 2025-10-24T03:12:07+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/pages/Payments.js, client/src/services/paymentsService.js, routes/payments.js, services/paymentsService.js, storage/docs/TECH_OVERVIEW.md, tests/payments.rules.e2e.test.js | feat(payments): add remove method to payments service and update UI
@@ -255,3 +328,4 @@
 2025-10-25T00:32:04+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, TECH_OVERVIEW.md, jest.config.js, middleware/validate.js, package.json, routes/items.js, routes/orders.js, routes/stock.js, server/models/Item.js, server/models/StockBalance.js, server/models/StockLedger.js | feat(orders): add dev mode status logs and coverage thresholds
 2025-10-25T01:06:17+03:00 | CHANGELOG_TRAE.md, routes/stock.js, server/models/StockLedger.js | feat(stock): add operation type to stock ledger entries
 2025-10-24T16:20:00+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, routes/shop.js, server.js, server/models/ShopSale.js, middleware/validate.js, client/src/services/shopSalesService.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/App.js, client/src/layout/sidebarConfig.ts | feat(shop): scaffold shop sales API, model, client UI and routing
+2025-10-25T19:23:32+03:00 | CHANGELOG_TRAE.md, TECH_OVERVIEW.md, client/src/App.js, client/src/layout/sidebarConfig.ts, client/src/pages/Settings.js, client/src/pages/reports/Payroll.js, client/src/pages/reports/StockTurnover.js, client/src/pages/settings/PayrollRules.js, client/src/pages/shop/SaleForm.js, client/src/pages/shop/ShopHistory.js, client/src/services/payrollService.js, client/src/services/reportsService.js, client/src/services/shopSalesService.js, jest.config.js, middleware/validate.js, package.json, routes/employees.js, routes/payrollAccruals.js, routes/payrollRules.js, routes/reports.js, routes/shop.js, scripts/extractItemsSpec.js, scripts/extractPayrollSpec.js, scripts/extractShopSalesSpec.js, scripts/generateSwagger.js, server.js, server/models/Employee.js, server/models/PayrollAccrual.js, server/models/PayrollRule.js, server/models/ShopSale.js, services/telegramNotify.js, storage/reports/api-contracts/fields.json, tests/e2e/items.e2e.test.js, tests/e2e/payroll.summary.e2e.test.js, tests/e2e/shop.sales.e2e.test.js | feat(payroll): add payroll rules, accruals, reports and UI components

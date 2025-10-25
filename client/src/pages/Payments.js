@@ -354,297 +354,310 @@ export default function PaymentsPage() {
   ];
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2 }} data-tour="payments-root">
       <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Платежи</Typography>
+          <Typography variant="h6" data-tour="payments-title">Платежи</Typography>
           <Stack direction="row" spacing={1}>
-            {canPaymentsWrite && (
-              <>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')}>Новый приход</Button>
-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')}>Новый расход</Button>
-                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund}>Рефанд</Button>
-              </>
-            )}
-          </Stack>
-        </Stack>
-
-        <Divider sx={{ my: 2 }} />
-
+             {canPaymentsWrite && (
+               <>
+-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')}>Новый приход</Button>
+-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')}>Новый расход</Button>
+-                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund}>Рефанд</Button>
++                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('income')} data-tour="payments-new-income">Новый приход</Button>
++                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openCreate('expense')} data-tour="payments-new-expense">Новый расход</Button>
++                <Button variant="outlined" color="warning" startIcon={<UndoIcon />} onClick={openRefund} data-tour="payments-refund">Рефанд</Button>
+               </>
+             )}
+           </Stack>
+         </Stack>
+ 
+         <Divider sx={{ my: 2 }} />
+ 
         {/* Cashflow mini-report widget */}
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 2 }} data-tour="payments-cashflow-widget">
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
             <Typography variant="subtitle1">Итоги по кассам</Typography>
             {cfLoading ? (
               <Skeleton variant="rounded" width={140} height={28} />
             ) : (
-              <Chip label={`Сальдо: ${currency(cashflowBalance)}`} color={cashflowBalance >= 0 ? 'success' : 'error'} />
+              <Chip label={`Сальдо: ${currency(cashflowBalance)}`} color={cashflowBalance >= 0 ? 'success' : 'error'} data-tour="payments-cashflow-balance" />
             )}
           </Stack>
           {cfError && <Alert severity="error" sx={{ mt: 1 }}>{cfError}</Alert>}
           <Grid container spacing={1} sx={{ mt: 1 }}>
-            {!cfLoading && cashflowGroups.map((g) => {
-              const id = String(g.cashRegisterId || '');
-              const c = cashMap.get(id);
-              const title = c ? `${c.name} (${c.code})` : (id ? `#${id}` : 'Без кассы');
-              const t = g.totals || { income: 0, expense: 0, refund: 0, balance: 0 };
-              return (
-                <Grid item xs={12} md={6} lg={4} key={id || 'none'}>
-                  <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
-                      <Chip label={`Приход: ${currency(t.income)}`} size="small" />
-                      <Chip label={`Расход: ${currency(t.expense)}`} size="small" />
-                      <Chip label={`Рефанд: ${currency(t.refund)}`} size="small" />
-                      <Chip label={`Сальдо: ${currency(t.balance)}`} size="small" color={t.balance >= 0 ? 'success' : 'error'} />
-                    </Stack>
-                  </Paper>
-                </Grid>
-              );
-            })}
-            {cfLoading && (
-              <>
-                {[0,1,2].map((i) => (
-                  <Grid item xs={12} md={6} lg={4} key={`sk-${i}`}>
-                    <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
-                      <Skeleton variant="text" width="60%" height={24} />
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                        <Skeleton variant="rounded" width={88} height={28} />
-                        <Skeleton variant="rounded" width={88} height={28} />
-                        <Skeleton variant="rounded" width={88} height={28} />
-                        <Skeleton variant="rounded" width={88} height={28} />
-                      </Stack>
-                    </Paper>
-                  </Grid>
-                ))}
-              </>
-            )}
-            {!cfLoading && cashflowGroups.length === 0 && !cfError && (
-              <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Нет данных за выбранный период</Typography></Grid>
-            )}
-          </Grid>
-        </Box>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={2}>
-            <DatePicker
-              label="С даты"
-              value={dateFrom ? new Date(dateFrom) : null}
-              onChange={(newValue) => setDateFrom(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
-              renderInput={(params) => <TextField {...params} fullWidth />}
-              inputFormat="dd.MM.yyyy"
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <DatePicker
-              label="По дату"
-              value={dateTo ? new Date(dateTo) : null}
-              onChange={(newValue) => setDateTo(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
-              renderInput={(params) => <TextField {...params} fullWidth />}
-              inputFormat="dd.MM.yyyy"
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel id="type-label">Тип</InputLabel>
-              <Select labelId="type-label" label="Тип" value={type} onChange={(e)=>setType(e.target.value)}>
-                <MenuItem value="">Все</MenuItem>
-                <MenuItem value="income">Приход</MenuItem>
-                <MenuItem value="expense">Расход</MenuItem>
-                <MenuItem value="refund">Рефанд</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel id="cash-label">Касса</InputLabel>
-              <Select labelId="cash-label" label="Касса" value={cashRegisterId} onChange={(e)=>setCashRegisterId(e.target.value)}>
-                <MenuItem value="">Все</MenuItem>
-                {cash.map((c) => (
-                  <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel id="location-label">Локация</InputLabel>
-              <Select labelId="location-label" label="Локация" value={locationId} onChange={(e)=>setLocationId(e.target.value)}>
-                <MenuItem value="">Все</MenuItem>
-                {locations.map((loc) => (
-                  <MenuItem key={loc} value={loc}>{loc}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <TextField label="Поиск по заметке" value={noteQuery} onChange={(e)=>setNoteQuery(e.target.value)} fullWidth />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel id="locked-label">Статус</InputLabel>
-              <Select labelId="locked-label" label="Статус" value={lockedFilter} onChange={(e)=>setLockedFilter(e.target.value)}>
-                <MenuItem value="all">Все</MenuItem>
-                <MenuItem value="locked">Только заблокированные</MenuItem>
-                <MenuItem value="unlocked">Только разблокированные</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-
-        <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid item xs={12}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)}>Статьи</Button>
-              {selectedArticles.length > 0 ? (
-                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                  {selectedArticles.map((p) => (
-                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} />
-                  ))}
-                </Stack>
-              ) : (
-                <Typography variant="body2" sx={{ opacity: 0.7 }}>Фильтр по статьям не выбран</Typography>
-              )}
-            </Stack>
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 2 }} />
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        )}
-
-        {filteredItems.length === 0 && !loading && (
-          <Box sx={{ p: 3, textAlign: 'center', color: 'var(--color-textMuted)' }}>
-            <Typography>Нет данных</Typography>
-          </Box>
-        )}
-
-        <div style={{ height: 520, width: '100%' }}>
-          <DataGridBase
-            rows={filteredItems}
-            columns={columns}
-            pageSizeOptions={[25, 50, 100]}
-            initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
-            loading={loading}
-            getRowId={(row) => row.id}
-            getRowClassName={(params) => {
-              const t = params.row.type;
-              if (t === 'income') return 'row-income';
-              if (t === 'expense') return 'row-expense';
-              if (t === 'refund') return 'row-refund';
-              return '';
-            }}
-            sx={{
-              '& .row-income': { bgcolor: 'rgba(76, 175, 80, 0.10)' },
-              '& .row-expense': { bgcolor: 'rgba(244, 67, 54, 0.10)' },
-              '& .row-refund': { bgcolor: 'rgba(255, 152, 0, 0.10)' }
-            }}
-          />
-        </div>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Stack direction="row" spacing={3} alignItems="center" sx={{ minHeight: 36 }}>
-          {loading ? (
-            <>
-              <Skeleton variant="rounded" width={140} height={28} />
-              <Skeleton variant="rounded" width={140} height={28} />
-              <Skeleton variant="rounded" width={140} height={28} />
-              <Skeleton variant="rounded" width={140} height={28} />
-            </>
-          ) : (
-            <>
-              <Chip label={`Приход: ${currency(totals.income)}`} />
-              <Chip label={`Расход: ${currency(totals.expense)}`} />
-              <Chip label={`Рефанд: ${currency(totals.refund)}`} />
-              <Chip label={`Сальдо: ${currency(totals.balance)}`} color={totals.balance >= 0 ? 'success' : 'error'} />
-            </>
-          )}
-        </Stack>
-      </Paper>
-
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {modalMode === 'create' ? (formType === 'income' ? 'Создать приход' : 'Создать расход') : (modalMode === 'edit' ? 'Редактировать платёж' : 'Создать рефанд')}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Заказ (orderId)" value={form.orderId} onChange={(e)=>setForm((f)=>({ ...f, orderId: e.target.value }))} fullWidth />
-            <TextField label="Сумма" type="number" value={form.amount} onChange={(e)=>setForm((f)=>({ ...f, amount: Number(e.target.value) }))} fullWidth />
-            <FormField label="Метод">
-              <TextField label={undefined} value={form.method} onChange={(e)=>setForm((f)=>({ ...f, method: e.target.value }))} fullWidth />
-            </FormField>
-            <FormField label="Касса">
-              <Select value={form.cashRegisterId} onChange={(e)=>setForm((f)=>({ ...f, cashRegisterId: e.target.value }))} fullWidth>
-                <MenuItem value="">Не выбрано</MenuItem>
-                {cash.map((c) => (
-                  <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
-                ))}
-              </Select>
-            </FormField>
-            <FormField label="Заметка">
-              <TextField label={undefined} value={form.note} onChange={(e)=>setForm((f)=>({ ...f, note: e.target.value }))} fullWidth />
-            </FormField>
-            <Stack>
-              <Typography variant="body2" sx={{ mb: 1 }}>Статья (хлебные крошки)</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button size="small" variant="outlined" onClick={() => setArticleDialogOpen(true)}>Выбрать из дерева</Button>
-                {Array.isArray(form.articlePath) && form.articlePath.length > 0 && (
-                  <Chip label={formatArticleBreadcrumbs(form.articlePath)} />
-                )}
-              </Stack>
-            </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModalOpen(false)}>Отмена</Button>
-          <Button variant="contained" onClick={submitModal} disabled={modalMode==='edit' && !canPaymentsWrite}>{modalMode==='edit' ? 'Сохранить' : 'Создать'}</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={articleDialogOpen} onClose={() => setArticleDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Выбор статей</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>Отметьте одну или несколько статей</Typography>
-          <Stack spacing={1}>
-            {allArticlePaths.length === 0 && (
-              <Typography sx={{ opacity: 0.7 }}>Здесь пока пусто</Typography>
-            )}
-            {allArticlePaths.map((p) => (
-              <FormControl key={p}>
-                <FormControlLabel
-                  control={<Checkbox checked={selectedArticles.includes(p)} onChange={(e)=>{
-                    const checked = e.target.checked;
-                    setSelectedArticles((prev) => {
-                      const s = new Set(prev);
-                      if (checked) s.add(p); else s.delete(p);
-                      return Array.from(s);
-                    });
-                    if (modalOpen) {
-                      const segs = p.split('/').map((t)=>t.trim()).filter(Boolean);
-                      setForm((f)=>({ ...f, articlePath: segs }));
-                    }
-                  }} />}
-                  label={p}
-                />
+             {!cfLoading && cashflowGroups.map((g) => {
+               const id = String(g.cashRegisterId || '');
+               const c = cashMap.get(id);
+               const title = c ? `${c.name} (${c.code})` : (id ? `#${id}` : 'Без кассы');
+               const t = g.totals || { income: 0, expense: 0, refund: 0, balance: 0 };
+               return (
+                 <Grid item xs={12} md={6} lg={4} key={id || 'none'}>
+                   <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
+                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
+                     </Stack>
+                     <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                       <Chip label={`Приход: ${currency(t.income)}`} size="small" />
+                       <Chip label={`Расход: ${currency(t.expense)}`} size="small" />
+                       <Chip label={`Рефанд: ${currency(t.refund)}`} size="small" />
+                       <Chip label={`Сальдо: ${currency(t.balance)}`} size="small" color={t.balance >= 0 ? 'success' : 'error'} />
+                     </Stack>
+                   </Paper>
+                 </Grid>
+               );
+             })}
+             {cfLoading && (
+               <>
+                 {[0,1,2].map((i) => (
+                   <Grid item xs={12} md={6} lg={4} key={`sk-${i}`}>
+                     <Paper sx={{ p: 1.5, border: '1px solid var(--color-border)', minHeight: 96 }}>
+                       <Skeleton variant="text" width="60%" height={24} />
+                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                         <Skeleton variant="rounded" width={88} height={28} />
+                         <Skeleton variant="rounded" width={88} height={28} />
+                         <Skeleton variant="rounded" width={88} height={28} />
+                         <Skeleton variant="rounded" width={88} height={28} />
+                       </Stack>
+                     </Paper>
+                   </Grid>
+                 ))}
+               </>
+             )}
+             {!cfLoading && cashflowGroups.length === 0 && !cfError && (
+               <Grid item xs={12}><Typography variant="body2" sx={{ opacity: 0.7 }}>Нет данных за выбранный период</Typography></Grid>
+             )}
+           </Grid>
+         </Box>
+ 
+         <Grid container spacing={2}>
+           <Grid item xs={12} md={2}>
+             <DatePicker
+               label="С даты"
+               value={dateFrom ? new Date(dateFrom) : null}
+               onChange={(newValue) => setDateFrom(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+               renderInput={(params) => <TextField {...params} fullWidth inputProps={{ ...(params.inputProps||{}), 'data-tour': 'payments-date-from' }} />}
+               inputFormat="dd.MM.yyyy"
+             />
+           </Grid>
+           <Grid item xs={12} md={2}>
+             <DatePicker
+               label="По дату"
+               value={dateTo ? new Date(dateTo) : null}
+               onChange={(newValue) => setDateTo(newValue ? format(newValue, 'yyyy-MM-dd') : '')}
+               renderInput={(params) => <TextField {...params} fullWidth inputProps={{ ...(params.inputProps||{}), 'data-tour': 'payments-date-to' }} />}
+               inputFormat="dd.MM.yyyy"
+             />
+           </Grid>
+           <Grid item xs={12} md={2}>
+              <FormControl fullWidth data-tour="payments-type-filter">
+                <InputLabel id="type-label">Тип</InputLabel>
+                <Select labelId="type-label" label="Тип" value={type} onChange={(e)=>setType(e.target.value)}>
+                  <MenuItem value="">Все</MenuItem>
+                  <MenuItem value="income">Приход</MenuItem>
+                  <MenuItem value="expense">Расход</MenuItem>
+                  <MenuItem value="refund">Рефанд</MenuItem>
+                </Select>
               </FormControl>
-            ))}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setArticleDialogOpen(false)}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar open={toast.open} autoHideDuration={2500} onClose={closeToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert onClose={closeToast} severity={toast.severity} sx={{ width: '100%' }}>
-          {toast.message}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
-}
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth data-tour="payments-cash-filter">
+                <InputLabel id="cash-label">Касса</InputLabel>
+                <Select labelId="cash-label" label="Касса" value={cashRegisterId} onChange={(e)=>setCashRegisterId(e.target.value)}>
+                  <MenuItem value="">Все</MenuItem>
+                  {cash.map((c) => (
+                    <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth data-tour="payments-location-filter">
+                <InputLabel id="location-label">Локация</InputLabel>
+                <Select labelId="location-label" label="Локация" value={locationId} onChange={(e)=>setLocationId(e.target.value)}>
+                  <MenuItem value="">Все</MenuItem>
+                  {locations.map((loc) => (
+                    <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField label="Поиск по заметке" value={noteQuery} onChange={(e)=>setNoteQuery(e.target.value)} fullWidth inputProps={{ 'data-tour': 'payments-note-filter' }} />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth data-tour="payments-status-filter">
+                <InputLabel id="locked-label">Статус</InputLabel>
+                <Select labelId="locked-label" label="Статус" value={lockedFilter} onChange={(e)=>setLockedFilter(e.target.value)}>
+                  <MenuItem value="all">Все</MenuItem>
+                  <MenuItem value="locked">Только заблокированные</MenuItem>
+                  <MenuItem value="unlocked">Только разблокированные</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+         </Grid>
+ 
+         <Grid container spacing={2} sx={{ mt: 1 }}>
+           <Grid item xs={12}>
+             <Stack direction="row" spacing={1} alignItems="center">
+-              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)}>Статьи</Button>
++              <Button variant="outlined" onClick={() => setArticleDialogOpen(true)} data-tour="payments-articles-filter">Статьи</Button>
+               <Typography variant="body2" sx={{ opacity: 0.8 }}>Выбранные: {selectedArticles.length || 0}</Typography>
+             </Stack>
+           </Grid>
+         </Grid>
+ 
+         <Grid container spacing={2} sx={{ mt: 1 }}>
+           <Grid item xs={12}>
+             <Stack spacing={1}>
+               {selectedArticles.length > 0 ? (
+                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                   {selectedArticles.map((p) => (
+-                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} />
++                    <Chip key={p} label={p} onDelete={() => setSelectedArticles((prev) => prev.filter((x) => x !== p))} data-tour="payments-selected-articles" />
+                   ))}
+                 </Stack>
+               ) : (
+                 <Typography variant="body2" sx={{ opacity: 0.7 }}>Фильтр по статьям не выбран</Typography>
+               )}
+             </Stack>
+           </Grid>
+         </Grid>
+ 
+         <Divider sx={{ my: 2 }} />
+ 
+         {error && (
+           <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+         )}
+ 
+         {filteredItems.length === 0 && !loading && (
+           <Box sx={{ p: 3, textAlign: 'center', color: 'var(--color-textMuted)' }}>
+             <Typography>Нет данных</Typography>
+           </Box>
+         )}
+ 
+         <div style={{ height: 520, width: '100%' }} data-tour="payments-grid">
+           <DataGridBase
+             rows={filteredItems}
+             columns={columns}
+             pageSizeOptions={[25, 50, 100]}
+             initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
+             loading={loading}
+             getRowId={(row) => row.id}
+             getRowClassName={(params) => {
+               const t = params.row.type;
+               if (t === 'income') return 'row-income';
+               if (t === 'expense') return 'row-expense';
+               if (t === 'refund') return 'row-refund';
+               return '';
+             }}
+             sx={{
+               '& .row-income': { bgcolor: 'rgba(76, 175, 80, 0.10)' },
+               '& .row-expense': { bgcolor: 'rgba(244, 67, 54, 0.10)' },
+               '& .row-refund': { bgcolor: 'rgba(255, 152, 0, 0.10)' }
+             }}
+           />
+         </div>
+ 
+         <Divider sx={{ my: 2 }} />
+ 
+         <Stack direction="row" spacing={3} alignItems="center" sx={{ minHeight: 36 }} data-tour="payments-totals">
+           {loading ? (
+             <>
+               <Skeleton variant="rounded" width={140} height={28} />
+               <Skeleton variant="rounded" width={140} height={28} />
+               <Skeleton variant="rounded" width={140} height={28} />
+               <Skeleton variant="rounded" width={140} height={28} />
+             </>
+           ) : (
+             <>
+               <Chip label={`Приход: ${currency(totals.income)}`} />
+               <Chip label={`Расход: ${currency(totals.expense)}`} />
+               <Chip label={`Рефанд: ${currency(totals.refund)}`} />
+               <Chip label={`Сальдо: ${currency(totals.balance)}`} color={totals.balance >= 0 ? 'success' : 'error'} />
+             </>
+           )}
+         </Stack>
+       </Paper>
+ 
+       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm">
+         <DialogTitle>
+           {modalMode === 'create' ? (formType === 'income' ? 'Создать приход' : 'Создать расход') : (modalMode === 'edit' ? 'Редактировать платёж' : 'Создать рефанд')}
+         </DialogTitle>
+         <DialogContent>
+           <Stack spacing={2} sx={{ mt: 1 }}>
+             <TextField label="Заказ (orderId)" value={form.orderId} onChange={(e)=>setForm((f)=>({ ...f, orderId: e.target.value }))} fullWidth />
+             <TextField label="Сумма" type="number" value={form.amount} onChange={(e)=>setForm((f)=>({ ...f, amount: Number(e.target.value) }))} fullWidth />
+             <FormField label="Метод">
+               <TextField label={undefined} value={form.method} onChange={(e)=>setForm((f)=>({ ...f, method: e.target.value }))} fullWidth />
+             </FormField>
+             <FormField label="Касса">
+               <Select value={form.cashRegisterId} onChange={(e)=>setForm((f)=>({ ...f, cashRegisterId: e.target.value }))} fullWidth>
+                 <MenuItem value="">Не выбрано</MenuItem>
+                 {cash.map((c) => (
+                   <MenuItem key={String(c._id || c.id)} value={String(c._id || c.id)}>{c.name} ({c.code})</MenuItem>
+                 ))}
+               </Select>
+             </FormField>
+             <FormField label="Заметка">
+               <TextField label={undefined} value={form.note} onChange={(e)=>setForm((f)=>({ ...f, note: e.target.value }))} fullWidth />
+             </FormField>
+             <Stack>
+               <Typography variant="body2" sx={{ mb: 1 }}>Статья (хлебные крошки)</Typography>
+               <Stack direction="row" spacing={1} alignItems="center">
+                 <Button size="small" variant="outlined" onClick={() => setArticleDialogOpen(true)}>Выбрать из дерева</Button>
+                 {Array.isArray(form.articlePath) && form.articlePath.length > 0 && (
+                   <Chip label={formatArticleBreadcrumbs(form.articlePath)} />
+                 )}
+               </Stack>
+             </Stack>
+           </Stack>
+         </DialogContent>
+         <DialogActions>
+           <Button onClick={() => setModalOpen(false)}>Отмена</Button>
+           <Button variant="contained" onClick={submitModal} disabled={modalMode==='edit' && !canPaymentsWrite}>{modalMode==='edit' ? 'Сохранить' : 'Создать'}</Button>
+         </DialogActions>
+       </Dialog>
+ 
+       <Dialog open={articleDialogOpen} onClose={() => setArticleDialogOpen(false)} fullWidth maxWidth="sm">
+         <DialogTitle>Выбор статей</DialogTitle>
+         <DialogContent>
+           <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>Отметьте одну или несколько статей</Typography>
+           <Stack spacing={1}>
+             {allArticlePaths.length === 0 && (
+               <Typography sx={{ opacity: 0.7 }}>Здесь пока пусто</Typography>
+             )}
+             {allArticlePaths.map((p) => (
+               <FormControl key={p}>
+                 <FormControlLabel
+                   control={<Checkbox checked={selectedArticles.includes(p)} onChange={(e)=>{
+                     const checked = e.target.checked;
+                     setSelectedArticles((prev) => {
+                       const s = new Set(prev);
+                       if (checked) s.add(p); else s.delete(p);
+                       return Array.from(s);
+                     });
+                     if (modalOpen) {
+                       const segs = p.split('/').map((t)=>t.trim()).filter(Boolean);
+                       setForm((f)=>({ ...f, articlePath: segs }));
+                     }
+                   }} />}
+                   label={p}
+                 />
+               </FormControl>
+             ))}
+           </Stack>
+         </DialogContent>
+         <DialogActions>
+           <Button onClick={() => setArticleDialogOpen(false)}>Закрыть</Button>
+         </DialogActions>
+       </Dialog>
+ 
+       <Snackbar open={toast.open} autoHideDuration={2500} onClose={closeToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+         <Alert onClose={closeToast} severity={toast.severity} sx={{ width: '100%' }}>
+           {toast.message}
+         </Alert>
+       </Snackbar>
+     </Box>
+   );
+ }

@@ -19,6 +19,7 @@ import Calendar from './pages/Calendar';
 import NotFound from './pages/NotFound';
 // удалён: раздел «Тренды» объединён в «Дашборд»
 import Services from './pages/Services';
+import Landing from './pages/Landing';
 import InventoryProducts from './pages/inventory/Products';
 import InventoryOrders from './pages/inventory/Orders';
 import InventorySuppliers from './pages/inventory/Suppliers';
@@ -39,8 +40,8 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 import UsersSettingsPage from './pages/settings/Users';
 import RolesSettingsPage from './pages/settings/Roles';
-import BootstrapWizard from './pages/BootstrapWizard';
-import BootstrapFirst from './pages/BootstrapFirst';
+import OnboardingWizard from './pages/OnboardingWizard';
+import OnboardingChecklist from './pages/OnboardingChecklist';
 import RbacTest from './pages/RbacTest';
 import UiThemePage from './pages/settings/UiTheme';
 // Тема импортируется из отдельного файла theme.js
@@ -56,8 +57,9 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/bootstrap" element={<BootstrapWizard />} />
-        <Route path="/bootstrap-first" element={<BootstrapFirst />} />
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/bootstrap" element={<OnboardingWizard />} />
+        <Route path="/bootstrap-first" element={<OnboardingChecklist />} />
         <Route path="/" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           {/* удалён: маршрут «/trends» объединён в «Дашборд» */}

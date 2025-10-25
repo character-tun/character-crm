@@ -49,15 +49,15 @@ export default function PayrollReport() {
   const chartData = useMemo(() => (summary.groups || []).map((g) => ({ name: g.employeeId, amount: g.amount })), [summary]);
 
   return (
-    <Box>
+    <Box data-tour="payroll-root">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>Отчёт: Начисления</Typography>
-        <Button variant="outlined" onClick={load}>Обновить</Button>
+        <Typography variant="h5" sx={{ fontWeight: 800 }} data-tour="payroll-title">Отчёт: Начисления</Typography>
+        <Button variant="outlined" onClick={load} data-tour="payroll-refresh">Обновить</Button>
       </Stack>
-      <Paper sx={{ height: 520, p: 1, borderRadius: 2, border: '1px solid var(--color-border)' }}>
+      <Paper sx={{ height: 520, p: 1, borderRadius: 2, border: '1px solid var(--color-border)' }} data-tour="payroll-grid">
         <DataGridBase rows={items} columns={columns} pageSize={10} loading={loading} />
       </Paper>
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid var(--color-border)' }}>
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid var(--color-border)' }} data-tour="payroll-summary">
         <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>Сводка по сотрудникам</Typography>
         <Chart data={chartData} dataKey="amount" />
       </Paper>

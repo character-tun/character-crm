@@ -65,17 +65,17 @@ export default function SaleFormPage() {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h5" gutterBottom>Новая продажа</Typography>
+    <Box sx={{ width: '100%' }} data-tour="shop-sale-root">
+      <Typography variant="h5" gutterBottom data-tour="shop-sale-title">Новая продажа</Typography>
       <Paper sx={{ p: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <TextField label="Наименование" value={name} onChange={(e) => setName(e.target.value)} size="small" sx={{ minWidth: 220 }} />
-          <TextField label="Цена" value={price} onChange={(e) => setPrice(e.target.value)} size="small" type="number" sx={{ width: 120 }} />
-          <TextField label="Кол-во" value={qty} onChange={(e) => setQty(e.target.value)} size="small" type="number" sx={{ width: 120 }} />
-          <Button variant="contained" startIcon={<AddIcon />} onClick={addItem}>Добавить</Button>
+        <Stack direction="row" spacing={2} alignItems="center" data-tour="shop-sale-add-item">
+          <TextField label="Наименование" value={name} onChange={(e) => setName(e.target.value)} size="small" sx={{ minWidth: 220 }} inputProps={{ 'data-tour': 'shop-sale-name' }} />
+          <TextField label="Цена" value={price} onChange={(e) => setPrice(e.target.value)} size="small" type="number" sx={{ width: 120 }} inputProps={{ 'data-tour': 'shop-sale-price' }} />
+          <TextField label="Кол-во" value={qty} onChange={(e) => setQty(e.target.value)} size="small" type="number" sx={{ width: 120 }} inputProps={{ 'data-tour': 'shop-sale-qty' }} />
+          <Button variant="contained" startIcon={<AddIcon />} onClick={addItem} data-tour="shop-sale-add-btn">Добавить</Button>
         </Stack>
         <Divider sx={{ my: 2 }} />
-        <Stack spacing={1}>
+        <Stack spacing={1} data-tour="shop-sale-items-list">
           {items.map((it, idx) => (
             <Stack key={idx} direction="row" alignItems="center" spacing={2}>
               <Typography sx={{ minWidth: 220 }}>{it.name}</Typography>
@@ -93,11 +93,11 @@ export default function SaleFormPage() {
         </Stack>
         <Divider sx={{ my: 2 }} />
         <Stack direction="row" spacing={2} alignItems="center">
-          <TextField label="Заметка" value={note} onChange={(e) => setNote(e.target.value)} size="small" fullWidth />
+          <TextField label="Заметка" value={note} onChange={(e) => setNote(e.target.value)} size="small" fullWidth inputProps={{ 'data-tour': 'shop-sale-note' }} />
         </Stack>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }} data-tour="shop-sale-total">
           <Typography variant="h6">Итого: {currency(totals.grandTotal)}</Typography>
-          <Button variant="contained" onClick={submit} disabled={loading}>Оформить продажу</Button>
+          <Button variant="contained" onClick={submit} disabled={loading} data-tour="shop-sale-submit">Оформить продажу</Button>
         </Box>
       </Paper>
       <Snackbar open={toast.open} autoHideDuration={4000} onClose={closeToast}>
