@@ -55,6 +55,7 @@ npm run client      # http://localhost:3000 (UI)
 - `npm run client` — только клиент (`client/`)
 - `npm run build` — сборка клиента (CRA)
 - `npm test` — Jest (unit/e2e/контракты)
+- `npm run test:cov` — Jest coverage + гейты (coverageThreshold).
 - `npm run extract:payments` — экстракт payments → `storage/reports/api-contracts/payments.json`
 - `npm run test:contracts` — регенерация артефактов + контракт‑тесты (`tests/api.contracts.*.test.js`)
 - `npm run precontracts` — полная регенерация Swagger и экстрактов (auth/fields/ordertype/payments)
@@ -74,10 +75,11 @@ npm run client      # http://localhost:3000 (UI)
 - Оба скрипта идемпотентны: повторные прогоны безопасны.
 
 ## Тестирование и покрытие
-- Запуск: `npm test` или `CI=true npm test -- --coverage --watchAll=false`
+- Запуск: `npm test`; покрытие/гейты: `npm run test:cov` — собирает покрытие и применяет гейты.
 - Контракты: перед запуском контракт‑тестов используйте `npm run precontracts` или `npm run test:contracts`. В CI шаг `precontracts` выполняется автоматически перед Jest.
 - Категории: `services`, `routes`, `queue`, `rbac`, `contracts`, `env`
-- Пороговая политика: целевой `70%`; если ниже, требуем рост ≥ текущий+5pp на следующий прогон
+- Гейты покрытия (Jest): линии 65%, стейтменты 65%, ветвления 50%, функции 55%.
+- Реализация: `jest.config.js` → `coverageThreshold`; CI шаг «Coverage gates (Jest)» выполняет `npm run test:cov` и блокирует билд при недоборе.
 
 ## DEV‑страницы
 - Bootstrap Wizard: `/bootstrap` — мастер создания администратора и сид базовых ролей
