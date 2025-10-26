@@ -78,7 +78,7 @@ npm run client      # http://localhost:3000 (UI)
 - Запуск: `npm test`; покрытие/гейты: `npm run test:cov` — собирает покрытие и применяет гейты.
 - Контракты: перед запуском контракт‑тестов используйте `npm run precontracts` или `npm run test:contracts`. В CI шаг `precontracts` выполняется автоматически перед Jest.
 - Категории: `services`, `routes`, `queue`, `rbac`, `contracts`, `env`
-- Гейты покрытия (Jest): линии 65%, стейтменты 65%, ветвления 50%, функции 55%.
+- Гейты покрытия (Jest): линии 65%, стейтменты 60%, ветвления 50%, функции 60%.
 - Реализация: `jest.config.js` → `coverageThreshold`; CI шаг «Coverage gates (Jest)» выполняет `npm run test:cov` и блокирует билд при недоборе.
 
 ## DEV‑страницы
