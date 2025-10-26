@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Stack, FormControlLabel, Switch, TextField } from '@mui/material';
+import { Box, Paper, Stack, FormControlLabel, Switch, TextField } from '@mui/material';
 import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_orders_general';

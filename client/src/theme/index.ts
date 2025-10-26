@@ -1,6 +1,6 @@
 import { createTheme, alpha } from '@mui/material/styles';
 import '@mui/x-data-grid/themeAugmentation';
-import { tokens, ThemeMode } from './tokens';
+import { ThemeMode } from './tokens';
 import { createCharacterTheme } from './theme';
 
 export const makeTheme = (mode: ThemeMode) => createCharacterTheme(mode);

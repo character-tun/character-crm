@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Stack, TextField, Button } from '@mui/material';
+import { Box, Paper, Stack, TextField, Button } from '@mui/material';
 import SettingsBackBar from '../../components/SettingsBackBar';
 
 const STORAGE_KEY = 'settings_orders_sms_templates';

@@ -12,14 +12,12 @@ const formatDateTime = (iso) => {
 export default function ShopHistoryPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [toast, setToast] = useState({ open: false, severity: 'success', message: '' });
   const openToast = (severity, message) => setToast({ open: true, severity, message });
   const closeToast = () => setToast((t) => ({ ...t, open: false }));
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const data = await shopSalesService.list({ limit: 200, offset: 0 });
       const arr = Array.isArray(data?.items) ? data.items : [];
@@ -34,7 +32,7 @@ export default function ShopHistoryPage() {
       })));
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка загрузки продаж';
-      setError(String(msg));
+      // removed: setError(String(msg));
       openToast('error', String(msg));
     } finally {
       setLoading(false);
