@@ -6,6 +6,7 @@ Run a smaller load/perf scenario outside Jest to validate:
 - Report generation under storage/reports
 */
 
+/* eslint-disable no-use-before-define */
 process.env.AUTH_DEV_MODE = '1';
 process.env.NODE_ENV = 'test';
 process.env.ENABLE_STATUS_QUEUE = '1';
@@ -206,6 +207,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('runLoadPerf error', err && err.stack || err);
+  console.error('runLoadPerf error', (err && err.stack) || err);
   process.exit(1);
 });

@@ -28,6 +28,7 @@ module.exports = {
         'object-curly-newline': 'off',
         'object-property-newline': 'off',
         'eol-last': 'off',
+        'no-shadow': 'off',
       },
     },
     {
@@ -40,6 +41,27 @@ module.exports = {
         'prefer-destructuring': 'off',
         'no-empty': ['off', { allowEmptyCatch: true }],
         'unused-imports/no-unused-vars': 'off',
+        'no-use-before-define': 'off',
+        'consistent-return': 'off',
+        'func-names': 'off',
+        'no-shadow': 'off',
+        'eol-last': 'off',
+      },
+    },
+    {
+      files: ['models/**/*.js'],
+      rules: {
+        'consistent-return': 'off',
+        'func-names': 'off',
+      },
+    },
+    {
+      files: ['queues/**/*.js'],
+      rules: {
+        'no-use-before-define': 'off',
+        'consistent-return': 'off',
+        'max-len': 'off',
+        'eol-last': 'off',
       },
     },
   ],
