@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { listUsers, createUser, updateUser, deleteUser } from '../../services/usersService';
 import { listRoles } from '../../services/rolesService';
 import SettingsBackBar from '../../components/SettingsBackBar';
@@ -51,35 +51,37 @@ export default function UsersSettingsPage() {
     }
   };
 
-  const onUpdate = async (id, changes) => {
+  const onUpdate = useCallback(async (id, changes) => {
     setError('');
     try {
       const updated = await updateUser(id, changes);
-      setUsers(users.map(u => (u._id === id ? updated : u)));
+      setUsers(prev => prev.map(u => (u._id === id ? updated : u)));
     } catch (e) {
       setError(e?.response?.data?.error || e.message);
     }
-  };
+  }, []);
 
-  const onDelete = async (id) => {
+  const onDelete = useCallback(async (id) => {
     if (!window.confirm('Удалить пользователя?')) return;
     setError('');
     try {
       await deleteUser(id);
-      setUsers(users.filter(u => u._id !== id));
+      setUsers(prev => prev.filter(u => u._id !== id));
     } catch (e) {
       setError(e?.response?.data?.error || e.message);
     }
-  };
+  }, []);
 
-  const toggleUserRole = (userId, roleCode, checked) => {
-    setUsers(users.map(u => {
+  const toggleUserRole = useCallback((userId, roleCode, checked) => {
+    setUsers(prev => prev.map(u => {
       if (u._id !== userId) return u;
       const cur = Array.isArray(u.roles) ? u.roles : [];
-      const nextRoles = checked ? Array.from(new Set([...cur, roleCode])) : cur.filter(rc => rc !== roleCode);
+      const nextRoles = checked
+        ? Array.from(new Set([...cur, roleCode]))
+        : cur.filter(rc => rc !== roleCode);
       return { ...u, roles: nextRoles };
     }));
-  };
+  }, []);
 
   const saveAll = async () => {
     setError('');
