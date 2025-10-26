@@ -10,11 +10,12 @@ describe('print adapter unit tests (Mongo-only, DRY_RUN)', () => {
     const launch = jest.fn();
     jest.doMock('puppeteer', () => ({ launch }), { virtual: true });
 
-    const saveBuffer = jest.fn().mockResolvedValue('file-1');
-    const getMeta = jest.fn(() => ({ name: 'order.pdf', size: 0, mime: 'application/pdf', createdAt: new Date().toISOString() }));
-    jest.doMock('../services/fileStore', () => ({ saveBuffer, getMeta }), { virtual: true });
+    // Spy on actual fileStore to align with service require('./fileStore')
+    const fileStore = require('../services/fileStore');
+    const saveBuffer = jest.spyOn(fileStore, 'saveBuffer').mockResolvedValue('file-1');
+    const getMeta = jest.spyOn(fileStore, 'getMeta').mockImplementation(() => ({ name: 'order.pdf', size: 0, mime: 'application/pdf', createdAt: new Date().toISOString() }));
 
-    const tplDoc = { _id: 'tpl-print-1', code: 'print-order', name: 'Print Order', html: '<p>Print {{order.id}}</p>' };
+    const tplDoc = { _id: 'tpl-print-1', code: 'print-order', name: 'Print Order', html: '<p>Print {{order.id}}</p>', bodyHtml: '<p>Print {{order.id}}</p>' };
     jest.doMock('../models/DocTemplate', () => ({
       findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue(id === 'tpl-print-1' ? tplDoc : null) })),
       findOne: jest.fn(({ code }) => ({ lean: jest.fn().mockResolvedValue(code === 'print-order' ? tplDoc : null) })),
@@ -42,6 +43,10 @@ describe('print adapter unit tests (Mongo-only, DRY_RUN)', () => {
     expect(launch).not.toHaveBeenCalled();
     expect(saveBuffer).not.toHaveBeenCalled();
     expect(orderDoc.save).not.toHaveBeenCalled();
+
+    // Restore spies
+    saveBuffer.mockRestore();
+    getMeta.mockRestore();
   });
 
   test('DRY_RUN=0: generates PDF via puppeteer and saves via fileStore', async () => {
@@ -62,11 +67,12 @@ describe('print adapter unit tests (Mongo-only, DRY_RUN)', () => {
     const launch = jest.fn().mockResolvedValue(browser);
     jest.doMock('puppeteer', () => ({ launch }), { virtual: true });
 
-    const saveBuffer = jest.fn().mockResolvedValue('file-2');
-    const getMeta = jest.fn(() => ({ name: 'order.pdf', size: pdfBuffer.length, mime: 'application/pdf', createdAt: new Date().toISOString() }));
-    jest.doMock('../services/fileStore', () => ({ saveBuffer, getMeta }), { virtual: true });
+    // Spy on actual fileStore to align with service require('./fileStore')
+    const fileStore = require('../services/fileStore');
+    const saveBuffer = jest.spyOn(fileStore, 'saveBuffer').mockResolvedValue('file-2');
+    const getMeta = jest.spyOn(fileStore, 'getMeta').mockImplementation(() => ({ name: 'order.pdf', size: pdfBuffer.length, mime: 'application/pdf', createdAt: new Date().toISOString() }));
 
-    const tplDoc = { _id: 'tpl-print-2', code: 'print-order-2', name: 'Print Order 2', html: '<p>Order {{order.id}} total: {{order.total}}</p>' };
+    const tplDoc = { _id: 'tpl-print-2', code: 'print-order-2', name: 'Print Order 2', html: '<p>Order {{order.id}} total: {{order.total}}</p>', bodyHtml: '<p>Order {{order.id}} total: {{order.total}}</p>' };
     jest.doMock('../models/DocTemplate', () => ({
       findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue(id === 'tpl-print-2' ? tplDoc : null) })),
       findOne: jest.fn(({ code }) => ({ lean: jest.fn().mockResolvedValue(code === 'print-order-2' ? tplDoc : null) })),
@@ -100,5 +106,9 @@ describe('print adapter unit tests (Mongo-only, DRY_RUN)', () => {
     // Order updated with attached file and saved
     expect(orderDoc.files.length).toBeGreaterThan(0);
     expect(orderDoc.save).toHaveBeenCalledTimes(1);
+
+    // Restore spies
+    saveBuffer.mockRestore();
+    getMeta.mockRestore();
   });
 });

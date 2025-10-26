@@ -16,7 +16,7 @@ describe('services/orderStatusService.changeOrderStatus', () => {
     OrderMock = {
       findById: jest.fn((id) => (id === '507f1f77bcf86cd799439011' ? orderDoc : null)),
     };
-    jest.doMock('../models/Order', () => OrderMock, { virtual: true });
+    jest.doMock('../models/Order', () => OrderMock);
 
     // ---- OrderStatus mock
     OrderStatusMock = {
@@ -32,11 +32,11 @@ describe('services/orderStatusService.changeOrderStatus', () => {
         })()),
       })),
     };
-    jest.doMock('../models/OrderStatus', () => OrderStatusMock, { virtual: true });
+    jest.doMock('../models/OrderStatus', () => OrderStatusMock);
 
     // ---- Log + queue mocks
     OrderStatusLogMock = { create: jest.fn(async () => ({ _id: 'log1' })) };
-    jest.doMock('../models/OrderStatusLog', () => OrderStatusLogMock, { virtual: true });
+    jest.doMock('../models/OrderStatusLog', () => OrderStatusLogMock);
 
     enqueueMock = jest.fn(async () => {});
     jest.doMock('../queues/statusActionQueue', () => ({ enqueueStatusActions: enqueueMock }));
@@ -45,7 +45,7 @@ describe('services/orderStatusService.changeOrderStatus', () => {
     OrderTypeMock = {
       findById: jest.fn((id) => ({ lean: () => Promise.resolve({ _id: id, allowedStatuses: ['st1'] }) })),
     };
-    jest.doMock('../server/models/OrderType', () => OrderTypeMock, { virtual: true });
+    jest.doMock('../server/models/OrderType', () => OrderTypeMock);
 
     svc = require('../services/orderStatusService');
 
