@@ -15,7 +15,7 @@ const CashRegisterSchema = new mongoose.Schema({
 CashRegisterSchema.index({ code: 1 }, { unique: true });
 
 // Guard: prohibit deleting cash register if it has payments
-CashRegisterSchema.pre('deleteOne', { document: false, query: true }, async function (next) {
+CashRegisterSchema.pre('deleteOne', { document: false, query: true }, async function preDeleteOne(next) {
   try {
     const filter = this.getFilter() || {};
     const id = filter._id || filter.id;
@@ -29,7 +29,7 @@ CashRegisterSchema.pre('deleteOne', { document: false, query: true }, async func
   }
 });
 
-CashRegisterSchema.pre('findOneAndDelete', async function (next) {
+CashRegisterSchema.pre('findOneAndDelete', async function preFindOneAndDelete(next) {
   try {
     const filter = this.getFilter() || {};
     const id = filter._id || filter.id;

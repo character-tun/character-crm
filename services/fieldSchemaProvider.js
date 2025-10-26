@@ -3,7 +3,7 @@ const { getCache } = require('./ttlCache');
 
 let FieldSchemaModel; try { FieldSchemaModel = require('../server/models/FieldSchema'); } catch (e) {}
 
-const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
+const _DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 const cache = getCache('fieldSchema');
 
 function mongoReady() {

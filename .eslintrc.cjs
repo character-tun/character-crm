@@ -73,14 +73,17 @@ module.exports = {
         'max-len': 'off',
         'no-await-in-loop': 'off',
         'no-continue': 'off',
+        'no-empty': ['off', { allowEmptyCatch: true }],
+        'no-nested-ternary': 'off',
       },
     },
     {
-      files: ['server/**/*.js'],
+      files: ['server/**/*.js', 'server.js'],
       rules: {
         'max-len': 'off',
         'no-await-in-loop': 'off',
         'no-continue': 'off',
+        'no-empty': ['off', { allowEmptyCatch: true }],
       },
     },
   ],
