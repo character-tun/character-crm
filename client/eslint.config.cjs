@@ -32,7 +32,7 @@ module.exports = [
       // мягкая маска: игнорируем переменные/аргументы с префиксом _ и игнорируем переменные catch
       'no-unused-vars': 'off',
       'react-hooks/exhaustive-deps': 'warn',
-      'import/no-extraneous-dependencies': ['error', { devDependencies: ['**/tests/**', '**/*.test.js'] }],
+      'import/no-extraneous-dependencies': ['error', { devDependencies: ['**/tests/**', '**/*.test.js', '**/*.test.jsx'] }],
       // отключаем как шумную и плохо совместимую с динамическими импортами/реэкспортами
       'import/no-unused-modules': 'off',
       // Разрешаем пустые catch-блоки (они используются для безопасного чтения из localStorage)
@@ -41,5 +41,15 @@ module.exports = [
       'no-hardcoded-ui/no-hardcoded-ui': 'off',
     },
     settings: { react: { version: 'detect' } },
+  },
+  // Jest globals for test files to avoid no-undef on describe/test/expect
+  {
+    files: ['src/**/__tests__/**/*.{js,jsx,ts,tsx}', 'src/**/*.{spec,test}.{js,jsx,ts,tsx}'],
+    languageOptions: {
+      globals: { ...globals.jest },
+    },
+    rules: {
+      'no-console': 'off',
+    },
   },
 ];
