@@ -27,8 +27,8 @@ jobs:
       - name: Install client deps
         run: npm ci
         working-directory: client
-      - name: Lint client (ESLint v9 flat config)
-        run: npx eslint . --max-warnings=0
+      - name: Lint client (ESLint flat config)
+        run: npx eslint --no-eslintrc -c eslint.config.cjs . --max-warnings=0
         working-directory: client
       - name: Get changed UI files (PR only)
         if: ${{ github.event_name == 'pull_request' }}
