@@ -161,7 +161,7 @@ export default function UsersSettingsPage() {
         </Stack>
       ),
     },
-  ], [rolesOptions]);
+  ], [rolesOptions, onUpdate, onDelete, toggleUserRole]);
 
   return (
     <Box sx={{ p: 2 }}>

@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Typography, Paper, Stack, Button, Grid, TextField, Divider, List, ListItem, ListItemText, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Paper, Stack, Button, Grid, Tooltip } from '@mui/material';
 import EmptyState from '../../components/EmptyState.jsx';
 import { useNotify } from '../../components/NotifyProvider';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import AddIcon from '@mui/icons-material/Add';
+
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TreeEditor from '../../components/TreeEditor.jsx';
 
@@ -31,8 +30,7 @@ const DEFAULT_TREE = {
 const KNOWN_INCOME = new Set(['Внесение в кассу','Оплата заказа','Оплата продажи','Оплата счета клиентом','Перемещение денег','Предоплата','Предоплата заказа']);
 const KNOWN_EXPENSE = new Set(['Аренда','Аутсорс','Возврат заказа','Возврат предоплаты','Выкуп у клиента','Выплата зарплаты','Доставка','Закупка товара','Изъятие из кассы','Налоги','Оплата поставщику','Оплата счета','Прочие расходы','Расходники','Реклама']);
 
-// Сортировка использовалась раньше, но для drag-n-drop порядок задаёт пользователь — сохраняем как есть
-const sortTree = (tree) => tree;
+
 
 const wrapFlatToTree = (incArr = [], expArr = []) => {
   const income = incArr.length ? [{ name: 'Без категории (доход)', children: [...new Set(incArr)] }] : [];

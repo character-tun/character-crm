@@ -45,6 +45,27 @@ export default function RolesSettingsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const onUpdate = React.useCallback(async (id, changes) => {
+    setError('');
+    try {
+      const updated = await updateRole(id, changes);
+      setRoles(roles.map(r => (r._id === id ? updated : r)));
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message);
+    }
+  }, [roles]);
+
+  const onDelete = React.useCallback(async (id) => {
+    if (!window.confirm('Удалить роль?')) return;
+    setError('');
+    try {
+      await deleteRole(id);
+      setRoles(roles.filter(r => r._id !== id));
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message);
+    }
+  }, [roles]);
+
   const columns = React.useMemo(() => [
     { field: 'code', headerName: 'Код', width: 220 },
     {
@@ -96,7 +117,7 @@ export default function RolesSettingsPage() {
         </Stack>
       ),
     },
-  ], [roles, loading]);
+  ], [roles, loading, onUpdate, onDelete]);
 
   const onCreate = async (e) => {
     e.preventDefault();
@@ -118,26 +139,9 @@ export default function RolesSettingsPage() {
     }
   };
 
-  const onUpdate = async (id, changes) => {
-    setError('');
-    try {
-      const updated = await updateRole(id, changes);
-      setRoles(roles.map(r => (r._id === id ? updated : r)));
-    } catch (e) {
-      setError(e?.response?.data?.error || e.message);
-    }
-  };
 
-  const onDelete = async (id) => {
-    if (!window.confirm('Удалить роль?')) return;
-    setError('');
-    try {
-      await deleteRole(id);
-      setRoles(roles.filter(r => r._id !== id));
-    } catch (e) {
-      setError(e?.response?.data?.error || e.message);
-    }
-  };
+
+
 
   const saveAll = async () => {
     setError('');

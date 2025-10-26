@@ -6,7 +6,7 @@ import { useUiTheme } from '../../context/ThemeContext';
 export default function UiThemePage() {
   const { hasAnyRole } = useAuth();
   const isAdmin = hasAnyRole(['Admin']);
-  const { theme, themeName, setTheme, availableThemes, accentMode, accentHex, setAccentMode, setAccentHex } = useUiTheme();
+  const { themeName, setTheme, availableThemes, accentMode, accentHex, setAccentMode, setAccentHex } = useUiTheme();
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

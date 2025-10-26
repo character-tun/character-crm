@@ -14,7 +14,7 @@ export default function SaleFormPage() {
   const [note, setNote] = useState('');
   const [method, setMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+
   const [toast, setToast] = useState({ open: false, severity: 'success', message: '' });
   const openToast = (severity, message) => setToast({ open: true, severity, message });
   const closeToast = () => setToast((t) => ({ ...t, open: false }));
@@ -46,7 +46,6 @@ export default function SaleFormPage() {
       return;
     }
     setLoading(true);
-    setError('');
     try {
       const resp = await shopSalesService.create({ items, note, method });
       if (resp?.ok) {
@@ -57,7 +56,6 @@ export default function SaleFormPage() {
       }
     } catch (e) {
       const msg = e?.response?.data?.error || e?.message || 'Ошибка создания продажи';
-      setError(String(msg));
       openToast('error', String(msg));
     } finally {
       setLoading(false);
