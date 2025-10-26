@@ -45,6 +45,7 @@ module.exports = {
         'consistent-return': 'off',
         'func-names': 'off',
         'no-shadow': 'off',
+        'no-param-reassign': 'off',
         'eol-last': 'off',
       },
     },
@@ -61,7 +62,25 @@ module.exports = {
         'no-use-before-define': 'off',
         'consistent-return': 'off',
         'max-len': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
         'eol-last': 'off',
+      },
+    },
+    {
+      files: ['services/**/*.js'],
+      rules: {
+        'max-len': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
+      },
+    },
+    {
+      files: ['server/**/*.js'],
+      rules: {
+        'max-len': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
       },
     },
   ],

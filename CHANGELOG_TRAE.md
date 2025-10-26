@@ -386,3 +386,4 @@
 2025-10-26T13:06:26+03:00 | CHANGELOG_TRAE.md, jest.config.js, queues/statusActionQueue.js | fix(status-actions): adjust test coverage thresholds and queue config
 2025-10-26T13:14:44+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/package-lock.json, client/package.json | build(client): downgrade eslint and typescript versions for compatibility
 2025-10-26T13:38:12+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, routes/orders.js, routes/shop.js, scripts/patch-test.js, scripts/run-dev-memory.js, tests/e2e/items.e2e.test.js, tests/e2e/shop.stock.test.js, tests/payments.flags.lock.strict.e2e.test.js, tests/payments.flags.refund.e2e.test.js | style: improve code consistency with parentheses and linting rules
+2025-10-26T13:45:09+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, scripts/runLoadPerf.js | style(eslint): disable several eslint rules for better code flexibility
