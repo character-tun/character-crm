@@ -124,7 +124,9 @@ export default function PaymentsPage() {
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const hydratedRef = React.useRef(false);
   React.useEffect(() => {
+    if (hydratedRef.current) return;
     const p = Object.fromEntries(searchParams.entries());
     if (p.dateFrom) setDateFrom(p.dateFrom);
     if (p.dateTo) setDateTo(p.dateTo);
@@ -132,7 +134,8 @@ export default function PaymentsPage() {
     if (p.locationId) setLocationId(p.locationId);
     if (p.q) setNoteQuery(p.q);
     if (p.articlePath) setSelectedArticles([p.articlePath]);
-  }, []);
+    hydratedRef.current = true;
+  }, [searchParams]);
   React.useEffect(() => {
     const q = {};
     if (dateFrom) q.dateFrom = dateFrom;
@@ -142,9 +145,9 @@ export default function PaymentsPage() {
     if (noteQuery) q.q = noteQuery;
     if (selectedArticles.length === 1) q.articlePath = selectedArticles[0];
     setSearchParams(q, { replace: true });
-  }, [dateFrom, dateTo, cashRegisterId, locationId, noteQuery, selectedArticles]);
+  }, [dateFrom, dateTo, cashRegisterId, locationId, noteQuery, selectedArticles, setSearchParams]);
 
-  const loadCash = async () => {
+  const loadCash = useCallback(async () => {
     try {
       const res = await cashService.list({ limit: 200, offset: 0 });
       const arr = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
@@ -152,7 +155,7 @@ export default function PaymentsPage() {
     } catch (e) {
       console.warn('Не удалось загрузить кассы', e);
     }
-  };
+  }, []);
 
   const loadPayments = useCallback(async () => {
     setLoading(true);
@@ -188,7 +191,7 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, locationId]);
+  }, [type, cashRegisterId, dateFrom, dateTo, selectedArticles, locationId, notify]);
   // Load cashflow report
   const loadCashflow = useCallback(async () => {
     setCfLoading(true);
@@ -205,7 +208,7 @@ export default function PaymentsPage() {
     }
   }, [dateFrom, dateTo, locationId]);
 
-  useEffect(() => { loadCash(); }, []);
+  useEffect(() => { loadCash(); }, [loadCash]);
   useEffect(() => { loadPayments(); }, [loadPayments]);
   useEffect(() => { loadCashflow(); }, [loadCashflow]);
 

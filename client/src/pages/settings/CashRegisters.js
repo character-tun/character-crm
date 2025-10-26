@@ -93,7 +93,7 @@ export default function CashRegistersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   const loadBalances = useCallback(async () => {
     setBalLoading(true);
@@ -123,7 +123,7 @@ export default function CashRegistersPage() {
     } finally {
       setBalLoading(false);
     }
-  }, [dateFrom, dateTo, locationId]);
+  }, [dateFrom, dateTo, locationId, notify]);
 
   useEffect(() => { loadCash(); }, [loadCash]);
   useEffect(() => { loadBalances(); }, [loadBalances]);

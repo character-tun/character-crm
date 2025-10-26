@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -149,7 +149,7 @@ export default function Layout({ children }) {
     return hasAnyRole(allowed);
   };
 
-  const sectionsRaw = [
+  const sectionsRaw = useMemo(() => [
     { label: 'Наш гараж', items: [
       { label: 'Дашборд', icon: LayoutDashboard, route: '/' },
       { label: 'Календарь', icon: CalendarIconLucide, route: '/calendar' },
@@ -191,7 +191,7 @@ export default function Layout({ children }) {
     { label: 'Настройки', items: [
       { label: 'Настройки', icon: SettingsLucide, route: '/settings' },
     ]},
-  ];
+  ], []);
 
   // При первом заходе по прямому URL выбираем подходящий ключ (по умолчанию — верхний уровень)
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function Layout({ children }) {
       });
     });
     if (found) setActiveKey(found);
-  }, [location.pathname]);
+  }, [location.pathname, activeKey, sectionsRaw]);
 
   return (
     <ThemeProvider>

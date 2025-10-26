@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, InputLabel, List, ListItem, ListItemText, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -104,7 +104,7 @@ export default function InventoryOrdersPage() {
   const [orderDraft, setOrderDraft] = useState({ supplierId: '', items: [], discount: 0, taxPercent: 0, status: 'Новый', payments: [] });
   const [categoryFilter, setCategoryFilter] = useState(null);
 
-  const descendantIds = (id) => {
+  const descendantIds = useCallback((id) => {
     const res = [];
     const stack = [id];
     while (stack.length) {
@@ -113,7 +113,7 @@ export default function InventoryOrdersPage() {
       kids.forEach((k) => { res.push(k.id); stack.push(k.id); });
     }
     return res;
-  };
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     if (!categoryFilter) return products;

@@ -33,7 +33,7 @@ export default function FiltersBar({
       }
     }, debounceMs);
     return () => clearTimeout(handle);
-  }, [searchInput]);
+  }, [searchInput, debounceMs, onChange, q, value]);
 
   const setField = (field, v) => {
     const next = { ...value, [field]: v };

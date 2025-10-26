@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -174,7 +174,7 @@ export default function SuppliersPage() {
     return m;
   }, [categories]);
 
-  const descendantIds = (id) => {
+  const descendantIds = useCallback((id) => {
     const res = [];
     const stack = [id];
     while (stack.length) {
@@ -183,7 +183,7 @@ export default function SuppliersPage() {
       kids.forEach((k) => { res.push(k.id); stack.push(k.id); });
     }
     return res;
-  };
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     if (!categoryFilter) return products;

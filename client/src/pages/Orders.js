@@ -22,6 +22,7 @@ import { useNotify } from '../components/NotifyProvider';
 const formatCurrency = (value) => `₽${Number(value || 0).toLocaleString('ru-RU')}`;
 
 const ALL_TYPES = ['Детали', 'Детейлинг', 'Кузовной ремонт'];
+const TYPE_MAP = { parts: 'Детали', detailing: 'Детейлинг', bodywork: 'Кузовной ремонт' };
 
 // Справочники: услуги, исполнители, статусы
 const SERVICES = [
@@ -194,13 +195,13 @@ export default function Orders() {
   };
 
   useEffect(() => {
-    if (editOpen && currentOrder?.id) {
+    if (editOpen) {
       loadOrderPayments();
     }
-  }, [editOpen, currentOrder?.id, loadOrderPayments]);
+  }, [editOpen, loadOrderPayments]);
 
   const navigate = useNavigate();
-  const typeMap = { parts: 'Детали', detailing: 'Детейлинг', bodywork: 'Кузовной ремонт' };
+  // type map moved to top-level as TYPE_MAP
   const [orderTypeItems, setOrderTypeItems] = useState([]);
   const [statusGroups, setStatusGroups] = useState([]);
   const statuses = useMemo(() => flattenStatuses(statusGroups), [statusGroups]);
@@ -282,10 +283,14 @@ export default function Orders() {
     }
   }, []);
 
+  const loadClientsForCurrentOrder = useCallback(() => {
+    return loadClients(currentOrder?.client || '');
+  }, [currentOrder?.client, loadClients]);
+
   useEffect(() => {
     if (!editOpen) return;
-    loadClients(currentOrder?.client || '');
-  }, [editOpen, currentOrder?.client, loadClients]);
+    loadClientsForCurrentOrder();
+  }, [editOpen, loadClientsForCurrentOrder]);
 
   useEffect(() => {
     if (!editOpen) return;
@@ -364,7 +369,7 @@ export default function Orders() {
   }, [statuses, orderTypeItems, currentOrder?.orderTypeId]);
 
   const filteredOrders = useMemo(() => {
-    const label = typeMap[type];
+    const label = TYPE_MAP[type];
     if (!label) return orders;
     return (orders || []).filter((o) => (o.types || []).includes(label));
   }, [orders, type]);
@@ -763,13 +768,13 @@ export default function Orders() {
     ) + 1;
     const newId = `ORD-${nextNumericId}`;
     const now = new Date();
-    const defaultTypes = typeMap[type] ? [typeMap[type]] : [];
+    const defaultTypes = TYPE_MAP[type] ? [TYPE_MAP[type]] : [];
 
     // попробовать выбрать тип из загруженных по названию из маршрута
     let orderTypeId = '';
     let initialStatus = 'Новый';
     if (orderTypeItems.length) {
-      const preferredName = typeMap[type];
+      const preferredName = TYPE_MAP[type];
       const t = orderTypeItems.find((it) => (it.name || it.code) === preferredName) || orderTypeItems[0];
       if (t) {
         orderTypeId = t._id;
@@ -852,7 +857,7 @@ export default function Orders() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-        {typeMap[type] ? `Заказы: ${typeMap[type]}` : 'Все заказы'}
+        {TYPE_MAP[type] ? `Заказы: ${TYPE_MAP[type]}` : 'Все заказы'}
       </Typography>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>

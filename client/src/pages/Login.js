@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import http from '../services/http';
@@ -11,9 +11,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [firstAllowed, setFirstAllowed] = useState(false);
+  const devRedirectHydrated = useRef(false);
 
   // Мгновенный редирект с Login при DEV‑режиме
   useEffect(() => {
+    if (devRedirectHydrated.current) return;
+    devRedirectHydrated.current = true;
     const devBypass = (() => {
       try {
         const flag = localStorage.getItem('auth_dev_mode');
@@ -25,7 +28,7 @@ export default function LoginPage() {
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
-  }, []);
+  }, [navigate, location]);
 
   useEffect(() => {
     const devBypass = (() => {

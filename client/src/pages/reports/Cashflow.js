@@ -22,6 +22,8 @@ export default function CashflowReport() {
 
   const [state, setState] = React.useState({ groups: [], balance: 0, loading: true, error: '' });
 
+  const { dateFrom, dateTo, locationId } = filters;
+
   // Initialize filters from URL on mount
   React.useEffect(() => {
     const p = Object.fromEntries(searchParams.entries());
@@ -59,7 +61,6 @@ export default function CashflowReport() {
 
   // Fetch cashflow report when relevant filters change
   React.useEffect(() => {
-    const { dateFrom, dateTo, locationId } = filters;
     setState((s) => ({ ...s, loading: true, error: '' }));
     reportsService.cashflow({ dateFrom, dateTo, locationId }).then((data) => {
       if (data && data.ok) {
@@ -72,7 +73,7 @@ export default function CashflowReport() {
       setState({ groups: [], balance: 0, loading: false, error: 'ERROR' });
       notify(String(msg), { severity: 'error' });
     });
-  }, [filters.dateFrom, filters.dateTo, filters.locationId]);
+  }, [dateFrom, dateTo, locationId, notify]);
 
   const visibleGroups = React.useMemo(() => {
     const id = String(filters.cashRegisterId || '');

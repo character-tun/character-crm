@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
     logout,
     refreshAccess,
     hasAnyRole: (roles) => storeHasAnyRole(roles),
-  }), [access, user]);
+  }), [access, user, isAuthenticated]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

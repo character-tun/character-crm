@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, List, ListItem, ListItemText, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -54,16 +54,16 @@ export default function InventoryProductsPage() {
   const topCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
   const childrenOf = (id) => categories.filter((c) => c.parentId === id);
 
-  const descendantIds = (id) => {
+  const descendantIds = useCallback((id) => {
     const res = [];
     const stack = [id];
     while (stack.length) {
       const cur = stack.pop();
-      const kids = childrenOf(cur);
+      const kids = categories.filter((c) => c.parentId === cur);
       kids.forEach((k) => { res.push(k.id); stack.push(k.id); });
     }
     return res;
-  };
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
