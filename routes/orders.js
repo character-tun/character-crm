@@ -300,6 +300,10 @@ router.get('/:id/files', requireRoles('docs.print', 'Admin'), async (req, res, n
   try {
     const orderId = req.params.id;
     const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+    // DEV fallback: when Mongo is unavailable, return an empty list
+    if (!mongoReady && DEV_MODE) {
+      return res.json({ ok: true, files: [] });
+    }
     if (!mongoReady) return next(httpError(503, 'MongoDB is required'));
     const order = await Order.findById(orderId).lean();
     if (!order) return next(httpError(404, 'Order not found'));

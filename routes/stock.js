@@ -163,9 +163,13 @@ router.post('/movements', requirePermission('warehouse.write'), validate(schemas
       source: body.source || { kind: 'manual' },
       createdBy: req.user && req.user.id,
     });
-    // Also record to ledger
+    // Also record to ledger (only if ids are valid ObjectId)
     if (StockLedger) {
-      await StockLedger.create({ itemId: mongoose.Types.ObjectId(itemId), locationId: locationId ? mongoose.Types.ObjectId(locationId) : undefined, qty: signed, cost, refType: 'movement', op: type, refId: mv._id, ts, createdBy: req.user && req.user.id });
+      const itemIdObj = mongoose.Types.ObjectId.isValid(itemId) ? mongoose.Types.ObjectId(itemId) : null;
+      const locationIdObj = locationId && mongoose.Types.ObjectId.isValid(locationId) ? mongoose.Types.ObjectId(locationId) : undefined;
+      if (itemIdObj) {
+        await StockLedger.create({ itemId: itemIdObj, locationId: locationIdObj, qty: signed, cost, refType: 'movement', op: type, refId: mv._id, ts, createdBy: req.user && req.user.id });
+      }
     }
     return res.status(201).json({ ok: true, item: mv });
   } catch (err) {

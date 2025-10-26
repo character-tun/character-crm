@@ -1,6 +1,8 @@
 const { Queue, Worker } = require('bullmq');
 const { handleStatusActions } = require('../services/statusActionsHandler');
 
+// Environment flags
+const IS_TEST = process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID;
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 const { REDIS_URL } = process.env;
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
@@ -8,6 +10,10 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 
 // Use an in-memory queue when in DEV mode and Redis is not configured
 const USE_MEM_QUEUE = DEV_MODE && !REDIS_URL;
+// Do NOT disable the queue in tests when using the in-memory queue (DEV)
+const DISABLE_STATUS_QUEUE = !USE_MEM_QUEUE && IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1';
+const LOG_ENABLED = ((!IS_TEST && USE_MEM_QUEUE) || process.env.ENABLE_QUEUE_LOGS === '1');
+
 const queueName = 'statusActionQueue';
 
 
@@ -230,7 +236,3 @@ if (USE_MEM_QUEUE) {
 
   module.exports = { statusActionQueue, enqueueStatusActions, shutdownQueue };
 }
-
-const IS_TEST = process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID;
-const DISABLE_STATUS_QUEUE = IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1';
-const LOG_ENABLED = !IS_TEST || process.env.ENABLE_QUEUE_LOGS === '1';
