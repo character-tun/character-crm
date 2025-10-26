@@ -50,9 +50,9 @@ jobs:
           fi
           echo "Lockfile pair checks passed."
       - name: npm ci dry-run (root)
-        run: npm ci --dry-run
+        run: npm ci --ignore-scripts --dry-run
       - name: npm ci dry-run (client)
-        run: npm ci --dry-run
+        run: npm ci --ignore-scripts --dry-run
         working-directory: client
 
   lint:
@@ -66,11 +66,11 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install root deps
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Lint root (ESLint v8)
         run: npx eslint . --ext .js --max-warnings=0
       - name: Install client deps
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: client
       - name: Lint client (ESLint flat config)
         run: npx eslint --no-eslintrc -c eslint.config.cjs . --max-warnings=0
@@ -129,7 +129,7 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install root deps
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Pre-contracts artifacts
         run: npm run precontracts
       - name: Run server tests (Jest)
@@ -143,7 +143,7 @@ jobs:
           JWT_SECRET: "dev_secret"
         run: npm run test:cov
       - name: Install client deps
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: client
       - name: Run client tests (CRA Jest)
         run: npm test -- --watchAll=false
@@ -160,7 +160,7 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install client deps
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: client
       - name: Build client
         run: npm run build
@@ -182,12 +182,12 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install root deps
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: npm audit (root)
         run: |
           npm audit --audit-level=high || true
       - name: Install client deps
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: client
       - name: npm audit (client)
         run: |

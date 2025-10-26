@@ -1,3 +1,12 @@
+## 2025-10-26 13:40 (Europe/Warsaw) | CI — Phase 3: Lockfile consistency + npm ci discipline
+
+- files: `.github/workflows/ci.yml`, `package-lock.json`, `client/package-lock.json`, `CHANGELOG_TRAE.md`
+- changes: synced lockfiles in root and client; resolved `yaml@2.8.1` mismatch by regenerating locks; stabilized CI by pinning Node 20 and using `npm ci --ignore-scripts` for installs and dry-runs; all downstream jobs depend on `lock-check`.
+- Acceptance:
+  - `npm ci --dry-run` passes in root and client locally and in CI.
+  - Job "Lockfile consistency" succeeds; no "Missing:" errors in logs.
+  - Lint, tests, build, and audit run after lock-check.
+
 ## 2025-10-26 00:10 (Europe/Warsaw) | Client — Дашборд: финансовый виджет (5.5 — Finance UX)
 
 - files: `client/src/components/widgets/FinanceWidget.jsx`, `client/src/pages/Dashboard.js`, `client/src/pages/reports/Cashflow.js`, `client/src/App.js`, `CHANGELOG_TRAE.md`
@@ -389,3 +398,4 @@
 2025-10-26T13:45:09+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, scripts/runLoadPerf.js | style(eslint): disable several eslint rules for better code flexibility
 2025-10-26T13:48:47+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, jest.config.js | style(eslint): disable several eslint rules for better code flexibility
 2025-10-26T13:58:58+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, server/models/CashRegister.js, server/models/Payment.js, services/fieldSchemaProvider.js | refactor(models): improve mongoose hook function naming consistency
+2025-10-26T16:21:13+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md | ci(workflows): add lockfile consistency check job
