@@ -140,13 +140,13 @@ router.post('/sales', requireRoles('Admin', 'Manager'), validate(schemas.shopSal
 router.post('/sales/:id/refund', requireRoles('Admin', 'Manager'), validate(schemas.shopSaleRefundSchema), async (req, res, next) => {
   try {
     const id = String(req.params.id || '').trim();
-    const amount = Number(req.body && req.body.amount || 0);
+    const amount = Number((req.body && req.body.amount) || 0);
     const reason = req.body && req.body.reason ? String(req.body.reason) : undefined;
 
     if (DEV_MODE && !mongoReady()) {
       const sale = devSales.find((s) => String(s._id) === id);
       if (!sale) return res.status(404).json({ error: 'NOT_FOUND' });
-      const refundAmt = amount > 0 ? amount : (sale.totals && sale.totals.grandTotal) || 0;
+      const refundAmt = amount > 0 ? amount : ((sale.totals && sale.totals.grandTotal) || 0);
       const refund = { amount: refundAmt, reason, ts: new Date().toISOString(), by: req.user && req.user.id ? String(req.user.id) : undefined };
       sale.refunds = Array.isArray(sale.refunds) ? sale.refunds.concat([refund]) : [refund];
 
@@ -175,7 +175,8 @@ router.post('/sales/:id/refund', requireRoles('Admin', 'Manager'), validate(sche
     if (!ShopSale) return res.status(503).json({ error: 'MODEL_NOT_AVAILABLE' });
     const sale = await ShopSale.findById(id);
     if (!sale) return res.status(404).json({ error: 'NOT_FOUND' });
-    const refundAmt = amount > 0 ? amount : (sale.totals && sale.totals.grandTotal) || 0;
+    const refundAmt = amount > 0 ? amount : ((sale.totals && sale.totals.grandTotal) || 0);
+    const refund = { amount: refundAmt, reason, ts: new Date().toISOString(), by: req.user && req.user.id ? String(req.user.id) : undefined };
     sale.refunds = Array.isArray(sale.refunds) ? sale.refunds.concat([{ amount: refundAmt, reason, ts: new Date(), by: req.user && req.user.id ? new mongoose.Types.ObjectId(String(req.user.id)) : undefined }]) : [{ amount: refundAmt, reason, ts: new Date(), by: req.user && req.user.id ? new mongoose.Types.ObjectId(String(req.user.id)) : undefined }];
     await sale.save();
     return res.json({ ok: true });

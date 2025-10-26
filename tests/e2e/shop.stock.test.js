@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
@@ -136,20 +135,12 @@ jest.mock('../../server/models/StockMovement', () => {
 // Helper: app with mounted routes
 function makeApp() {
   const app = express();
-  app.use(bodyParser.json());
-  // simple auth middleware mock
-  app.use((req, res, next) => {
-    const role = req.header('x-user-role');
-    const auth = req.header('Authorization');
-    if (auth && auth.startsWith('Bearer ')) {
-      try { req.user = jwt.verify(auth.slice('Bearer '.length), process.env.JWT_SECRET || 'dev_secret'); } catch (e) {}
-    }
-    if (!req.user) req.user = { id: req.header('x-user-id') || 'u1', roles: role ? [role] : (req.user?.roles || ['Admin']) };
-    next();
-  });
-  app.use('/api/orders', require('../../routes/orders'));
-  app.use('/api/payments', require('../../routes/payments'));
+  app.use(express.json());
+  app.use(require('../../middleware/auth').withUser);
+  app.use('/api/items', require('../../routes/items'));
+  app.use('/api/shop', require('../../routes/shop'));
   app.use('/api/stock', require('../../routes/stock'));
+  app.use(require('../../middleware/error'));
   return app;
 }
 

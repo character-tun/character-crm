@@ -30,7 +30,7 @@ describe('Payments feature flag: PAYMENTS_REFUND_ENABLED', () => {
       .set('x-user-role', 'Finance')
       .send({ orderId: 'flags-refund-1', amount: 10 });
     expect(res.statusCode).toBe(403);
-    expect(String(res.body && res.body.error || '')).toMatch(/REFUND_DISABLED/);
+    expect(String((res.body && res.body.error) || '')).toMatch(/REFUND_DISABLED/);
   });
 
   test('refund enabled (PAYMENTS_REFUND_ENABLED=1) → 200', async () => {

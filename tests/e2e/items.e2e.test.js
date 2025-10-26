@@ -35,7 +35,7 @@ describe('Items (e2e): list/create/patch in DEV mode', () => {
       .get('/api/items?q=Shampoo')
       .set(headers)
       .expect(200);
-    const items = listRes.body && listRes.body.items || [];
+    const items = (listRes.body && listRes.body.items) || [];
     expect(Array.isArray(items)).toBe(true);
     const found = items.find((it) => String(it._id) === String(createdId));
     expect(found && found.name).toBe('Shampoo X');

@@ -384,3 +384,4 @@
 2025-10-26T12:50:20+03:00 | CHANGELOG_TRAE.md, client/package-lock.json, client/package.json | build(client): downgrade react types to v18 for compatibility
 2025-10-26T13:02:43+03:00 | CHANGELOG_TRAE.md, jest.config.js, queues/statusActionQueue.js, routes/statuses.js | fix(status-actions): improve validation and queue handling
 2025-10-26T13:06:26+03:00 | CHANGELOG_TRAE.md, jest.config.js, queues/statusActionQueue.js | fix(status-actions): adjust test coverage thresholds and queue config
+2025-10-26T13:14:44+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md, client/package-lock.json, client/package.json | build(client): downgrade eslint and typescript versions for compatibility

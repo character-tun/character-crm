@@ -76,7 +76,7 @@ describe('Payments feature flag: CASH_LOCK_STRICT', () => {
         .set('x-user-role', 'Finance')
         .send({ note: 'edit under strict' });
       expect(res.statusCode).toBe(403);
-      expect(String(res.body && res.body.error || '')).toMatch(/PAYMENT_LOCKED/);
+      expect(String((res.body && res.body.error) || '')).toMatch(/PAYMENT_LOCKED/);
     });
   });
 });

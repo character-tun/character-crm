@@ -219,7 +219,7 @@ router.get('/', requireRoles('Admin', 'Manager'), async (req, res, next) => {
 
     const from = req.query.from ? new Date(req.query.from) : null;
     const to = req.query.to ? new Date(req.query.to) : null;
-    if (from && !Number.isNaN(from.getTime()) || to && !Number.isNaN(to.getTime())) {
+    if ((from && !Number.isNaN(from.getTime())) || (to && !Number.isNaN(to.getTime()))) {
       match.createdAt = {};
       if (from && !Number.isNaN(from.getTime())) match.createdAt.$gte = from;
       if (to && !Number.isNaN(to.getTime())) match.createdAt.$lte = to;

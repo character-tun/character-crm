@@ -30,15 +30,19 @@ const mongoose = require('mongoose');
   }
 
   // Start server
-  require('../server.js');
+  require('../server');
 
   const shutdown = async () => {
     try {
       await mongoose.disconnect();
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[run-dev-memory] mongoose disconnect error:', e && e.message);
+    }
     try {
       await mongod.stop();
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[run-dev-memory] mongod stop error:', e && e.message);
+    }
     process.exit(0);
   };
 

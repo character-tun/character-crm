@@ -30,6 +30,18 @@ module.exports = {
         'eol-last': 'off',
       },
     },
+    {
+      files: ['scripts/**/*.js', 'routes/**/*.js', 'tests/**/*.js'],
+      rules: {
+        'max-len': 'off',
+        'no-nested-ternary': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
+        'prefer-destructuring': 'off',
+        'no-empty': ['off', { allowEmptyCatch: true }],
+        'unused-imports/no-unused-vars': 'off',
+      },
+    },
   ],
   rules: {
     'no-console': 'off',

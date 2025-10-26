@@ -3,7 +3,6 @@ process.env.NODE_ENV = 'test';
 
 const express = require('express');
 const mongoose = require('mongoose');
-const http = require('http');
 const request = require('supertest');
 
 const { withUser } = require('../middleware/auth');
@@ -19,8 +18,6 @@ for (let i = 1; i <= 3; i++) {
   const id = String(i).padStart(24, '0');
   globalThis.__OrdersMem.set(id, { _id: id, status: 'new', closed: false, paymentsLocked: false, totals: { grandTotal: 1000 } });
 }
-
-jest = undefined; // allow running outside Jest
 
 // Mocks of Order & OrderStatusLog when models are required by services
 require.cache[require.resolve('../models/Order')] = {
