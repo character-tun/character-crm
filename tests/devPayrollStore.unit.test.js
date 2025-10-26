@@ -22,6 +22,6 @@ describe('devPayrollStore — basic operations', () => {
     store.pushItem({ _id: id2, employee: 'u2', amount: 900 });
     const items2 = store.getItems();
     expect(items2.length).toBe(2);
-    expect(items2.map(i => i._id)).toEqual([id1, id2]);
+    expect(items2.map((i) => i._id)).toEqual([id1, id2]);
   });
 });

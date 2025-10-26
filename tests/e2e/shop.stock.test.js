@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 process.env.AUTH_DEV_MODE = '1';
 process.env.NOTIFY_DRY_RUN = '1';
 process.env.PRINT_DRY_RUN = '1';
+process.env.ENABLE_STATUS_QUEUE = '0';
 
 // --- Mocks: Mongo models ---
 jest.mock('../../server/models/Item', () => {
@@ -140,6 +141,8 @@ function makeApp() {
   app.use('/api/items', require('../../routes/items'));
   app.use('/api/shop', require('../../routes/shop'));
   app.use('/api/stock', require('../../routes/stock'));
+  app.use('/api/orders', require('../../routes/orders'));
+  app.use('/api/payments', require('../../routes/payments'));
   app.use(require('../../middleware/error'));
   return app;
 }
@@ -152,6 +155,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     process.env.NOTIFY_DRY_RUN = '1';
     process.env.PRINT_DRY_RUN = '1';
     process.env.PAYROLL_PERCENT = '0';
+    process.env.ENABLE_STATUS_QUEUE = '0';
     // Reset mongoose readyState per test; we toggle inside steps
     const mongoose = require('mongoose');
     mongoose.connection = { readyState: 1 };

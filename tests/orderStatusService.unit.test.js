@@ -12,7 +12,7 @@ describe('services/orderStatusService.changeOrderStatus', () => {
     jest.resetModules();
 
     // ---- Order mock
-    let orderDoc = { _id: '507f1f77bcf86cd799439011', status: 'in_work', save: jest.fn(async () => {}) };
+    const orderDoc = { _id: '507f1f77bcf86cd799439011', status: 'in_work', save: jest.fn(async () => {}) };
     OrderMock = {
       findById: jest.fn((id) => (id === '507f1f77bcf86cd799439011' ? orderDoc : null)),
     };
@@ -47,7 +47,7 @@ describe('services/orderStatusService.changeOrderStatus', () => {
     };
     jest.doMock('../server/models/OrderType', () => OrderTypeMock, { virtual: true });
 
-    svc = require('../services/orderStatusService.js');
+    svc = require('../services/orderStatusService');
 
     global.__ORDER_HEX = '507f1f77bcf86cd799439011';
     global.__USER_HEX = '60af924b2b8e2a5f3c4d5e6f';

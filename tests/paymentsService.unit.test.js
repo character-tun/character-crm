@@ -58,7 +58,7 @@ describe('services/paymentsService', () => {
     jest.doMock('../models/OrderStatusLog', () => OrderStatusLogMock, { virtual: true });
 
     // ---- Require service with mocks in place
-    paymentsService = require('../services/paymentsService.js');
+    paymentsService = require('../services/paymentsService');
 
     // Expose IDs to tests via globals
     global.__ORDER_HEX = ORDER_HEX;

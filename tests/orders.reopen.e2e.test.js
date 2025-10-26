@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 // Ensure DEV mode so orders route uses in-memory branch when Mongo not connected
 process.env.AUTH_DEV_MODE = '1';
+process.env.ENABLE_STATUS_QUEUE = '0';
 
 function makeApp() {
   const app = express();

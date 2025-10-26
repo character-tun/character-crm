@@ -64,7 +64,7 @@ describe('configValidator — validateEnv and logEnvValidation', () => {
     const res = validateEnv(process.env);
 
     expect(res.ok).toBe(false);
-    expect(res.warnings.some(w => /MONGO_URI/.test(w) && /MONGO_URL/.test(w))).toBe(true);
+    expect(res.warnings.some((w) => /MONGO_URI/.test(w) && /MONGO_URL/.test(w))).toBe(true);
   });
 
   test('logEnvValidation prints info on ok=true and warns on problems', () => {
