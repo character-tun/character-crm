@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const _mongoose = require('mongoose');
 const { statusActionQueue, getMemQueueSnapshot } = require('../queues/statusActionQueue');
 
 function simplifyFailed(job) {

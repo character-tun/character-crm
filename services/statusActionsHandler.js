@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 /**
  * Handle status actions (stub implementations with TODOs)
  * Supported action types:
@@ -213,7 +214,7 @@ const Order = require('../models/Order');
 const OrderStatusLog = require('../models/OrderStatusLog');
 
 // DEV in-memory order state helpers (used when Mongo is not available in tests)
-const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
+const _DEV_MODE = process.env.AUTH_DEV_MODE === '1';
 const __devOrders = new Map();
 function mongoReady() { return !!(mongoose.connection && mongoose.connection.readyState === 1 && mongoose.connection.db); }
 function getDevState(orderId) { const st = __devOrders.get(String(orderId)); return st ? { ...st } : null; }
@@ -257,12 +258,13 @@ async function markCloseWithoutPayment({
       if (res && typeof res.then === 'function') {
         await res.then((doc) => {
           if (doc) {
-            doc.paymentsLocked = true;
-            if (!doc.closed || typeof doc.closed.success !== 'boolean') {
-              doc.closed = { success: false, at: now, by: String(userId) };
+            const d = doc;
+            d.paymentsLocked = true;
+            if (!d.closed || typeof d.closed.success !== 'boolean') {
+              d.closed = { success: false, at: now, by: String(userId) };
             }
-            if (typeof doc.save === 'function') {
-              try { doc.save(); } catch {}
+            if (typeof d.save === 'function') {
+              try { d.save(); } catch {}
             }
           }
         });
@@ -320,11 +322,11 @@ function renderVars(str = '', ctx = {}) {
 }
 async function pickTemplate(type, idOrCode) {
   if (!idOrCode) return null;
-  const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+  const isConnReady = mongoose.connection && mongoose.connection.readyState === 1;
   const isJestMock = (fn) => !!(fn && typeof fn === 'function' && (fn._isMockFunction || ('mock' in fn)));
 
-  const useNotifyModel = NotifyTemplate && (mongoReady || isJestMock(NotifyTemplate.findById) || isJestMock(NotifyTemplate.findOne));
-  const useDocModel = DocTemplate && (mongoReady || isJestMock(DocTemplate.findById) || isJestMock(DocTemplate.findOne));
+  const useNotifyModel = NotifyTemplate && (isConnReady || isJestMock(NotifyTemplate.findById) || isJestMock(NotifyTemplate.findOne));
+  const useDocModel = DocTemplate && (isConnReady || isJestMock(DocTemplate.findById) || isJestMock(DocTemplate.findOne));
 
   if (type === 'notify' && useNotifyModel) {
     const byId = await NotifyTemplate.findById(idOrCode).lean().catch(() => null);
@@ -473,7 +475,7 @@ printAdapter = {
 
 // --- New: stock issue adapter ---
 async function issueStockFromOrder({ orderId, userId }) {
-  const mongoReady = mongoose.connection && mongoose.connection.readyState === 1;
+  const isConnReady = mongoose.connection && mongoose.connection.readyState === 1;
   const isJestMock = (fn) => !!(fn && typeof fn === 'function' && (fn._isMockFunction || ('mock' in fn)));
 
   // If stock models are not available, or DB is not ready and models are not mocked, skip gracefully
@@ -482,7 +484,7 @@ async function issueStockFromOrder({ orderId, userId }) {
     return { ok: true, skipped: true, reason: 'MODEL_NOT_AVAILABLE' };
   }
   const modelsMocked = isJestMock(StockItem.findOne) || isJestMock(StockItem.create) || isJestMock(StockMovement.create);
-  if (!mongoReady && !modelsMocked) {
+  if (!isConnReady && !modelsMocked) {
     console.warn('[stockIssue] skip: DB_NOT_READY');
     return { ok: true, skipped: true, reason: 'DB_NOT_READY' };
   }
