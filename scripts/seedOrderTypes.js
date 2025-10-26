@@ -33,7 +33,7 @@ const OrderType = require('../server/models/OrderType');
         $set: payload,
         $setOnInsert: { code: 'default', createdAt: new Date() },
       },
-      { upsert: true, runValidators: true }
+      { upsert: true, runValidators: true },
     );
 
     const created = res.upsertedCount && res.upsertedCount > 0;

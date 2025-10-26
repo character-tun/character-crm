@@ -29,21 +29,19 @@ jest.mock('../../server/models/OrderType', () => {
   };
 });
 
-jest.mock('../../models/OrderStatus', () => {
-  return {
-    findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue({ _id: id, code: 'new', group: 'new', actions: [] }) })),
-    findOne: jest.fn((query) => ({ lean: jest.fn().mockResolvedValue(
-      (query && query.code) === 'closed_paid' ? { _id: 'st_closed', code: 'closed_paid', group: 'closed_success', actions: [] } :
-      ((query && query.code) === 'in_work' ? { _id: 'st_work', code: 'in_work', group: 'in_progress', actions: [] } : { _id: 'st_new', code: 'new', group: 'new', actions: [] })
-    ) })),
-  };
-});
+jest.mock('../../models/OrderStatus', () => ({
+  findById: jest.fn((id) => ({ lean: jest.fn().mockResolvedValue({ _id: id, code: 'new', group: 'new', actions: [] }) })),
+  findOne: jest.fn((query) => ({ lean: jest.fn().mockResolvedValue(
+    (query && query.code) === 'closed_paid' ? { _id: 'st_closed', code: 'closed_paid', group: 'closed_success', actions: [] }
+      : ((query && query.code) === 'in_work' ? { _id: 'st_work', code: 'in_work', group: 'in_progress', actions: [] } : { _id: 'st_new', code: 'new', group: 'new', actions: [] }),
+  ) })),
+}));
 
 jest.mock('../../models/OrderStatusLog', () => {
   const store = [];
   return {
     create: jest.fn(async (payload) => { const rec = { _id: `osl-${Date.now()}`, ...payload }; store.push(rec); return rec; }),
-    find: jest.fn(() => ({ sort: function () { return this; }, lean: async function () { return store.slice(); } })),
+    find: jest.fn(() => ({ sort() { return this; }, async lean() { return store.slice(); } })),
     __all: () => store.slice(),
     __clear: () => { store.length = 0; },
   };
@@ -87,7 +85,7 @@ jest.mock('../../server/models/StockItem', () => {
       itemId,
       locationId: locId,
       qtyOnHand: Number(qty || 0),
-      save: async function () {
+      async save() {
         console.log('[MockStockItem.save]', { itemId, locId, prev: items.get(key(itemId, locId))?.qtyOnHand, next: this.qtyOnHand });
         items.set(key(itemId, locId), { ...this });
       },
@@ -104,7 +102,7 @@ jest.mock('../../server/models/StockItem', () => {
       console.log('[MockStockItem.findOne]', { itemId, preferredLoc, found: !!doc, qty: doc?.qtyOnHand });
       if (!doc) return null;
       // return a shallow copy with save
-      return { ...doc, save: async function () { console.log('[MockStockItem.save(copy)]', { itemId: doc.itemId, locId: doc.locationId, prev: items.get(key(doc.itemId, doc.locationId))?.qtyOnHand, next: this.qtyOnHand }); items.set(key(doc.itemId, doc.locationId), { ...this }); } };
+      return { ...doc, async save() { console.log('[MockStockItem.save(copy)]', { itemId: doc.itemId, locId: doc.locationId, prev: items.get(key(doc.itemId, doc.locationId))?.qtyOnHand, next: this.qtyOnHand }); items.set(key(doc.itemId, doc.locationId), { ...this }); } };
     }),
     create: jest.fn(async ({ itemId, qtyOnHand }) => {
       const doc = makeDoc(itemId, preferredLoc, qtyOnHand || 0);
@@ -112,10 +110,10 @@ jest.mock('../../server/models/StockItem', () => {
       return doc;
     }),
     find: jest.fn(() => ({
-      sort: function () { return this; },
-      skip: function () { return this; },
-      limit: function () { return this; },
-      lean: async function () { return Array.from(items.values()); },
+      sort() { return this; },
+      skip() { return this; },
+      limit() { return this; },
+      async lean() { return Array.from(items.values()); },
     })),
   };
 });
@@ -125,10 +123,10 @@ jest.mock('../../server/models/StockMovement', () => {
   return {
     create: jest.fn(async (payload) => { const mv = { _id: `sm-${Date.now()}`, ...payload }; moves.push(mv); console.log('[MockStockMovement.create]', { itemId: payload.itemId, qty: payload.qty, type: payload.type, source: payload.source }); return mv; }),
     find: jest.fn(() => ({
-      sort: function () { return this; },
-      skip: function () { return this; },
-      limit: function () { return this; },
-      lean: async function () { return moves.slice(); },
+      sort() { return this; },
+      skip() { return this; },
+      limit() { return this; },
+      async lean() { return moves.slice(); },
     })),
     __getAll: () => moves.slice(),
     __clear: () => { moves.length = 0; },
@@ -185,7 +183,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     // Seed receipts: +10 in locA, +4 in locB (DB branch for stock)
     mongoose.connection.readyState = 1; // force DB branch for stock endpoints
     StockItem.__setPreferredLocation(locA);
-    let recA = await request(app)
+    const recA = await request(app)
       .post('/api/stock/movements')
       .set('x-user-role', 'Admin')
       .set('x-user-id', 'u_admin')
@@ -194,7 +192,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     expect(recA.body && recA.body.ok).toBe(true);
 
     StockItem.__setPreferredLocation(locB);
-    let recB = await request(app)
+    const recB = await request(app)
       .post('/api/stock/movements')
       .set('x-user-role', 'Admin')
       .set('x-user-id', 'u_admin')
@@ -203,7 +201,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     expect(recB.body && recB.body.ok).toBe(true);
 
     // Verify balances by location
-    let listRes = await request(app)
+    const listRes = await request(app)
       .get('/api/stock/items')
       .set('x-user-role', 'Admin')
       .set('x-user-id', 'u_admin')
@@ -214,8 +212,8 @@ describe('Shop + Stock e2e: приход → продажа → списание
     console.log('[DEBUG] stock items before issue', StockItem.__all());
     expect(qtyA1).toBe(10);
     expect(qtyB1).toBe(4);
-    expect(itemsList1.some(i => i.itemId === itemSku && i.locationId === locA)).toBe(true);
-    expect(itemsList1.some(i => i.itemId === itemSku && i.locationId === locB)).toBe(true);
+    expect(itemsList1.some((i) => i.itemId === itemSku && i.locationId === locA)).toBe(true);
+    expect(itemsList1.some((i) => i.itemId === itemSku && i.locationId === locB)).toBe(true);
 
     // Quick sale: create order (DB branch required)
     const OrderType = require('../../server/models/OrderType');
@@ -249,7 +247,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     const statusUserHex = new (require('mongoose').Types.ObjectId)().toHexString();
     mongoose.connection.readyState = 0; // DEV fallback for status change
     const token = jwt.sign({ id: statusUserHex, roles: ['orders.changeStatus', 'orders.reopen'] }, process.env.JWT_SECRET || 'dev_secret');
-    let st1 = await request(app)
+    const st1 = await request(app)
       .patch(`/api/orders/${order._id}/status`)
       .set('Authorization', `Bearer ${token}`)
       .send({ newStatusCode: 'in_work', from: 'new', userId: statusUserHex })
@@ -260,7 +258,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
     const { enqueueStatusActions } = require('../../queues/statusActionQueue');
     StockItem.__setPreferredLocation(locA);
     mongoose.connection.readyState = 0; // DEV for closed_paid
-    let st2 = await request(app)
+    const st2 = await request(app)
       .patch(`/api/orders/${order._id}/status`)
       .set('Authorization', `Bearer ${token}`)
       .send({ newStatusCode: 'closed_paid', from: 'in_work', userId: statusUserHex })
@@ -269,7 +267,7 @@ describe('Shop + Stock e2e: приход → продажа → списание
 
     // Manually issue from stock via stock API to reflect automatic issue
     StockItem.__setPreferredLocation(locA);
-    const alreadyIssued = require('../../server/models/StockMovement').__getAll().some(m => m.type === 'issue' && String(m.qty) === String(-3) && m.source && m.source.kind === 'order' && String(m.source.id) === String(order._id));
+    const alreadyIssued = require('../../server/models/StockMovement').__getAll().some((m) => m.type === 'issue' && String(m.qty) === String(-3) && m.source && m.source.kind === 'order' && String(m.source.id) === String(order._id));
     if (!alreadyIssued) {
       mongoose.connection.readyState = 1; // DB branch for issue to record movement in mock
       await request(app)
@@ -288,11 +286,11 @@ describe('Shop + Stock e2e: приход → продажа → списание
     expect(qtyB2).toBe(4);
     const movementsAfterIssue = StockMovement.__getAll();
     console.log('[DEBUG] movements after issue', movementsAfterIssue);
-    expect(movementsAfterIssue.some(m => m.type === 'issue' && String(m.qty) === String(-3) && String(m.itemId) && m.source && m.source.kind === 'order' && String(m.source.id) === String(order._id))).toBe(true);
+    expect(movementsAfterIssue.some((m) => m.type === 'issue' && String(m.qty) === String(-3) && String(m.itemId) && m.source && m.source.kind === 'order' && String(m.source.id) === String(order._id))).toBe(true);
 
     // Reopen to allow refund
     mongoose.connection.readyState = 0; // DEV for reopen
-    let st3 = await request(app)
+    const st3 = await request(app)
       .patch(`/api/orders/${order._id}/status`)
       .set('Authorization', `Bearer ${token}`)
       .send({ newStatusCode: 'in_work', from: 'closed_paid', userId: statusUserHex })
@@ -327,8 +325,8 @@ describe('Shop + Stock e2e: приход → продажа → списание
       .set('x-user-id', 'auditor')
       .expect(200);
     const payItems = Array.isArray(paymentsList.body.items) ? paymentsList.body.items : [];
-    expect(payItems.some(p => String(p.orderId) === String(order._id) && p.type === 'income' && Number(p.amount) === 300)).toBe(true);
-    expect(payItems.some(p => String(p.orderId) === String(order._id) && p.type === 'refund' && Number(p.amount) === 100)).toBe(true);
+    expect(payItems.some((p) => String(p.orderId) === String(order._id) && p.type === 'income' && Number(p.amount) === 300)).toBe(true);
+    expect(payItems.some((p) => String(p.orderId) === String(order._id) && p.type === 'refund' && Number(p.amount) === 100)).toBe(true);
 
     // Verify movements include receipt, issue, adjust; and location balances
     const qtyA3 = StockItem.__getQty(itemSku, locA);
@@ -341,10 +339,10 @@ describe('Shop + Stock e2e: приход → продажа → списание
       .set('x-user-id', 'auditor')
       .expect(200);
     const mvItems = Array.isArray(movementsFinal.body.items) ? movementsFinal.body.items : [];
-    expect(mvItems.some(m => m.type === 'receipt' && Number(m.qty) === 10)).toBe(true);
-    expect(mvItems.some(m => m.type === 'receipt' && Number(m.qty) === 4)).toBe(true);
-    expect(mvItems.some(m => m.type === 'issue' && Number(m.qty) === -3)).toBe(true);
-    expect(mvItems.some(m => m.type === 'adjust' && Number(m.qty) === 1)).toBe(true);
+    expect(mvItems.some((m) => m.type === 'receipt' && Number(m.qty) === 10)).toBe(true);
+    expect(mvItems.some((m) => m.type === 'receipt' && Number(m.qty) === 4)).toBe(true);
+    expect(mvItems.some((m) => m.type === 'issue' && Number(m.qty) === -3)).toBe(true);
+    expect(mvItems.some((m) => m.type === 'adjust' && Number(m.qty) === 1)).toBe(true);
   });
 });
 

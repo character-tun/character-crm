@@ -27,7 +27,7 @@ describe('Items (e2e): list/create/patch in DEV mode', () => {
       .post('/api/items')
       .set(headers)
       .send({ name: 'Shampoo X', price: 19.99, unit: 'pcs', sku: 'shx-001', tags: ['care'] });
-    expect([200,201]).toContain(createRes.statusCode);
+    expect([200, 201]).toContain(createRes.statusCode);
     const createdId = createRes.body && (createRes.body.id || (createRes.body.item && createRes.body.item._id));
     expect(typeof createdId).toBe('string');
 

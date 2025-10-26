@@ -51,7 +51,7 @@ router.post('/', requirePermission('cash.write'), validate(schemas.cashCreateSch
   const defaultForLocation = !!body.defaultForLocation;
   const cashierMode = body.cashierMode || 'manual';
   const isSystem = !!body.isSystem;
-  const locationId = body.locationId;
+  const { locationId } = body;
 
   if (DEV_MODE && !mongoReady()) {
     if (memStore.items.some((i) => i.code === code)) return res.status(409).json({ error: 'CODE_EXISTS' });
@@ -113,7 +113,7 @@ router.patch('/:id', requirePermission('cash.write'), validate(schemas.cashPatch
     const item = await CashRegister.findByIdAndUpdate(
       id,
       { $set: patch },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).lean();
     if (!item) return res.status(404).json({ error: 'NOT_FOUND' });
     return res.json({ ok: true, item });

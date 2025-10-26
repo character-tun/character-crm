@@ -88,7 +88,7 @@ describe('e2e DEV: notify + print DRY_RUN — no SMTP or files', () => {
         then: (resolve) => resolve(notifyMem.find((i) => String(i.code) === String(filter?.code)) || null),
       })),
       create: jest.fn(async (data) => {
-        const item = { _id: data.code || `tpl-${notifyMem.length + 1}` , ...data };
+        const item = { _id: data.code || `tpl-${notifyMem.length + 1}`, ...data };
         notifyMem.push(item);
         return item;
       }),
@@ -118,7 +118,7 @@ describe('e2e DEV: notify + print DRY_RUN — no SMTP or files', () => {
       find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(docMem.map((i) => ({ ...i }))) })),
       findOne: jest.fn((filter) => ({ lean: jest.fn().mockResolvedValue(docMem.find((i) => String(i.code) === String(filter?.code)) || null) })),
       create: jest.fn(async (data) => {
-        const item = { _id: data.code || `doc-${docMem.length + 1}` , ...data };
+        const item = { _id: data.code || `doc-${docMem.length + 1}`, ...data };
         docMem.push(item);
         return item;
       }),

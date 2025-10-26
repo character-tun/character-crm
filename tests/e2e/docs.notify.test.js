@@ -85,7 +85,7 @@ describe('e2e DEV: Docs + Notify → status ready → DRY pdf/email', () => {
     const orderStatusLogModelPath = require.resolve('../../models/OrderStatusLog');
     jest.doMock(orderStatusLogModelPath, () => ({
       create: jest.fn(async () => ({ _id: 'log-e2e-ready-1' })),
-      find: jest.fn(() => ({ sort: function () { return this; }, lean: async function () { return []; } })),
+      find: jest.fn(() => ({ sort() { return this; }, async lean() { return []; } })),
     }));
 
     // Mock Client model for lookup

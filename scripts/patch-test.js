@@ -33,7 +33,7 @@ require.cache[require.resolve('../models/Order')] = {
       if (!o) return null;
       return {
         ...o,
-        save: async function () { globalThis.__OrdersMem.set(String(this._id), this); return this; },
+        async save() { globalThis.__OrdersMem.set(String(this._id), this); return this; },
       };
     },
   },

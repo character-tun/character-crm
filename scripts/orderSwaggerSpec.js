@@ -42,7 +42,7 @@ module.exports = {
         discountTotal: { type: 'number' },
         grandTotal: { type: 'number' },
       },
-      required: ['subtotal','discountTotal','grandTotal'],
+      required: ['subtotal', 'discountTotal', 'grandTotal'],
       additionalProperties: true,
     },
     OrderClosed: {
@@ -186,7 +186,7 @@ module.exports = {
       },
     },
     '/api/orders/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get order',
         security: [{ bearerAuth: [] }],
@@ -210,7 +210,7 @@ module.exports = {
       },
     },
     '/api/orders/{id}/status': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       patch: {
         summary: 'Change order status',
         security: [{ bearerAuth: [] }],
@@ -226,7 +226,7 @@ module.exports = {
       },
     },
     '/api/orders/{id}/status-logs': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get status change logs',
         security: [{ bearerAuth: [] }],
@@ -237,7 +237,7 @@ module.exports = {
       },
     },
     '/api/orders/{id}/timeline': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get order timeline',
         security: [{ bearerAuth: [] }],
@@ -248,7 +248,7 @@ module.exports = {
       },
     },
     '/api/orders/{id}/files': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'List attached files',
         security: [{ bearerAuth: [] }],
@@ -259,5 +259,5 @@ module.exports = {
         },
       },
     },
-  }
+  },
 };

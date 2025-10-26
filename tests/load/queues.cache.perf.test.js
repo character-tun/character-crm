@@ -156,8 +156,8 @@ function writeReport(filePath, content) {
 }
 
 function fmtMetrics(m) {
-  return `waiting=${m.waiting} active=${m.active} delayed=${m.delayed} processed24h=${m.processed24h} failed24h=${m.failed24h}\n` +
-    `failedLastHour=${m.failedLastHour}\n`;
+  return `waiting=${m.waiting} active=${m.active} delayed=${m.delayed} processed24h=${m.processed24h} failed24h=${m.failed24h}\n`
+    + `failedLastHour=${m.failedLastHour}\n`;
 }
 
 // --- Основной тест ---
@@ -252,7 +252,7 @@ Processed=${metrics.processed24h} Failed=${metrics.failed24h} Waiting=${metrics.
     writeReport(path.join(reportsDir, 'queue-load-report.md'), queueReport);
 
     const perfReport = [
-      `Perf Report\nTTL Cache and Queue Metrics`,
+      'Perf Report\nTTL Cache and Queue Metrics',
       `TTL Cache:
 statuses: hits=${statusesStats.hits}, misses=${statusesStats.misses}, size=${statusesStats.size}
 docTemplates: hits=${docsStats.hits}, misses=${docsStats.misses}, size=${docsStats.size}`,

@@ -8,6 +8,7 @@ const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
 const Order = require('../models/Order');
 const { getDevState, setDevState } = require('../services/statusActionsHandler');
+
 let OrderStatus; try { OrderStatus = require('../models/OrderStatus'); } catch (e) { /* optional in DEV */ }
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 let Item; try { Item = require('../server/models/Item'); } catch (e) {}
@@ -224,7 +225,8 @@ router.get('/', requireRoles('Admin', 'Manager'), async (req, res, next) => {
       if (to && !Number.isNaN(to.getTime())) match.createdAt.$lte = to;
     }
 
-    const items = await Order.find(match).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await Order.find(match).sort({ createdAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return next(err);
@@ -449,7 +451,7 @@ router.patch('/:id/status', requireRole('orders.changeStatus'), async (req, res,
       }
 
       let actions = [];
-      let closed = undefined;
+      let closed;
       if (finalCode === 'closed_unpaid') {
         closed = { success: false, at: nowIso, by: String(userId) };
         actions = ['closeWithoutPayment'];

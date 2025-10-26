@@ -1,3 +1,4 @@
+const { randomUUID } = require('crypto');
 const express = require('express');
 
 const router = express.Router();
@@ -6,7 +7,6 @@ const { requirePermission } = require('../middleware/auth');
 const { getActiveSchema } = require('../services/fieldSchemaProvider');
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
-const { randomUUID } = require('crypto');
 const devClients = [
   { _id: randomUUID(), name: 'Иван Петров', phone: '+7 999 123-45-67', telegram: '@ivanp', city: 'Москва', vehicle: 'Sedan', tags: [], notes: '', createdAt: new Date().toISOString() },
   { _id: randomUUID(), name: 'Анна Сидорова', phone: '+7 999 765-43-21', telegram: '@annas', city: 'Санкт-Петербург', vehicle: 'Hatchback', tags: [], notes: '', createdAt: new Date().toISOString() },
@@ -79,14 +79,14 @@ router.get('/', requirePermission('clients.read'), async (req, res) => {
     }
     const match = q
       ? {
-          $or: [
-            { name: { $regex: q, $options: 'i' } },
-            { phone: { $regex: q, $options: 'i' } },
-            { telegram: { $regex: q, $options: 'i' } },
-            { city: { $regex: q, $options: 'i' } },
-            { vehicle: { $regex: q, $options: 'i' } },
-          ],
-        }
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { phone: { $regex: q, $options: 'i' } },
+          { telegram: { $regex: q, $options: 'i' } },
+          { city: { $regex: q, $options: 'i' } },
+          { vehicle: { $regex: q, $options: 'i' } },
+        ],
+      }
       : {};
     const clients = await Client.find(match).sort({ createdAt: -1 });
     return res.json({ ok: true, items: clients });

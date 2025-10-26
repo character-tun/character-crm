@@ -15,14 +15,7 @@ function parseArgs(argv) {
   const args = { file: null, scope: null, name: null, note: '' };
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];
-    if (a === '--file' || a === '-f') { args.file = argv[i + 1]; i += 1; }
-    else if (a.startsWith('--file=')) { args.file = a.split('=')[1]; }
-    else if (a === '--scope') { args.scope = argv[i + 1]; i += 1; }
-    else if (a.startsWith('--scope=')) { args.scope = a.split('=')[1]; }
-    else if (a === '--name') { args.name = argv[i + 1]; i += 1; }
-    else if (a.startsWith('--name=')) { args.name = a.split('=')[1]; }
-    else if (a === '--note') { args.note = argv[i + 1] || ''; i += 1; }
-    else if (a.startsWith('--note=')) { args.note = a.split('=')[1] || ''; }
+    if (a === '--file' || a === '-f') { args.file = argv[i + 1]; i += 1; } else if (a.startsWith('--file=')) { args.file = a.split('=')[1]; } else if (a === '--scope') { args.scope = argv[i + 1]; i += 1; } else if (a.startsWith('--scope=')) { args.scope = a.split('=')[1]; } else if (a === '--name') { args.name = argv[i + 1]; i += 1; } else if (a.startsWith('--name=')) { args.name = a.split('=')[1]; } else if (a === '--note') { args.note = argv[i + 1] || ''; i += 1; } else if (a.startsWith('--note=')) { args.note = a.split('=')[1] || ''; }
   }
   return args;
 }

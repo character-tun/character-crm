@@ -22,10 +22,10 @@ jest.mock('../models/OrderStatus', () => ({
       code === 'new'
         ? { _id: 'st_new', code: 'new', group: 'draft', actions: [] }
         : code === 'in_work'
-        ? { _id: 'st_in_work', code: 'in_work', group: 'in_progress', actions: [] }
-        : code === 'closed_paid'
-        ? { _id: 'st_closed_paid', code: 'closed_paid', group: 'closed_success', actions: [{ type: 'payrollAccrual' }] }
-        : null
+          ? { _id: 'st_in_work', code: 'in_work', group: 'in_progress', actions: [] }
+          : code === 'closed_paid'
+            ? { _id: 'st_closed_paid', code: 'closed_paid', group: 'closed_success', actions: [{ type: 'payrollAccrual' }] }
+            : null,
     ),
   })),
 }));

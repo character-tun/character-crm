@@ -59,7 +59,7 @@ describe('Payments Business Rules (refund/lock)', () => {
       .set('x-user-role', 'Finance')
       .send({ orderId, type: 'income', amount: 100 })
       .expect(200);
-    const id = res.body.id;
+    const { id } = res.body;
 
     // Attempt to set locked via PATCH → 400 VALIDATION_ERROR
     res = await request(app)

@@ -30,7 +30,7 @@ const Payment = require('../../server/models/Payment');
         newArticlePath = [p.articlePath].filter(Boolean);
         needsUpdate = true;
       } else if (Array.isArray(p.articlePath)) {
-        const cleaned = (p.articlePath || []).filter(v => v != null && v !== '').map(v => String(v));
+        const cleaned = (p.articlePath || []).filter((v) => v != null && v !== '').map((v) => String(v));
         if (JSON.stringify(cleaned) !== JSON.stringify(p.articlePath)) {
           newArticlePath = cleaned;
           needsUpdate = true;
@@ -52,8 +52,8 @@ const Payment = require('../../server/models/Payment');
     let backfilledLocation = 0;
     if (DEFAULT_LOCATION_ID) {
       const res = await Payment.updateMany(
-        { $or: [ { locationId: { $exists: false } }, { locationId: null }, { locationId: '' } ] },
-        { $set: { locationId: DEFAULT_LOCATION_ID } }
+        { $or: [{ locationId: { $exists: false } }, { locationId: null }, { locationId: '' }] },
+        { $set: { locationId: DEFAULT_LOCATION_ID } },
       );
       backfilledLocation = res.modifiedCount || res.nModified || 0;
     } else {

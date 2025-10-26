@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const ACTION_TYPES = ['charge','closeWithoutPayment','payrollAccrual','notify','print'];
-const CHANNELS = ['sms','email','telegram'];
-const GROUPS = ['draft','in_progress','closed_success','closed_fail'];
+const ACTION_TYPES = ['charge', 'closeWithoutPayment', 'payrollAccrual', 'notify', 'print'];
+const CHANNELS = ['sms', 'email', 'telegram'];
+const GROUPS = ['draft', 'in_progress', 'closed_success', 'closed_fail'];
 
 const ActionSchema = new mongoose.Schema({
   type: { type: String, required: true, enum: ACTION_TYPES },
   templateId: { type: String },
   channel: { type: String, enum: CHANNELS },
-  docId: { type: String }
+  docId: { type: String },
 }, { _id: false });
 
 const OrderStatusSchema = new mongoose.Schema({
@@ -23,14 +23,14 @@ const OrderStatusSchema = new mongoose.Schema({
   system: { type: Boolean, default: false },
   locationId: { type: String },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
 // Compound index for sorting within group
 OrderStatusSchema.index({ group: 1, order: 1 });
 
 // Update updatedAt on save
-OrderStatusSchema.pre('save', function(next) {
+OrderStatusSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   // If system=true, prevent changes to code/group on existing docs
   if (!this.isNew && this.system) {
@@ -42,7 +42,7 @@ OrderStatusSchema.pre('save', function(next) {
 });
 
 // Prevent changing code/group via findOneAndUpdate when system=true
-OrderStatusSchema.pre('findOneAndUpdate', async function(next) {
+OrderStatusSchema.pre('findOneAndUpdate', async function (next) {
   try {
     const update = this.getUpdate() || {};
     const $set = update.$set || {};
@@ -69,7 +69,7 @@ OrderStatusSchema.pre('findOneAndUpdate', async function(next) {
 });
 
 // Prevent deletion of system status via query-based deletions
-OrderStatusSchema.pre('findOneAndDelete', async function(next) {
+OrderStatusSchema.pre('findOneAndDelete', async function (next) {
   try {
     const doc = await this.model.findOne(this.getQuery()).lean();
     if (doc && doc.system) {
@@ -81,7 +81,7 @@ OrderStatusSchema.pre('findOneAndDelete', async function(next) {
   }
 });
 
-OrderStatusSchema.pre('deleteOne', { query: true }, async function(next) {
+OrderStatusSchema.pre('deleteOne', { query: true }, async function (next) {
   try {
     const doc = await this.model.findOne(this.getFilter()).lean();
     if (doc && doc.system) {
@@ -94,7 +94,7 @@ OrderStatusSchema.pre('deleteOne', { query: true }, async function(next) {
 });
 
 // Prevent deletion of system status via document.deleteOne()
-OrderStatusSchema.pre('deleteOne', { document: true }, function(next) {
+OrderStatusSchema.pre('deleteOne', { document: true }, function (next) {
   if (this.system) {
     return next(new Error('System status: cannot be deleted'));
   }

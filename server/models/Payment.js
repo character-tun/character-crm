@@ -26,7 +26,7 @@ PaymentSchema.virtual('signedAmount').get(function signedAmount() {
 });
 
 // Minimal pre-validate checks
-PaymentSchema.pre('validate', function(next) {
+PaymentSchema.pre('validate', function (next) {
   if (!Array.isArray(this.articlePath) || this.articlePath.length < 1) {
     return next(new Error('ARTICLE_PATH_REQUIRED'));
   }

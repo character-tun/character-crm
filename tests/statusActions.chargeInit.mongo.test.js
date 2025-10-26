@@ -64,7 +64,6 @@ describe('statusActionsHandler — chargeInit (Mongo branch)', () => {
 
     expect(res && res.ok).toBe(true);
 
-
     expect(Payment.create).toHaveBeenCalledTimes(1);
     const payload = Payment.create.mock.calls[0][0];
     expect(payload && payload.type).toBe('income');
@@ -105,7 +104,6 @@ describe('statusActionsHandler — chargeInit (Mongo branch)', () => {
     });
 
     expect(res && res.ok).toBe(true);
-
 
     expect(Payment.create).not.toHaveBeenCalled();
   });

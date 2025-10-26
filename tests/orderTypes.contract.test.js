@@ -39,7 +39,7 @@ describe('API /api/order-types contracts (DEV mem branch)', () => {
       .send({ code: 'OT-1', name: 'Type 1', startStatusId: 'st-1', allowedStatuses: ['st-1', 'st-2'] });
     expect(res.status).toBe(200);
     expect(res.body && res.body.ok).toBe(true);
-    const item = res.body.item;
+    const { item } = res.body;
     expect(item && item.code).toBe('ot-1'); // normalized to lowercase
 
     // Duplicate code (case-insensitive) → 409

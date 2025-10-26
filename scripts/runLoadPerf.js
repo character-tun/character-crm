@@ -109,8 +109,8 @@ async function measureList(app, url, headers, times) {
 }
 
 function fmtMetrics(m) {
-  return `waiting=${m.waiting} active=${m.active} delayed=${m.delayed} processed24h=${m.processed24h} failed24h=${m.failed24h}\n` +
-    `failedLastHour=${m.failedLastHour}\n`;
+  return `waiting=${m.waiting} active=${m.active} delayed=${m.delayed} processed24h=${m.processed24h} failed24h=${m.failed24h}\n`
+    + `failedLastHour=${m.failedLastHour}\n`;
 }
 
 async function main() {
@@ -183,7 +183,7 @@ async function main() {
   fs.writeFileSync(path.join(reportsDir, 'queue-load-report-small.md'), queueReport, 'utf8');
 
   const perfReport = [
-    `Perf Report (small)\nTTL Cache and Queue Metrics`,
+    'Perf Report (small)\nTTL Cache and Queue Metrics',
     `TTL Cache:\nstatuses: hits=${statusesStats.hits}, misses=${statusesStats.misses}, size=${statusesStats.size}\ndocTemplates: hits=${docsStats.hits}, misses=${docsStats.misses}, size=${docsStats.size}`,
     `Lists Timing (ms):\nstatuses: avg=${listStatuses2.avg.toFixed(2)} p95=${listStatuses2.p95}\ndocTemplates: avg=${listDocs2.avg.toFixed(2)} p95=${listDocs2.p95}`,
     `Queue Metrics:\n${fmtMetrics(metrics)}`,

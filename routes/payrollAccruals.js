@@ -18,13 +18,14 @@ router.get('/accruals', requireRoles('Admin', 'Manager', 'Finance'), async (req,
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   if (DEV_MODE && !mongoReady()) {
-    const items = devStore ? devStore.getItems().slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(offset, offset+limit) : [];
+    const items = devStore ? devStore.getItems().slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(offset, offset + limit) : [];
     return res.json({ ok: true, items });
   }
 
   if (!PayrollAccrual) return res.status(503).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
-    const items = await PayrollAccrual.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await PayrollAccrual.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (e) {
     return res.status(500).json({ error: 'SERVER_ERROR' });

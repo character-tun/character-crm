@@ -134,17 +134,17 @@ describe('RBAC + Locations + Reports e2e (DEV)', () => {
       const reportPath = path.join(reportDir, 'rbac-locations-reports.md');
       try { fs.mkdirSync(reportDir, { recursive: true }); } catch {}
       const md = [
-        `# RBAC + Locations + Reports — E2E (DEV)`,
+        '# RBAC + Locations + Reports — E2E (DEV)',
         `Дата: ${new Date().toISOString()}`,
-        ``,
-        `## RBAC — доступ к платежам`,
+        '',
+        '## RBAC — доступ к платежам',
         `- GET /api/payments без роли: ${results.rbac403NoRole}`,
         `- GET /api/payments роль Manager: ${results.rbac403Manager}`,
-        ``,
+        '',
         `## Видимость по locationId=\`${locA}\``,
         `- Кол-во элементов: ${results.listLocA ? results.listLocA.count : 'n/a'}`,
         `- Totals: income=${results.listLocA?.totals?.income || 0}, expense=${results.listLocA?.totals?.expense || 0}, refund=${results.listLocA?.totals?.refund || 0}, balance=${results.listLocA?.totals?.balance || 0}`,
-        ``,
+        '',
         `## Cashflow report (dateFrom=1970-01-01, dateTo=2100-01-01, locationId=${locA})`,
         `- Balance: ${results.cashflowLocA?.balance || 0}`,
         `- dev-main: income=${results.cashflowLocA?.groupDevMain?.income || 0}, expense=${results.cashflowLocA?.groupDevMain?.expense || 0}, refund=${results.cashflowLocA?.groupDevMain?.refund || 0}, balance=${results.cashflowLocA?.groupDevMain?.balance || 0}`,

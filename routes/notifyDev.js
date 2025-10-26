@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 const { requireRole } = require('../middleware/auth');
 // GET /api/notify/dev/outbox — disabled

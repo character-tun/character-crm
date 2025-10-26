@@ -9,7 +9,7 @@ const DocTemplateSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-DocTemplateSchema.pre('save', function(next){
+DocTemplateSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

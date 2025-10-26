@@ -38,8 +38,7 @@ async function backfillOrders(defaultType) {
     },
     { $set: { orderTypeId: defaultType._id } },
   );
-  const orderTypeBackfilled =
-    setTypeRes.modifiedCount ?? setTypeRes.nModified ?? 0;
+  const orderTypeBackfilled = setTypeRes.modifiedCount ?? setTypeRes.nModified ?? 0;
 
   // 2) Backfill status from type.startStatusId when status missing and startStatusId present
   let statusBackfilled = 0;

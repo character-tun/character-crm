@@ -16,7 +16,6 @@ const LOG_ENABLED = ((!IS_TEST && USE_MEM_QUEUE) || process.env.ENABLE_QUEUE_LOG
 
 const queueName = 'statusActionQueue';
 
-
 if (USE_MEM_QUEUE) {
   // Simple in-memory queue + "worker" to simulate BullMQ behavior with metrics
   const memQueue = [];
@@ -52,9 +51,11 @@ if (USE_MEM_QUEUE) {
     const { jobId, data } = job;
     const startedAt = Date.now();
     try {
-      if (LOG_ENABLED) console.log(`[Worker:${queueName}] processing`, {
-        jobId, orderId: data.orderId, statusCode: data.statusCode, logId: data.logId,
-      });
+      if (LOG_ENABLED) {
+        console.log(`[Worker:${queueName}] processing`, {
+          jobId, orderId: data.orderId, statusCode: data.statusCode, logId: data.logId,
+        });
+      }
       if (data && data.__forceFail) {
         throw new Error('Forced fail (test)');
       }
@@ -67,7 +68,7 @@ if (USE_MEM_QUEUE) {
       const errorMessage = err?.message;
       if (LOG_ENABLED) console.error(`[Worker:${queueName}] failed`, { jobId, data, attempt }, err);
       if (attempt < (job.maxAttempts || MEM_ATTEMPTS)) {
-        const delayMs = (job.backoffBaseMs || MEM_BACKOFF_BASE_MS) * Math.pow(2, attempt);
+        const delayMs = (job.backoffBaseMs || MEM_BACKOFF_BASE_MS) * 2 ** attempt;
         const nextAt = Date.now() + delayMs;
         if (LOG_ENABLED) console.log(`[Worker:${queueName}] retry scheduled`, { jobId, attempt, nextInMs: delayMs });
         memQueue.push({ ...job, attempt, nextAt });
@@ -221,9 +222,11 @@ if (USE_MEM_QUEUE) {
       const {
         orderId, statusCode, actions, logId, userId,
       } = job.data || {};
-      if (LOG_ENABLED) console.log(`[Worker:${queueName}] processing`, {
-        jobId: job.id, orderId, statusCode, logId,
-      });
+      if (LOG_ENABLED) {
+        console.log(`[Worker:${queueName}] processing`, {
+          jobId: job.id, orderId, statusCode, logId,
+        });
+      }
       return handleStatusActions({
         orderId, statusCode, actions, logId, userId,
       });

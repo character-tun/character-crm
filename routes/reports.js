@@ -36,9 +36,7 @@ function computeGroups(items) {
     if (!groupsMap.has(id)) groupsMap.set(id, { cashRegisterId: id, income: 0, expense: 0, refund: 0 });
     const g = groupsMap.get(id);
     const amt = Number(it.amount || 0);
-    if (it.type === 'income') { g.income += amt; totals.income += amt; }
-    else if (it.type === 'expense') { g.expense += amt; totals.expense += amt; }
-    else if (it.type === 'refund') { g.refund += amt; totals.refund += amt; }
+    if (it.type === 'income') { g.income += amt; totals.income += amt; } else if (it.type === 'expense') { g.expense += amt; totals.expense += amt; } else if (it.type === 'refund') { g.refund += amt; totals.refund += amt; }
   });
   const groups = Array.from(groupsMap.values()).map((g) => ({
     cashRegisterId: g.cashRegisterId,
@@ -87,13 +85,11 @@ router.get('/cashflow', requirePermission('payments.read'), async (req, res) => 
     let totalIncome = 0; let totalExpense = 0; let totalRefund = 0;
     agg.forEach((row) => {
       const id = String(row._id.cashRegisterId || '');
-      const type = row._id.type;
+      const { type } = row._id;
       const sum = Number(row.sum || 0);
       if (!groupsMap.has(id)) groupsMap.set(id, { cashRegisterId: id, income: 0, expense: 0, refund: 0 });
       const g = groupsMap.get(id);
-      if (type === 'income') { g.income += sum; totalIncome += sum; }
-      else if (type === 'expense') { g.expense += sum; totalExpense += sum; }
-      else if (type === 'refund') { g.refund += sum; totalRefund += sum; }
+      if (type === 'income') { g.income += sum; totalIncome += sum; } else if (type === 'expense') { g.expense += sum; totalExpense += sum; } else if (type === 'refund') { g.refund += sum; totalRefund += sum; }
     });
     const groups = Array.from(groupsMap.values()).map((g) => ({
       cashRegisterId: g.cashRegisterId,

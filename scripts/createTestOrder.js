@@ -8,7 +8,7 @@ const Order = require('../models/Order');
   try {
     await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
     const order = await Order.create({ status: 'new', statusChangedAt: new Date() });
-    console.log('ORDER_ID=' + order._id.toString());
+    console.log(`ORDER_ID=${order._id.toString()}`);
     process.exit(0);
   } catch (err) {
     console.error('createTestOrder error:', err && err.message ? err.message : err);

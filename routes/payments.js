@@ -8,12 +8,9 @@ let Order; try { Order = require('../models/Order'); } catch (e) {}
 let Payment; try { Payment = require('../server/models/Payment'); } catch (e) {}
 let CashRegister; try { CashRegister = require('../server/models/CashRegister'); } catch (e) {}
 
-
 const { requirePermission, hasPermission, requireRole } = require('../middleware/auth');
 const { isPaymentsLocked, getDevState } = require('../services/statusActionsHandler');
 const OrderStatusLog = require('../models/OrderStatusLog');
-
-
 
 const httpError = (statusCode, message) => {
   const err = new Error(message);
@@ -82,7 +79,6 @@ function buildMatch(query) {
   }
   return match;
 }
-
 
 // GET /api/payments — list with filters and totals (payments.read)
 router.get('/', requirePermission('payments.read'), async (req, res, next) => {
@@ -174,10 +170,10 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
       if (state.closed && state.closed.success === true) {
         return next(httpError(400, 'ORDER_CLOSED'));
       }
-      const t = typeof type === 'string' && ['income','expense','refund'].includes(type) ? type : 'income';
+      const t = typeof type === 'string' && ['income', 'expense', 'refund'].includes(type) ? type : 'income';
       const ap = Array.isArray(articlePath) && articlePath.length > 0
         ? articlePath
-        : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи','Касса']));
+        : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи', 'Касса']));
       const amt = typeof amount === 'number' ? amount : 0;
       const id = devStore.nextId();
       devStore.pushItem({
@@ -211,10 +207,10 @@ router.post('/', requirePermission('payments.write'), validate(schemas.paymentCr
       return next(httpError(400, 'ORDER_CLOSED'));
     }
 
-    const t = typeof type === 'string' && ['income','expense','refund'].includes(type) ? type : 'income';
+    const t = typeof type === 'string' && ['income', 'expense', 'refund'].includes(type) ? type : 'income';
     const ap = Array.isArray(articlePath) && articlePath.length > 0
       ? articlePath
-      : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи','Касса']));
+      : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи', 'Касса']));
     const amt = typeof amount === 'number' ? amount : 0;
     if (!(amt > 0)) return next(httpError(400, 'VALIDATION_ERROR'));
 
@@ -427,7 +423,7 @@ router.patch('/:id', requirePermission('payments.write'), validate(schemas.payme
     const item = await Payment.findByIdAndUpdate(
       id,
       { $set: patch },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).lean();
     if (!item) return next(httpError(404, 'NOT_FOUND'));
     await recordAudit(item.orderId, req.user && req.user.id, `PAYMENT_UPDATE id=${id} fields=${Object.keys(patch).join(',')}`);

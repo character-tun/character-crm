@@ -13,7 +13,7 @@ function parseArgs(argv) {
     else if (a === '--no-dry-run') args.dryRun = false;
     else if (a.startsWith('--dry-run=')) {
       const v = a.split('=')[1];
-      args.dryRun = v === 'false' ? false : true;
+      args.dryRun = v !== 'false';
     } else if (a === '--since') {
       const v = argv[i + 1];
       i += 1;

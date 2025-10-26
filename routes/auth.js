@@ -63,9 +63,9 @@ const handleRegisterFirst = async (req, res) => {
     if (!email || !password || !name) {
       return res.status(400).json({ ok: false, error: 'email, password, name are required' });
     }
-    const pass_hash = await bcrypt.hash(password, 10);
+    const passHash = await bcrypt.hash(password, 10);
     const user = await User.create({
-      email, pass_hash, full_name: name, is_active: true,
+      email, pass_hash: passHash, full_name: name, is_active: true,
     });
 
     // Ensure Admin role exists
@@ -185,11 +185,11 @@ router.post('/login', rateLimitLogin, async (req, res) => {
     const accessToken = signAccess(user, roles);
 
     const refreshToken = uuidv4();
-    const expires_at = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
-    const user_agent = req.headers['user-agent'] || '';
+    const expiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
+    const userAgent = req.headers['user-agent'] || '';
     const ip = req.headers['x-forwarded-for'] || req.ip || '';
     await UserToken.create({
-      user_id: user._id, refresh_token: refreshToken, user_agent, ip, expires_at,
+      user_id: user._id, refresh_token: refreshToken, user_agent: userAgent, ip, expires_at: expiresAt,
     });
 
     return res.json(buildLoginResponse(user, roles, accessToken, refreshToken));

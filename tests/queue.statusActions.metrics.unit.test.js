@@ -53,20 +53,18 @@ describe('queueMetrics service (BullMQ mocked)', () => {
   });
 
   test('DEV mem snapshot fallback', async () => {
-    jest.doMock('../queues/statusActionQueue', () => {
-      return {
-        statusActionQueue: null,
-        getMemQueueSnapshot: (n) => ({
-          active: 0,
-          waiting: 5,
-          delayed: 0,
-          failedLastN: [{ id: 'x1', error: 'boom' }],
-          failed24h: 7,
-          processed24h: 12,
-          failedLastHour: 3,
-        }),
-      };
-    });
+    jest.doMock('../queues/statusActionQueue', () => ({
+      statusActionQueue: null,
+      getMemQueueSnapshot: (n) => ({
+        active: 0,
+        waiting: 5,
+        delayed: 0,
+        failedLastN: [{ id: 'x1', error: 'boom' }],
+        failed24h: 7,
+        processed24h: 12,
+        failedLastHour: 3,
+      }),
+    }));
 
     const { getStatusActionsMetrics } = require('../services/queueMetrics');
     const metrics = await getStatusActionsMetrics(1);

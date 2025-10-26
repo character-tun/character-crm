@@ -10,7 +10,7 @@ jest.mock('../server/models/OrderType', () => ({
     code: 'type-e2e',
     allowedStatuses: ['st_new', 'st_in_work', 'st_closed_paid'],
     startStatusId: 'st_new',
-  }) }) ),
+  }) })),
 }));
 
 jest.mock('../models/OrderStatus', () => ({
@@ -28,7 +28,7 @@ jest.mock('../models/OrderStatusLog', () => {
       return rec;
     }),
     find: jest.fn((query) => ({
-      sort: () => ({ lean: async () => mem.filter((l) => String(l.orderId) === String(query && query.orderId)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) })
+      sort: () => ({ lean: async () => mem.filter((l) => String(l.orderId) === String(query && query.orderId)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) }),
     })),
   };
 });
@@ -51,7 +51,7 @@ jest.mock('../models/Order', () => {
   const makeDoc = (obj) => ({
     ...obj,
     save: jest.fn(async function save() { mem.set(String(this._id), { ...this }); return this; }),
-    lean: jest.fn(async function lean() { return { ...obj }; }),
+    lean: jest.fn(async () => ({ ...obj })),
   });
   return {
     create: jest.fn(async (doc) => {
@@ -74,7 +74,7 @@ jest.mock('../models/Order', () => {
       return { ...(isNew ? next : cur) };
     }),
     find: jest.fn((match = {}) => ({
-      sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => Array.from(mem.values()) }) }) })
+      sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => Array.from(mem.values()) }) }) }),
     })),
   };
 });
@@ -89,7 +89,7 @@ jest.mock('../server/models/Payment', () => {
       return item;
     }),
     find: jest.fn((match = {}) => ({
-      sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => mem.filter((p) => (!match.orderId || String(p.orderId) === String(match.orderId))) }) }) })
+      sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => mem.filter((p) => (!match.orderId || String(p.orderId) === String(match.orderId))) }) }) }),
     })),
     aggregate: jest.fn(async (pipeline) => {
       const matchStage = (pipeline || []).find((st) => st.$match);
@@ -165,7 +165,7 @@ describe('Orders lifecycle e2e — create → pay → refund → close', () => {
       .send({
         orderTypeId: 'ot_e2e',
         newClient: { name: 'Client E2E', phone: '+7 900 000-00-00' },
-        items: [ { qty: 1, newItem: { name: 'Товар', price: 100, unit: 'pc' } } ],
+        items: [{ qty: 1, newItem: { name: 'Товар', price: 100, unit: 'pc' } }],
       });
     expect(createRes.status).toBe(201);
     expect(createRes.body && createRes.body.ok).toBe(true);

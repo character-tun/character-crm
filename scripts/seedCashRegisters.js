@@ -21,7 +21,7 @@ const CashRegister = require('../server/models/CashRegister');
           updatedAt: new Date(),
         },
       },
-      { upsert: true, runValidators: true }
+      { upsert: true, runValidators: true },
     );
 
     // Fetch the register to show its id/code
@@ -30,7 +30,7 @@ const CashRegister = require('../server/models/CashRegister');
     console.log(
       created
         ? `Создана системная касса: code=main, name="${reg && reg.name ? reg.name : 'Основная касса'}", id=${reg && reg._id ? reg._id : 'unknown'}`
-        : `Касса уже существует: code=main, id=${reg && reg._id ? reg._id : 'unknown'}`
+        : `Касса уже существует: code=main, id=${reg && reg._id ? reg._id : 'unknown'}`,
     );
 
     try { await mongoose.connection.close(); } catch {}

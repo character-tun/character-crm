@@ -4,7 +4,7 @@ const path = require('path');
 
 function pick(obj, keys) {
   const out = {};
-  keys.forEach(k => { if (obj && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k]; });
+  keys.forEach((k) => { if (obj && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k]; });
   return out;
 }
 
@@ -20,7 +20,7 @@ function pick(obj, keys) {
   const paths = spec.paths || {};
   const keepPaths = ['/api/order-types', '/api/order-types/{id}'];
   const filteredPaths = {};
-  keepPaths.forEach(p => { if (paths[p]) filteredPaths[p] = paths[p]; });
+  keepPaths.forEach((p) => { if (paths[p]) filteredPaths[p] = paths[p]; });
 
   const neededSchemas = [
     'OrderType',
@@ -28,26 +28,26 @@ function pick(obj, keys) {
     'OrderTypeItemResponse',
     'ErrorResponse',
     'DocTemplate',
-    'DeleteResponse'
+    'DeleteResponse',
   ];
   const schemas = spec.components && spec.components.schemas ? spec.components.schemas : {};
   const filteredSchemas = {};
-  neededSchemas.forEach(n => { if (schemas[n]) filteredSchemas[n] = schemas[n]; });
+  neededSchemas.forEach((n) => { if (schemas[n]) filteredSchemas[n] = schemas[n]; });
 
   const outSpec = {
     openapi: spec.openapi || '3.0.0',
     info: {
-      title: (spec.info && spec.info.title ? spec.info.title : 'API') + ' — OrderTypes',
+      title: `${spec.info && spec.info.title ? spec.info.title : 'API'} — OrderTypes`,
       version: spec.info && spec.info.version ? spec.info.version : '1.0.0',
-      description: 'Subset of OpenAPI spec for /api/order-types endpoints.'
+      description: 'Subset of OpenAPI spec for /api/order-types endpoints.',
     },
     servers: Array.isArray(spec.servers) ? spec.servers : [],
     security: Array.isArray(spec.security) ? spec.security : [{ bearerAuth: [] }],
     paths: filteredPaths,
     components: {
       securitySchemes: pick(spec.components || {}, ['securitySchemes']).securitySchemes || {},
-      schemas: filteredSchemas
-    }
+      schemas: filteredSchemas,
+    },
   };
 
   const outDir = path.join(root, 'storage', 'reports', 'api-contracts');

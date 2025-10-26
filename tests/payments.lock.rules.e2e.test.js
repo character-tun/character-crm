@@ -24,7 +24,7 @@ describe('Payments Lock Rules e2e', () => {
       .set('x-user-role', 'Finance')
       .send({ orderId: 'lock-order-1' })
       .expect(200);
-    const id = created.body.id;
+    const { id } = created.body;
 
     await request(app)
       .post(`/api/payments/${id}/lock`)
@@ -45,7 +45,7 @@ describe('Payments Lock Rules e2e', () => {
       .set('x-user-role', 'Finance')
       .send({ orderId: 'lock-order-2' })
       .expect(200);
-    const id = created.body.id;
+    const { id } = created.body;
 
     await request(app)
       .post(`/api/payments/${id}/lock`)

@@ -25,15 +25,15 @@ const STATUSES = [
         order: s.order,
         system: !!s.system,
         actions: s.actions || [],
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       const res = await OrderStatus.updateOne(
         { code: s.code },
         {
           $set: payload,
-          $setOnInsert: { _id: uuidv4(), code: s.code, createdAt: new Date() }
+          $setOnInsert: { _id: uuidv4(), code: s.code, createdAt: new Date() },
         },
-        { upsert: true, runValidators: true }
+        { upsert: true, runValidators: true },
       );
       if (res.upsertedCount || (res.upserted && res.upserted.length)) upserts += 1;
     }

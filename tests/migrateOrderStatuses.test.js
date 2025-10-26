@@ -155,7 +155,7 @@ describe('scripts/migrateOrderStatuses.js', () => {
     // Run without mapping
     await runScript(['--no-dry-run'], { MONGO_URI: uri });
     let X = await Order.findById(x._id).lean();
-    let report1 = await readLatestReport();
+    const report1 = await readLatestReport();
 
     expect(report1).toBeTruthy();
     // Should be reported as unknown

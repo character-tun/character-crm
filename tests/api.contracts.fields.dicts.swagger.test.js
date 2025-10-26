@@ -31,7 +31,7 @@ describe('Swagger contracts: Fields & Dicts', () => {
     // spot-check FieldSpec enum types
     const fieldTypeEnum = s.FieldSpec && s.FieldSpec.properties && s.FieldSpec.properties.type && s.FieldSpec.properties.type.enum;
     expect(fieldTypeEnum).toEqual(
-      expect.arrayContaining(['text', 'number', 'date', 'bool', 'list', 'multilist'])
+      expect.arrayContaining(['text', 'number', 'date', 'bool', 'list', 'multilist']),
     );
   });
 

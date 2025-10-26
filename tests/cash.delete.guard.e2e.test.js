@@ -2,16 +2,14 @@ const request = require('supertest');
 const express = require('express');
 
 // Мокаем модель CashRegister, чтобы удалить кассу и получить ошибку CASH_IN_USE
-jest.mock('../server/models/CashRegister', () => {
-  return {
-    // Имитируем Mongoose Query: findById возвращает объект с методом lean()
-    findById: jest.fn((id) => ({
-      lean: () => Promise.resolve({ _id: id, code: 'cash-01' }),
-    })),
-    // deleteOne возвращает rejected Promise с нужным сообщением
-    deleteOne: jest.fn(() => Promise.reject(new Error('CASH_REGISTER_HAS_PAYMENTS'))),
-  };
-});
+jest.mock('../server/models/CashRegister', () => ({
+  // Имитируем Mongoose Query: findById возвращает объект с методом lean()
+  findById: jest.fn((id) => ({
+    lean: () => Promise.resolve({ _id: id, code: 'cash-01' }),
+  })),
+  // deleteOne возвращает rejected Promise с нужным сообщением
+  deleteOne: jest.fn(() => Promise.reject(new Error('CASH_REGISTER_HAS_PAYMENTS'))),
+}));
 
 describe('Cash delete guard e2e', () => {
   let app;

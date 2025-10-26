@@ -4,7 +4,7 @@ const path = require('path');
 
 function pick(obj, keys) {
   const out = {};
-  keys.forEach(k => { if (obj && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k]; });
+  keys.forEach((k) => { if (obj && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k]; });
   return out;
 }
 
@@ -12,7 +12,7 @@ function pick(obj, keys) {
   const root = process.cwd();
   const sourcePath = path.join(root, 'artifacts', 'swagger.json');
   if (!fs.existsSync(sourcePath)) {
-    console.error('[extractFieldsSpec] Source not found: ' + sourcePath + '. Run scripts/generateSwagger.js first.');
+    console.error(`[extractFieldsSpec] Source not found: ${sourcePath}. Run scripts/generateSwagger.js first.`);
     process.exit(1);
   }
   const spec = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
@@ -27,7 +27,7 @@ function pick(obj, keys) {
     '/api/fields/{id}/deactivate',
   ];
   const filteredPaths = {};
-  keepPaths.forEach(p => { if (paths[p]) filteredPaths[p] = paths[p]; });
+  keepPaths.forEach((p) => { if (paths[p]) filteredPaths[p] = paths[p]; });
 
   const neededSchemas = [
     'FieldSpec',
@@ -40,14 +40,14 @@ function pick(obj, keys) {
   ];
   const schemas = spec.components && spec.components.schemas ? spec.components.schemas : {};
   const filteredSchemas = {};
-  neededSchemas.forEach(n => { if (schemas[n]) filteredSchemas[n] = schemas[n]; });
+  neededSchemas.forEach((n) => { if (schemas[n]) filteredSchemas[n] = schemas[n]; });
 
   const outSpec = {
     openapi: spec.openapi || '3.0.0',
     info: {
-      title: ((spec.info && spec.info.title) ? spec.info.title : 'API') + ' — Fields',
+      title: `${(spec.info && spec.info.title) ? spec.info.title : 'API'} — Fields`,
       version: (spec.info && spec.info.version) ? spec.info.version : '1.0.0',
-      description: 'Subset of OpenAPI spec for /api/fields endpoints.'
+      description: 'Subset of OpenAPI spec for /api/fields endpoints.',
     },
     servers: Array.isArray(spec.servers) ? spec.servers : [],
     security: Array.isArray(spec.security) ? spec.security : [{ bearerAuth: [] }],
@@ -62,5 +62,5 @@ function pick(obj, keys) {
   fs.mkdirSync(outDir, { recursive: true });
   const outFile = path.join(outDir, 'fields.json');
   fs.writeFileSync(outFile, JSON.stringify(outSpec, null, 2), 'utf8');
-  console.log('[extractFieldsSpec] Wrote ' + outFile);
+  console.log(`[extractFieldsSpec] Wrote ${outFile}`);
 })();

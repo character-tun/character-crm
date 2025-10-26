@@ -27,6 +27,7 @@ jest.mock('../server/models/StockItem', () => {
       this.itemId = payload.itemId;
       this.qtyOnHand = payload.qtyOnHand || 0;
     }
+
     async save() {
       stockItemsMem.set(String(this.itemId), this);
       return this;
@@ -46,7 +47,7 @@ jest.mock('../server/models/StockItem', () => {
       _id: `si-${Date.now()}`,
       itemId,
       qtyOnHand: qty,
-      save: async function () { stockItemsMem.set(String(itemId), this); },
+      async save() { stockItemsMem.set(String(itemId), this); },
     }),
     __clear: () => stockItemsMem.clear(),
   };
@@ -145,7 +146,7 @@ describe('e2e PROD-like: Stock → Shop → Staff', () => {
     res = await request(app).post('/api/payments')
       .set('x-user-role', 'Admin')
       .set('x-user-id', userId)
-      .send({ orderId, type: 'income', amount: 200, articlePath: ['Продажи','Касса'] });
+      .send({ orderId, type: 'income', amount: 200, articlePath: ['Продажи', 'Касса'] });
     expect(res.status).toBe(200);
 
     // 4) Переключаемся на Mongo-ветку для статус-экшенов и запускаем их
@@ -178,7 +179,7 @@ describe('e2e PROD-like: Stock → Shop → Staff', () => {
     expect(qtyAfter).toBe(2);
     const StockMovement = require('../server/models/StockMovement');
     const movementList = StockMovement.__getAll();
-    expect(movementList.some(m => m.type === 'issue' && String(m.itemId) === String(itemId) && m.qty === -1)).toBe(true);
+    expect(movementList.some((m) => m.type === 'issue' && String(m.itemId) === String(itemId) && m.qty === -1)).toBe(true);
 
     // Проверяем начисление: 10% от 200 = 20
     const PayrollAccrual = require('../server/models/PayrollAccrual');
@@ -192,6 +193,6 @@ describe('e2e PROD-like: Stock → Shop → Staff', () => {
     // Проверяем аудит-лог
     const OrderStatusLog = require('../models/OrderStatusLog');
     const logList = OrderStatusLog.__getAll();
-    expect(logList.some(l => l.note && l.note.includes('STATUS_ACTION_PAYROLL'))).toBe(true);
+    expect(logList.some((l) => l.note && l.note.includes('STATUS_ACTION_PAYROLL'))).toBe(true);
   });
 });

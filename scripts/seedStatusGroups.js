@@ -10,10 +10,10 @@ const OrderStatusGroupSchema = new mongoose.Schema({
   order: { type: Number, default: 0 },
   system: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 }, { collection: 'order_status_groups' });
 
-OrderStatusGroupSchema.pre('save', function(next) {
+OrderStatusGroupSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
@@ -37,9 +37,9 @@ const SEED = [
         { code: g.code },
         {
           $set: { name: g.name, order: g.order, system: true, updatedAt: new Date() },
-          $setOnInsert: { _id: uuidv4(), code: g.code, createdAt: new Date() }
+          $setOnInsert: { _id: uuidv4(), code: g.code, createdAt: new Date() },
         },
-        { upsert: true }
+        { upsert: true },
       );
       if (res.upsertedCount || (res.upserted && res.upserted.length)) upserts += 1;
     }

@@ -151,11 +151,11 @@ describe('statusActionQueue behavior (e2e, DEV mem-queue)', () => {
 
     // Save report artifact
     const reportDir = path.join(__dirname, '..', 'storage', 'reports');
-    const fileName = `statusActionQueue-load-report-${new Date().toISOString().slice(0,10)}.md`;
+    const fileName = `statusActionQueue-load-report-${new Date().toISOString().slice(0, 10)}.md`;
     const reportPath = path.join(reportDir, fileName);
     try { fs.mkdirSync(reportDir, { recursive: true }); } catch {}
     const md = [
-      `# statusActionQueue Load Test Report`,
+      '# statusActionQueue Load Test Report',
       `Date: ${new Date().toISOString()}`,
       `Processed: ${metrics.processed24h}`,
       `Failed: ${metrics.failed24h}`,

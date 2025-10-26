@@ -17,7 +17,7 @@ const SEED = [
       { code: 'prepaid', type: 'number', label: 'Предоплата' },
       { code: 'is_urgent', type: 'bool', label: 'Срочно?' },
     ],
-    note: 'Базовая форма заказа (seed)'
+    note: 'Базовая форма заказа (seed)',
   },
   {
     scope: 'clients',
@@ -30,8 +30,8 @@ const SEED = [
       { code: 'preferred_contact', type: 'list', label: 'Предпочтительный контакт', options: ['Телефон', 'Email', 'Telegram'] },
       { code: 'tags', type: 'multilist', label: 'Теги', options: ['VIP', 'Постоянный', 'Новый'] },
     ],
-    note: 'Базовая форма клиента (seed)'
-  }
+    note: 'Базовая форма клиента (seed)',
+  },
 ];
 
 (async () => {

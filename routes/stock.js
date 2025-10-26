@@ -28,14 +28,14 @@ let seqSB = 1; const nextSB = () => `sb-${seqSB++}`;
 
 function listDevItems(q) {
   const s = String(q || '').trim().toLowerCase();
-  const arr = devStockItems.slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  const arr = devStockItems.slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   if (!s) return arr;
-  return arr.filter(it => String(it.itemId || '').toLowerCase().includes(s));
+  return arr.filter((it) => String(it.itemId || '').toLowerCase().includes(s));
 }
 
 function currentQtyDev(itemId, locationId) {
   const sum = devLedger
-    .filter(l => String(l.itemId) === String(itemId) && String(l.locationId || '') === String(locationId || ''))
+    .filter((l) => String(l.itemId) === String(itemId) && String(l.locationId || '') === String(locationId || ''))
     .reduce((acc, l) => acc + Number(l.qty || 0), 0);
   return sum;
 }
@@ -55,7 +55,8 @@ router.get('/items', requirePermission('warehouse.read'), async (req, res) => {
   try {
     const match = {};
     // q can search by itemId as string (basic)
-    const items = await StockItem.find(match).sort({ updatedAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await StockItem.find(match).sort({ updatedAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return res.status(500).json({ error: 'SERVER_ERROR' });
@@ -102,13 +103,14 @@ router.get('/movements', requirePermission('warehouse.read'), async (req, res) =
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   if (DEV_MODE && !mongoReady()) {
-    const items = devStockMovements.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(offset, offset + limit);
+    const items = devStockMovements.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(offset, offset + limit);
     return res.json({ ok: true, items });
   }
 
   if (!StockMovement) return res.status(500).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
-    const items = await StockMovement.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await StockMovement.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return res.status(500).json({ error: 'SERVER_ERROR' });
@@ -258,10 +260,10 @@ router.get('/ledger', requirePermission('warehouse.read'), async (req, res, next
 
     if (DEV_MODE && !mongoReady()) {
       let arr = devLedger.slice();
-      if (itemId) arr = arr.filter(l => String(l.itemId) === itemId);
-      if (locationId) arr = arr.filter(l => String(l.locationId || '') === locationId);
-      if (refType) arr = arr.filter(l => String(l.refType || '') === refType);
-      arr = arr.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(offset, offset+limit);
+      if (itemId) arr = arr.filter((l) => String(l.itemId) === itemId);
+      if (locationId) arr = arr.filter((l) => String(l.locationId || '') === locationId);
+      if (refType) arr = arr.filter((l) => String(l.refType || '') === refType);
+      arr = arr.sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(offset, offset + limit);
       return res.json({ ok: true, items: arr });
     }
 
@@ -270,7 +272,8 @@ router.get('/ledger', requirePermission('warehouse.read'), async (req, res, next
     if (itemId) match.itemId = mongoose.Types.ObjectId(itemId);
     if (locationId) match.locationId = mongoose.Types.ObjectId(locationId);
     if (refType) match.refType = refType;
-    const items = await StockLedger.find(match).sort({ ts: -1 }).skip(offset).limit(limit).lean();
+    const items = await StockLedger.find(match).sort({ ts: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return next(err);
@@ -286,7 +289,7 @@ router.get('/balance', requirePermission('warehouse.read'), async (req, res, nex
     const locationId = req.query.locationId ? String(req.query.locationId).trim() : undefined;
 
     if (DEV_MODE && !mongoReady()) {
-      let map = new Map();
+      const map = new Map();
       for (const l of devLedger) {
         if (itemId && String(l.itemId) !== itemId) continue;
         if (locationId && String(l.locationId || '') !== locationId) continue;
@@ -296,8 +299,8 @@ router.get('/balance', requirePermission('warehouse.read'), async (req, res, nex
       const all = Array.from(map.entries()).map(([key, qty]) => {
         const [it, loc] = key.split('|');
         return { itemId: it, locationId: loc || undefined, qty };
-      }).sort((a,b)=>b.qty - a.qty);
-      const items = all.slice(offset, offset+limit);
+      }).sort((a, b) => b.qty - a.qty);
+      const items = all.slice(offset, offset + limit);
       return res.json({ ok: true, items });
     }
 
@@ -312,7 +315,7 @@ router.get('/balance', requirePermission('warehouse.read'), async (req, res, nex
       { $skip: offset },
       { $limit: limit },
     ]);
-    const items = agg.map(a => ({ itemId: a._id.itemId, locationId: a._id.locationId, qty: a.qty }));
+    const items = agg.map((a) => ({ itemId: a._id.itemId, locationId: a._id.locationId, qty: a.qty }));
     return res.json({ ok: true, items });
   } catch (err) {
     return next(err);

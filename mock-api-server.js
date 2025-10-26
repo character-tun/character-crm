@@ -45,9 +45,7 @@ let boxes = [
 ];
 
 // API маршруты для клиентов
-app.get('/api/clients', (req, res) => {
-  return res.json(clients);
-});
+app.get('/api/clients', (req, res) => res.json(clients));
 
 app.get('/api/clients/:id', (req, res) => {
   const client = clients.find((c) => c._id === req.params.id);
@@ -118,9 +116,7 @@ app.delete('/api/clients/:id', (req, res) => {
 });
 
 // API маршруты для заказов на детейлинг
-app.get('/api/detailing-orders', (req, res) => {
-  return res.json(detailingOrders);
-});
+app.get('/api/detailing-orders', (req, res) => res.json(detailingOrders));
 
 app.get('/api/detailing-orders/:id', (req, res) => {
   const order = detailingOrders.find((o) => o._id === req.params.id);
@@ -197,9 +193,7 @@ app.delete('/api/detailing-orders/:id', (req, res) => {
 });
 
 // API маршруты для боксов
-app.get('/api/boxes', (req, res) => {
-  return res.json(boxes);
-});
+app.get('/api/boxes', (req, res) => res.json(boxes));
 
 app.get('/api/boxes/:id', (req, res) => {
   const box = boxes.find((b) => b._id === req.params.id);
@@ -255,9 +249,7 @@ app.delete('/api/boxes/:id', (req, res) => {
 });
 
 // Базовый маршрут для тестирования
-app.get('/api/test', (req, res) => {
-  return res.json({ msg: 'API работает (моковая версия)' });
-});
+app.get('/api/test', (req, res) => res.json({ msg: 'API работает (моковая версия)' }));
 
 const PORT = 5002;
 

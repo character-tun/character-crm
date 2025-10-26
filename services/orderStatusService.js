@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const OrderStatus = require('../models/OrderStatus');
 const OrderStatusLog = require('../models/OrderStatusLog');
 const { enqueueStatusActions } = require('../queues/statusActionQueue');
+
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 
 /**

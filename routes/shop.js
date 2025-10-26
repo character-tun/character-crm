@@ -35,13 +35,14 @@ router.get('/sales', requireRoles('Admin', 'Manager'), async (req, res) => {
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   if (DEV_MODE && !mongoReady()) {
-    const items = devSales.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(offset, offset+limit);
+    const items = devSales.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(offset, offset + limit);
     return res.json({ ok: true, items });
   }
 
   if (!ShopSale) return res.status(503).json({ error: 'NOT_AVAILABLE' });
   try {
-    const items = await ShopSale.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await ShopSale.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return res.status(500).json({ error: 'SERVER_ERROR' });

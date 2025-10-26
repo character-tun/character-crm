@@ -11,7 +11,7 @@ const NotifyTemplateSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-NotifyTemplateSchema.pre('save', function(next){
+NotifyTemplateSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

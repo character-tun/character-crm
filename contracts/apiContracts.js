@@ -175,7 +175,7 @@ const stockMovementSchema = Joi.object({
   _id: idSchema.optional(),
   stockItemId: Joi.string().optional(),
   itemId: Joi.string().required(),
-  type: Joi.string().valid('receipt','issue','adjust').required(),
+  type: Joi.string().valid('receipt', 'issue', 'adjust').required(),
   qty: Joi.number().required(),
   note: Joi.string().allow('').optional(),
   source: Joi.object().optional(),
@@ -183,7 +183,7 @@ const stockMovementSchema = Joi.object({
   createdAt: Joi.date().optional(),
 });
 const stockMovementsListResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), items: Joi.array().items(stockMovementSchema).required() });
-const stockMovementCreateRequestSchema = Joi.object({ itemId: Joi.string().required(), type: Joi.string().valid('receipt','issue','adjust').required(), qty: Joi.number().required(), note: Joi.string().optional(), source: Joi.object({ kind: Joi.string().valid('order','manual','supplier','system').optional(), id: Joi.string().optional() }).optional() });
+const stockMovementCreateRequestSchema = Joi.object({ itemId: Joi.string().required(), type: Joi.string().valid('receipt', 'issue', 'adjust').required(), qty: Joi.number().required(), note: Joi.string().optional(), source: Joi.object({ kind: Joi.string().valid('order', 'manual', 'supplier', 'system').optional(), id: Joi.string().optional() }).optional() });
 const stockMovementItemResponseSchema = Joi.object({ ok: Joi.boolean().valid(true).required(), item: stockMovementSchema.required() });
 
 module.exports = {

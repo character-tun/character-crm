@@ -23,9 +23,9 @@ const nextId = () => `itm-${seq++}`;
 
 function filterDevItems(items, q) {
   const s = String(q || '').trim().toLowerCase();
-  if (!s) return items.slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
-  return items.filter(it => String(it.name || '').toLowerCase().includes(s))
-    .slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  if (!s) return items.slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  return items.filter((it) => String(it.name || '').toLowerCase().includes(s))
+    .slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 }
 
 // GET /api/items — list/search (catalog.read)
@@ -44,7 +44,8 @@ router.get('/', requirePermission('catalog.read'), async (req, res) => {
   try {
     const match = {};
     if (q) match.name = { $regex: String(q), $options: 'i' };
-    const items = await Item.find(match).sort({ updatedAt: -1 }).skip(offset).limit(limit).lean();
+    const items = await Item.find(match).sort({ updatedAt: -1 }).skip(offset).limit(limit)
+      .lean();
     return res.json({ ok: true, items });
   } catch (err) {
     return res.status(500).json({ error: 'SERVER_ERROR' });
