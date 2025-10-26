@@ -399,3 +399,4 @@
 2025-10-26T13:48:47+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, jest.config.js | style(eslint): disable several eslint rules for better code flexibility
 2025-10-26T13:58:58+03:00 | .eslintrc.cjs, CHANGELOG_TRAE.md, server/models/CashRegister.js, server/models/Payment.js, services/fieldSchemaProvider.js | refactor(models): improve mongoose hook function naming consistency
 2025-10-26T16:21:13+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md | ci(workflows): add lockfile consistency check job
+2025-10-26T17:05:32+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md | ci(workflows): stabilize CI with lockfile consistency and npm ci discipline
