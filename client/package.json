@@ -51,10 +51,14 @@
     ]
   },
   "proxy": "http://localhost:5002",
+  "overrides": {
+    "@types/react": "18.3.26",
+    "@types/react-dom": "18.3.7"
+  },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "18.3.26",
+    "@types/react-dom": "18.3.7",
     "eslint": "^9.38.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.32.0",
