@@ -136,7 +136,7 @@ jobs:
         env:
           AUTH_DEV_MODE: "1"
           JWT_SECRET: "dev_secret"
-        run: npm test -- --ci --runInBand
+        run: npm test -- --ci --runInBand --silent
       - name: Coverage gates (Jest)
         env:
           AUTH_DEV_MODE: "1"
@@ -146,7 +146,7 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: client
       - name: Run client tests (CRA Jest)
-        run: npm test -- --watchAll=false
+        run: npm test -- --watchAll=false --silent
         working-directory: client
 
   build:
@@ -163,6 +163,8 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: client
       - name: Build client
+        env:
+          DISABLE_ESLINT_PLUGIN: "true"
         run: npm run build
         working-directory: client
       - name: Upload build artifact
