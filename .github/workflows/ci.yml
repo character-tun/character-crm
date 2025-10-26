@@ -11,8 +11,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lock-check:
+    name: Lockfile consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Detect package/lock changes (PR only)
+        if: ${{ github.event_name == 'pull_request' }}
+        id: changed_pkgs
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            package.json
+            package-lock.json
+            client/package.json
+            client/package-lock.json
+      - name: Enforce package.json ↔ lockfile pair (PR only)
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          CHANGED_FILES="${{ steps.changed_pkgs.outputs.all_changed_files }}"
+          echo "Changed files:\n$CHANGED_FILES"
+          ROOT_PKG_CHANGED=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -c '^package.json$' || true)
+          ROOT_LOCK_CHANGED=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -c '^package-lock.json$' || true)
+          CLIENT_PKG_CHANGED=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -c '^client/package.json$' || true)
+          CLIENT_LOCK_CHANGED=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -c '^client/package-lock.json$' || true)
+          if [ "$ROOT_PKG_CHANGED" -gt 0 ] && [ "$ROOT_LOCK_CHANGED" -eq 0 ]; then
+            echo "Root package.json changed without package-lock.json. Run 'npm install --package-lock-only' and commit." >&2
+            exit 2
+          fi
+          if [ "$CLIENT_PKG_CHANGED" -gt 0 ] && [ "$CLIENT_LOCK_CHANGED" -eq 0 ]; then
+            echo "client/package.json changed without client/package-lock.json. Run 'cd client && npm install --package-lock-only' and commit." >&2
+            exit 2
+          fi
+          echo "Lockfile pair checks passed."
+      - name: npm ci dry-run (root)
+        run: npm ci --dry-run
+      - name: npm ci dry-run (client)
+        run: npm ci --dry-run
+        working-directory: client
+
   lint:
     name: Lint (root + client)
+    needs: lock-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +120,7 @@ jobs:
 
   test:
     name: Test (root + client)
+    needs: lock-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,6 +151,7 @@ jobs:
 
   build:
     name: Build client
+    needs: lock-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -126,6 +173,7 @@ jobs:
 
   audit:
     name: Security audit (npm)
+    needs: lock-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
