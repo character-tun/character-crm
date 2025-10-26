@@ -5,7 +5,6 @@ const router = express.Router();
 const { requirePermission } = require('../middleware/auth');
 
 const Order = require('../models/Order');
-
 let OrderType; try { OrderType = require('../server/models/OrderType'); } catch (e) {}
 
 const DEV_MODE = process.env.AUTH_DEV_MODE === '1';
@@ -226,7 +225,7 @@ router.delete('/:id', requirePermission('orderTypes.write'), async (req, res) =>
 
     let usedByOrders = null;
     try {
-      const { code } = item;
+      const code = item.code;
       const oid = item._id;
       usedByOrders = await Order.exists({
         $or: [

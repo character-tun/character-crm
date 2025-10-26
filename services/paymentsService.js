@@ -63,10 +63,10 @@ async function createPayment(dto, user) {
     throw httpError(400, 'ORDER_CLOSED');
   }
 
-  const t = typeof type === 'string' && ['income', 'expense', 'refund'].includes(type) ? type : 'income';
+  const t = typeof type === 'string' && ['income','expense','refund'].includes(type) ? type : 'income';
   const ap = Array.isArray(articlePath) && articlePath.length > 0
     ? articlePath
-    : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи', 'Касса']));
+    : (t === 'refund' ? ['Возвраты'] : (t === 'expense' ? ['Расходы'] : ['Продажи','Касса']));
   const amt = typeof amount === 'number' ? amount : 0;
   if (!(amt > 0)) throw httpError(400, 'VALIDATION_ERROR');
 
@@ -118,7 +118,7 @@ async function updatePayment(id, dto, user) {
   const item = await Payment.findByIdAndUpdate(
     id,
     { $set: patch },
-    { new: true, runValidators: true },
+    { new: true, runValidators: true }
   ).lean();
   if (!item) throw httpError(404, 'NOT_FOUND');
   await recordAudit(item.orderId, user && user.id, `PAYMENT_UPDATE id=${id} fields=${Object.keys(patch).join(',')}`);

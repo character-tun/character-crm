@@ -63,7 +63,7 @@ describe('orderStatusService changeOrderStatus (unit)', () => {
     expect(r && r.ok).toBe(true);
 
     const args = enqueueStatusActions.mock.calls[0][0];
-    const count = args.actions.filter((a) => a === 'stockIssue').length;
+    const count = args.actions.filter(a => a === 'stockIssue').length;
     expect(count).toBe(1);
   });
 

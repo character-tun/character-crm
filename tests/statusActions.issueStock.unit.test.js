@@ -75,12 +75,12 @@ describe('statusActionsHandler.issueStockFromOrder (unit)', () => {
     const r1 = await run();
     expect(r1 && r1.ok).toBe(true);
     expect(StockItem.__getQty('SKU-X')).toBe(7); // 10 - 3
-    expect(StockMovement.__all().filter((m) => m.type === 'issue').length).toBe(1);
+    expect(StockMovement.__all().filter(m => m.type === 'issue').length).toBe(1);
 
     const r2 = await run();
     expect(r2 && r2.ok).toBe(true);
     expect(StockItem.__getQty('SKU-X')).toBe(7); // unchanged due to idempotency
-    expect(StockMovement.__all().filter((m) => m.type === 'issue').length).toBe(1); // still one movement
+    expect(StockMovement.__all().filter(m => m.type === 'issue').length).toBe(1); // still one movement
   });
 
   test('creates StockItem when missing, decrements correctly, records movement payload', async () => {
@@ -126,7 +126,7 @@ describe('statusActionsHandler.issueStockFromOrder (unit)', () => {
     const r = await handleStatusActions({ orderId, statusCode: 'closed_paid', actions: ['stockIssue'], logId: 'log-2', userId });
     expect(r && r.ok).toBe(true);
     expect(StockItem.__getQty('SKU-Y')).toBe(-2); // created at 0 then decrement by 2
-    const mv = StockMovement.__all().find((m) => m.type === 'issue');
+    const mv = StockMovement.__all().find(m => m.type === 'issue');
     expect(mv).toBeTruthy();
     expect(String(mv.itemId)).toBe('SKU-Y');
     expect(Number(mv.qty)).toBe(-2);
@@ -146,6 +146,7 @@ describe('statusActionsHandler.issueStockFromOrder (unit)', () => {
 
     const { handleStatusActions } = require('../services/statusActionsHandler');
     const orderId = new mongoose.Types.ObjectId().toHexString();
+
 
     const r = await handleStatusActions({ orderId, statusCode: 'closed_paid', actions: ['stockIssue'], logId: 'log-3', userId: new mongoose.Types.ObjectId().toHexString() });
     expect(r && r.ok).toBe(true);

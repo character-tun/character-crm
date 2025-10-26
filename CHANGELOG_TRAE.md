@@ -402,3 +402,4 @@
 2025-10-26T17:05:32+03:00 | .github/workflows/ci.yml, CHANGELOG_TRAE.md | ci(workflows): stabilize CI with lockfile consistency and npm ci discipline
 2025-10-26T17:07:50+03:00 | CHANGELOG_TRAE.md | chore(ci): stabilize lockfile consistency (root+client), pin Node 20, switch to npm ci --ignore-scripts, add lock-check gate; update CHANGELOG_TRAE.md
 2025-10-26T17:24:11+03:00 | CHANGELOG_TRAE.md | chore(ci): update changelog with latest ci stabilization changes
+2025-10-26T17:25:24+03:00 | CHANGELOG_TRAE.md | chore(ci): update changelog with latest ci stabilization changes

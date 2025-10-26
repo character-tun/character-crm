@@ -19,14 +19,13 @@ router.get('/rules', requireRoles('Admin', 'Manager'), async (req, res) => {
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   if (DEV_MODE && !mongoReady()) {
-    const items = devRules.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(offset, offset + limit);
+    const items = devRules.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(offset, offset+limit);
     return res.json({ ok: true, items });
   }
 
   if (!PayrollRule) return res.status(503).json({ error: 'MODEL_NOT_AVAILABLE' });
   try {
-    const items = await PayrollRule.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit)
-      .lean();
+    const items = await PayrollRule.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
     return res.json({ ok: true, items });
   } catch (e) {
     return res.status(500).json({ error: 'SERVER_ERROR' });
