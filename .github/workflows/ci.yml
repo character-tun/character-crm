@@ -73,7 +73,7 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: client
       - name: Lint client (ESLint flat config)
-        run: npx eslint --no-eslintrc -c eslint.config.cjs . --max-warnings=0
+        run: npx eslint -c eslint.config.cjs . --max-warnings=0
         working-directory: client
       - name: Get changed UI files (PR only)
         if: ${{ github.event_name == 'pull_request' }}
@@ -90,7 +90,7 @@ jobs:
             | tr ' ' '\n' \
             | grep -E '^client/src/.*\.(js|jsx)$' \
             | sed 's#^client/##' \
-            | xargs -r npx eslint --no-eslintrc -c eslint.config.cjs --max-warnings=0 --rule "no-hardcoded-ui/no-hardcoded-ui:error"
+            | xargs -r npx eslint -c eslint.config.cjs --max-warnings=0 --rule "no-hardcoded-ui/no-hardcoded-ui:error"
       - name: UI TS/TSX gate (grep fallback)
         if: ${{ github.event_name == 'pull_request' && steps.changed_client.outputs.any_modified == 'true' }}
         working-directory: client
