@@ -23,21 +23,39 @@ async function validateActionsReferences(actions = []) {
   for (const a of actions) {
     if (!a || typeof a !== 'object') continue;
     if (a.type === 'notify') {
-      const id = a.templateId;
+      const id = a.templateId || a.code;
       if (!id) return { type: 'notify', id: null };
-      if (!NotifyTemplate) return { type: 'notify', id };
-      const byId = await NotifyTemplate.findById(id).lean().catch(() => null);
-      if (byId) continue;
-      const byCode = await NotifyTemplate.findOne({ code: id }).lean().catch(() => null);
-      if (!byCode) return { type: 'notify', id };
+
+      let ok = false;
+      if (NotifyTemplate) {
+        const byId = await NotifyTemplate.findById(id).lean().catch(() => null);
+        const byCode = byId ? null : await NotifyTemplate.findOne({ code: id }).lean().catch(() => null);
+        ok = !!(byId || byCode);
+      }
+      if (!ok) {
+        try {
+          const devTpl = TemplatesStore.getNotifyTemplate(id) || TemplatesStore.listNotifyTemplates().find((t) => t.code === id);
+          ok = !!devTpl;
+        } catch (_) { /* ignore DEV fallback errors */ }
+      }
+      if (!ok) return { type: 'notify', id };
     } else if (a.type === 'print') {
-      const id = a.docId;
+      const id = a.docId || a.code;
       if (!id) return { type: 'print', id: null };
-      if (!DocTemplate) return { type: 'print', id };
-      const byId = await DocTemplate.findById(id).lean().catch(() => null);
-      if (byId) continue;
-      const byCode = await DocTemplate.findOne({ code: id }).lean().catch(() => null);
-      if (!byCode) return { type: 'print', id };
+
+      let ok = false;
+      if (DocTemplate) {
+        const byId = await DocTemplate.findById(id).lean().catch(() => null);
+        const byCode = byId ? null : await DocTemplate.findOne({ code: id }).lean().catch(() => null);
+        ok = !!(byId || byCode);
+      }
+      if (!ok) {
+        try {
+          const devTpl = TemplatesStore.getDocTemplate(id) || TemplatesStore.listDocTemplates().find((t) => t.code === id);
+          ok = !!devTpl;
+        } catch (_) { /* ignore DEV fallback errors */ }
+      }
+      if (!ok) return { type: 'print', id };
     }
   }
   return null;

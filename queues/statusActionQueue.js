@@ -12,7 +12,7 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const USE_MEM_QUEUE = DEV_MODE && !REDIS_URL;
 // Do NOT disable the queue in tests when using the in-memory queue (DEV)
 const DISABLE_STATUS_QUEUE = !USE_MEM_QUEUE && IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1';
-const LOG_ENABLED = ((!IS_TEST && USE_MEM_QUEUE) || process.env.ENABLE_QUEUE_LOGS === '1');
+const LOG_ENABLED = (IS_TEST || ((!IS_TEST && USE_MEM_QUEUE) || process.env.ENABLE_QUEUE_LOGS === '1'));
 
 const queueName = 'statusActionQueue';
 
@@ -22,6 +22,7 @@ if (USE_MEM_QUEUE) {
   let processing = false;
   const memCompleted = []; // { jobId, data, finishedAt, startedAt, durationMs }
   const memFailed = []; // { jobId, data, finishedAt, error, attempts }
+  const memJobIds = new Set();
   let timerId = null;
 
   const MEM_ATTEMPTS = parseInt(process.env.MEM_ATTEMPTS || '5', 10);
@@ -63,6 +64,8 @@ if (USE_MEM_QUEUE) {
       if (LOG_ENABLED) console.log(`[Worker:${queueName}] completed`, { jobId, result });
       const finishedAt = Date.now();
       memCompleted.push({ jobId, data, startedAt, finishedAt, durationMs: finishedAt - startedAt });
+      // job fully done, allow future duplicate by removing from set
+      memJobIds.delete(jobId);
     } catch (err) {
       const attempt = (job.attempt || 0) + 1;
       const errorMessage = err?.message;
@@ -72,8 +75,11 @@ if (USE_MEM_QUEUE) {
         const nextAt = Date.now() + delayMs;
         if (LOG_ENABLED) console.log(`[Worker:${queueName}] retry scheduled`, { jobId, attempt, nextInMs: delayMs });
         memQueue.push({ ...job, attempt, nextAt });
+        // keep jobId in set while retries are pending
       } else {
         memFailed.push({ jobId, data, finishedAt: Date.now(), error: { message: errorMessage }, attempts: attempt });
+        // retries exhausted, remove from set
+        memJobIds.delete(jobId);
       }
     } finally {
       processing = false;
@@ -100,8 +106,13 @@ if (USE_MEM_QUEUE) {
           }
           return;
         }
+        const startedAt = Date.now();
         const result = await handleStatusActions({ orderId, statusCode, actions, logId, userId });
+        const finishedAt = Date.now();
+        memCompleted.push({ jobId, data: { orderId, statusCode, logId }, startedAt, finishedAt, durationMs: finishedAt - startedAt });
         if (LOG_ENABLED) console.log(`[Queue:${queueName}] run inline (test)`, { jobId, result });
+        // inline path completes immediately; remove from set if present
+        memJobIds.delete(jobId);
         return;
       } catch (err) {
         if (LOG_ENABLED) console.error(`[Queue:${queueName}] inline error (test)`, { jobId }, err);
@@ -112,46 +123,17 @@ if (USE_MEM_QUEUE) {
           error: { message: err?.message },
           attempts: 1,
         });
+        // inline error ends job lifecycle; ensure removed
+        memJobIds.delete(jobId);
         return;
       }
     }
-    // In tests, process mem-queue inline to avoid races
-    if (IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1') {
-      try {
-        if (__forceFail) {
-          memFailed.push({
-            jobId,
-            data: { orderId, statusCode, logId },
-            finishedAt: Date.now(),
-            error: { message: 'Forced fail (test)' },
-            attempts: 1,
-          });
-          if (LOG_ENABLED) {
-            console.error(`[Queue:${queueName}] inline error (mem)`, { jobId }, new Error('Forced fail (test)'));
-          }
-          return;
-        }
-        if (LOG_ENABLED) console.log(`[Worker:${queueName}] processing`, { jobId, orderId, statusCode, logId });
-        const result = await handleStatusActions({ orderId, statusCode, actions, logId, userId });
-        if (LOG_ENABLED) console.log(`[Worker:${queueName}] completed`, { jobId, result });
-        return;
-      } catch (err) {
-        if (LOG_ENABLED) console.error(`[Queue:${queueName}] inline error (mem)`, { jobId }, err);
-        memFailed.push({
-          jobId,
-          data: { orderId, statusCode, logId },
-          finishedAt: Date.now(),
-          error: { message: err?.message },
-          attempts: 1,
-        });
-        return;
-      }
-    }
-    // prevent duplicates in queue
-    if (memQueue.find((j) => j.jobId === jobId)) {
-      if (LOG_ENABLED) console.log(`[Queue:${queueName}] job already exists (mem)`, { jobId });
+    // prevent duplicates in queue (including active/retry lifecycle)
+    if (memJobIds.has(jobId) || memQueue.find((j) => j.jobId === jobId)) {
+      console.log(`[Queue:${queueName}] job already exists (mem)`, { jobId });
       return;
     }
+    memJobIds.add(jobId);
     memQueue.push({
       jobId,
       data: {
