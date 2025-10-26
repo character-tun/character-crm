@@ -375,3 +375,4 @@
 2025-10-26T00:33:00+03:00 | client/src/pages/reports/Cashflow.js, client/src/components/EmptyState.jsx, client/src/components/NotifyProvider.tsx | feat(reports v5.7): add Cashflow EmptyState with CTA to payments and centralized error toasts
 2025-10-26T01:01:55+03:00 | CHANGELOG_TRAE.md, client/src/components/FiltersBar.jsx, client/src/pages/Payments.js, client/src/pages/reports/Cashflow.js, client/src/pages/settings/CashRegisters.js, client/src/pages/settings/PaymentArticles.js | feat(filters): add unified FiltersBar component for reports and payments
 2025-10-26T01:04:14+03:00 | CHANGELOG_TRAE.md, client/src/pages/Payments.js | feat(filters): add unified FiltersBar component for reports and payments
+2025-10-26T12:05:14+03:00 | CHANGELOG_TRAE.md, package.json, queues/statusActionQueue.js, routes/notifyTemplates.js, routes/orderTypes.js, routes/orders.js, routes/stock.js, services/statusActionsHandler.js | feat(dev): add DEV mode fallbacks and test improvements

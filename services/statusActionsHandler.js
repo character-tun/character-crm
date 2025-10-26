@@ -496,6 +496,24 @@ async function issueStockFromOrder({ orderId, userId }) {
     const qty = ln && typeof ln.qty === 'number' ? ln.qty : 0;
     if (!itemId || qty <= 0) continue;
 
+    // Idempotency guard: skip if issue movement already exists for this order+item+qty
+    let skip = false;
+    try {
+      const existing = await (StockMovement.find ? StockMovement.find({}).lean() : []);
+      const existingList = Array.isArray(existing) ? existing : [];
+      skip = existingList.some((m) => (
+        m && m.type === 'issue'
+        && String(m.itemId) === String(itemId)
+        && Number(m.qty) === Number(-qty)
+        && m.source && m.source.kind === 'order'
+        && String(m.source.id) === String(orderId)
+      ));
+      if (skip) {
+        console.warn('[stockIssue] skip: ALREADY_ISSUED', { orderId, itemId, qty });
+      }
+    } catch (e) {}
+    if (skip) { continue; }
+
     let si = await StockItem.findOne({ itemId });
     if (!si) {
       si = await StockItem.create({ itemId, qtyOnHand: 0, createdBy: userId ? new mongoose.Types.ObjectId(userId) : undefined });

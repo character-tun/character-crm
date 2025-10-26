@@ -95,6 +95,19 @@ if (USE_MEM_QUEUE) {
         throw err;
       }
     }
+    // In tests, process mem-queue inline to avoid races
+    if (IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1') {
+      try {
+        if (__forceFail) throw new Error('Forced fail (test)');
+        if (LOG_ENABLED) console.log(`[Worker:${queueName}] processing`, { jobId, orderId, statusCode, logId });
+        const result = await handleStatusActions({ orderId, statusCode, actions, logId, userId });
+        if (LOG_ENABLED) console.log(`[Worker:${queueName}] completed`, { jobId, result });
+        return;
+      } catch (err) {
+        if (LOG_ENABLED) console.error(`[Queue:${queueName}] inline error (mem)`, { jobId }, err);
+        throw err;
+      }
+    }
     // prevent duplicates in queue
     if (memQueue.find((j) => j.jobId === jobId)) {
       if (LOG_ENABLED) console.log(`[Queue:${queueName}] job already exists (mem)`, { jobId });
