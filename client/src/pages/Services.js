@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -119,7 +119,7 @@ function ServicesPage() {
 
   const findCategory = (id) => categories.find((c) => c.id === id) || null;
 
-  const collectDescendants = (id) => {
+  const collectDescendants = useCallback((id) => {
     const res = [];
     const stack = [id];
     while (stack.length) {
@@ -131,7 +131,7 @@ function ServicesPage() {
       });
     }
     return res;
-  };
+  }, [categories]);
 
   const visibleServices = useMemo(() => {
     const q = search.trim().toLowerCase();
