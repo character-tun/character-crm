@@ -377,3 +377,4 @@
 2025-10-26T01:04:14+03:00 | CHANGELOG_TRAE.md, client/src/pages/Payments.js | feat(filters): add unified FiltersBar component for reports and payments
 2025-10-26T12:05:14+03:00 | CHANGELOG_TRAE.md, package.json, queues/statusActionQueue.js, routes/notifyTemplates.js, routes/orderTypes.js, routes/orders.js, routes/stock.js, services/statusActionsHandler.js | feat(dev): add DEV mode fallbacks and test improvements
 2025-10-26T12:17:03+03:00 | CHANGELOG_TRAE.md, queues/statusActionQueue.js, services/statusActionsHandler.js | feat(test): add inline processing for mem-queue in tests
+2025-10-26T12:25:43+03:00 | CHANGELOG_TRAE.md, tests/orderStatusService.actions.unit.test.js, tests/queues.statusActionQueue.unit.test.js, tests/statusActions.issueStock.unit.test.js | test(status-actions): add unit tests for stock issue functionality
