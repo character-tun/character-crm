@@ -163,6 +163,8 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: client
       - name: Build client
+        env:
+          CI: "false"
         run: npm run build
         working-directory: client
       - name: Upload build artifact
