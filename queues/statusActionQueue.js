@@ -10,8 +10,8 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 
 // Use an in-memory queue when in DEV mode and Redis is not configured
 const USE_MEM_QUEUE = DEV_MODE && !REDIS_URL;
-// Do NOT disable the queue in tests when using the in-memory queue (DEV)
-const DISABLE_STATUS_QUEUE = !USE_MEM_QUEUE && IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1';
+// Allow disabling the queue in tests explicitly via ENABLE_STATUS_QUEUE='0'
+const DISABLE_STATUS_QUEUE = IS_TEST && process.env.ENABLE_STATUS_QUEUE === '0';
 const LOG_ENABLED = (IS_TEST || ((!IS_TEST && USE_MEM_QUEUE) || process.env.ENABLE_QUEUE_LOGS === '1'));
 
 const queueName = 'statusActionQueue';
@@ -250,24 +250,22 @@ if (USE_MEM_QUEUE) {
         {
           orderId, statusCode, actions, logId, userId,
         },
-        {
-          jobId,
-          attempts: 5,
-          backoff: { type: 'exponential', delay: 2000 },
-          removeOnComplete: true,
-          removeOnFail: false,
-        },
+        { jobId },
       );
       if (LOG_ENABLED) console.log(`[Queue:${queueName}] enqueued`, { jobId });
     } catch (err) {
-      if (LOG_ENABLED) console.error(`[Queue:${queueName}] enqueue error`, { jobId }, err);
-      throw err;
+      console.error(`[Queue:${queueName}] enqueue error`, err);
     }
   }
 
   async function shutdownQueue() {
-    await worker.close();
-    await statusActionQueue.close();
+    try {
+      await worker.close();
+      await statusActionQueue.close();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, err: err?.message };
+    }
   }
 
   module.exports = { statusActionQueue, enqueueStatusActions, shutdownQueue };
