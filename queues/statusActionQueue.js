@@ -86,26 +86,64 @@ if (USE_MEM_QUEUE) {
     const jobId = `${orderId}:${statusCode}:${logId}`;
     if (DISABLE_STATUS_QUEUE) {
       try {
-        if (__forceFail) throw new Error('Forced fail (test)');
+        if (__forceFail) {
+          memFailed.push({
+            jobId,
+            data: { orderId, statusCode, logId },
+            finishedAt: Date.now(),
+            error: { message: 'Forced fail (test)' },
+            attempts: 1,
+          });
+          if (LOG_ENABLED) {
+            console.error(`[Queue:${queueName}] inline error (test)`, { jobId }, new Error('Forced fail (test)'));
+          }
+          return;
+        }
         const result = await handleStatusActions({ orderId, statusCode, actions, logId, userId });
         if (LOG_ENABLED) console.log(`[Queue:${queueName}] run inline (test)`, { jobId, result });
         return;
       } catch (err) {
         if (LOG_ENABLED) console.error(`[Queue:${queueName}] inline error (test)`, { jobId }, err);
-        throw err;
+        memFailed.push({
+          jobId,
+          data: { orderId, statusCode, logId },
+          finishedAt: Date.now(),
+          error: { message: err?.message },
+          attempts: 1,
+        });
+        return;
       }
     }
     // In tests, process mem-queue inline to avoid races
     if (IS_TEST && process.env.ENABLE_STATUS_QUEUE !== '1') {
       try {
-        if (__forceFail) throw new Error('Forced fail (test)');
+        if (__forceFail) {
+          memFailed.push({
+            jobId,
+            data: { orderId, statusCode, logId },
+            finishedAt: Date.now(),
+            error: { message: 'Forced fail (test)' },
+            attempts: 1,
+          });
+          if (LOG_ENABLED) {
+            console.error(`[Queue:${queueName}] inline error (mem)`, { jobId }, new Error('Forced fail (test)'));
+          }
+          return;
+        }
         if (LOG_ENABLED) console.log(`[Worker:${queueName}] processing`, { jobId, orderId, statusCode, logId });
         const result = await handleStatusActions({ orderId, statusCode, actions, logId, userId });
         if (LOG_ENABLED) console.log(`[Worker:${queueName}] completed`, { jobId, result });
         return;
       } catch (err) {
         if (LOG_ENABLED) console.error(`[Queue:${queueName}] inline error (mem)`, { jobId }, err);
-        throw err;
+        memFailed.push({
+          jobId,
+          data: { orderId, statusCode, logId },
+          finishedAt: Date.now(),
+          error: { message: err?.message },
+          attempts: 1,
+        });
+        return;
       }
     }
     // prevent duplicates in queue

@@ -378,3 +378,4 @@
 2025-10-26T12:05:14+03:00 | CHANGELOG_TRAE.md, package.json, queues/statusActionQueue.js, routes/notifyTemplates.js, routes/orderTypes.js, routes/orders.js, routes/stock.js, services/statusActionsHandler.js | feat(dev): add DEV mode fallbacks and test improvements
 2025-10-26T12:17:03+03:00 | CHANGELOG_TRAE.md, queues/statusActionQueue.js, services/statusActionsHandler.js | feat(test): add inline processing for mem-queue in tests
 2025-10-26T12:25:43+03:00 | CHANGELOG_TRAE.md, tests/orderStatusService.actions.unit.test.js, tests/queues.statusActionQueue.unit.test.js, tests/statusActions.issueStock.unit.test.js | test(status-actions): add unit tests for stock issue functionality
+2025-10-26T12:38:08+03:00 | CHANGELOG_TRAE.md, tests/clients.crud.e2e.test.js, tests/orders.lifecycle.e2e.test.js, tests/payments.flow.e2e.test.js | test(e2e): add payments, clients and orders lifecycle e2e tests
