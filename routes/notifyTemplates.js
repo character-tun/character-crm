@@ -127,6 +127,4 @@ router.delete('/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-
-
 module.exports = router;

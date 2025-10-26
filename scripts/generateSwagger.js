@@ -63,7 +63,7 @@ const spec = {
           method: { type: 'string' },
           cashRegisterId: { type: 'string' },
           note: { type: 'string' },
-          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdBy: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
           locked: { type: 'boolean' },
           lockedAt: { type: 'string', format: 'date-time' },
           locationId: { type: 'string' },
@@ -89,7 +89,7 @@ const spec = {
             expense: { type: 'number' },
             refund: { type: 'number' },
             balance: { type: 'number' },
-          }, required: ['income','expense','refund','balance'] },
+          }, required: ['income', 'expense', 'refund', 'balance'] },
         },
         required: ['items', 'totals'],
         additionalProperties: true,
@@ -217,7 +217,7 @@ const spec = {
           sku: { type: 'string' },
           tags: { type: 'array', items: { type: 'string' } },
           note: { type: 'string' },
-          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdBy: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
           locked: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -279,13 +279,13 @@ const spec = {
         type: 'object',
         properties: {
           code: { type: 'string' },
-          type: { type: 'string', enum: ['text','number','date','bool','list','multilist'] },
+          type: { type: 'string', enum: ['text', 'number', 'date', 'bool', 'list', 'multilist'] },
           label: { type: 'string' },
           required: { type: 'boolean' },
-          options: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          options: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true }] } },
           note: { type: 'string' },
         },
-        required: ['code','type'],
+        required: ['code', 'type'],
         additionalProperties: true,
       },
       FieldSchema: {
@@ -297,11 +297,11 @@ const spec = {
           version: { type: 'integer', minimum: 1 },
           isActive: { type: 'boolean' },
           note: { type: 'string' },
-          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdBy: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
           createdAt: { type: 'string', format: 'date-time' },
           fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
         },
-        required: ['scope','name','version','fields'],
+        required: ['scope', 'name', 'version', 'fields'],
         additionalProperties: true,
       },
       FieldSchemaCreateRequest: {
@@ -312,7 +312,7 @@ const spec = {
           fields: { type: 'array', items: { $ref: '#/components/schemas/FieldSpec' } },
           note: { type: 'string' },
         },
-        required: ['scope','name'],
+        required: ['scope', 'name'],
         additionalProperties: true,
       },
       FieldSchemaPatchRequest: {
@@ -342,17 +342,17 @@ const spec = {
         properties: {
           _id: { type: 'string' },
           code: { type: 'string' },
-          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          values: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true }] } },
           updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['code','values'],
+        required: ['code', 'values'],
         additionalProperties: true,
       },
       DictionaryCreateRequest: {
         type: 'object',
         properties: {
           code: { type: 'string' },
-          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          values: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true }] } },
         },
         required: ['code'],
         additionalProperties: true,
@@ -361,7 +361,7 @@ const spec = {
         type: 'object',
         properties: {
           code: { type: 'string' },
-          values: { type: 'array', items: { anyOf: [ { type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true } ] } },
+          values: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'object', additionalProperties: true }] } },
         },
         additionalProperties: true,
       },
@@ -389,7 +389,7 @@ const spec = {
           minQty: { type: 'number' },
           maxQty: { type: 'number' },
           locked: { type: 'boolean' },
-          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdBy: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
@@ -431,11 +431,11 @@ const spec = {
           _id: { type: 'string' },
           stockItemId: { type: 'string' },
           itemId: { type: 'string' },
-          type: { type: 'string', enum: ['receipt','issue','adjust'] },
+          type: { type: 'string', enum: ['receipt', 'issue', 'adjust'] },
           qty: { type: 'number' },
           note: { type: 'string' },
           source: { type: 'object', additionalProperties: true },
-          createdBy: { anyOf: [ { type: 'string' }, { type: 'object', additionalProperties: true } ] },
+          createdBy: { anyOf: [{ type: 'string' }, { type: 'object', additionalProperties: true }] },
           createdAt: { type: 'string', format: 'date-time' },
         },
         additionalProperties: true,
@@ -444,12 +444,12 @@ const spec = {
         type: 'object',
         properties: {
           itemId: { type: 'string' },
-          type: { type: 'string', enum: ['receipt','issue','adjust'] },
+          type: { type: 'string', enum: ['receipt', 'issue', 'adjust'] },
           qty: { type: 'number' },
           note: { type: 'string' },
-          source: { type: 'object', properties: { kind: { type: 'string', enum: ['order','manual','supplier','system'] }, id: { type: 'string' } }, additionalProperties: true },
+          source: { type: 'object', properties: { kind: { type: 'string', enum: ['order', 'manual', 'supplier', 'system'] }, id: { type: 'string' } }, additionalProperties: true },
         },
-        required: ['itemId','type','qty'],
+        required: ['itemId', 'type', 'qty'],
         additionalProperties: true,
       },
       StockMovementItemResponse: {
@@ -470,43 +470,38 @@ const spec = {
   paths: {
     '/api/payments': {
 
-
-
-
-
-
-    get: {
-      summary: 'List payments',
-      security: [{ bearerAuth: [] }],
-      parameters: [
-        { name: 'type', in: 'query', schema: { type: 'string', enum: ['income','expense','refund'] } },
-        { name: 'orderId', in: 'query', schema: { type: 'string' } },
-        { name: 'cashRegisterId', in: 'query', schema: { type: 'string' } },
-        { name: 'locationId', in: 'query', schema: { type: 'string' } },
-        { name: 'dateFrom', in: 'query', schema: { type: 'string', format: 'date-time' } },
-        { name: 'dateTo', in: 'query', schema: { type: 'string', format: 'date-time' } },
-        { name: 'articlePath', in: 'query', schema: { type: 'string' }, description: 'Prefix "a/b/c" or contains segment "a"' },
-        { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 500 }, description: 'Default 50' },
-        { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Default 0' },
-      ],
-      responses: {
-        '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentsListResponse' } } } },
-        '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-        '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      get: {
+        summary: 'List payments',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'type', in: 'query', schema: { type: 'string', enum: ['income', 'expense', 'refund'] } },
+          { name: 'orderId', in: 'query', schema: { type: 'string' } },
+          { name: 'cashRegisterId', in: 'query', schema: { type: 'string' } },
+          { name: 'locationId', in: 'query', schema: { type: 'string' } },
+          { name: 'dateFrom', in: 'query', schema: { type: 'string', format: 'date-time' } },
+          { name: 'dateTo', in: 'query', schema: { type: 'string', format: 'date-time' } },
+          { name: 'articlePath', in: 'query', schema: { type: 'string' }, description: 'Prefix "a/b/c" or contains segment "a"' },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 500 }, description: 'Default 50' },
+          { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0 }, description: 'Default 0' },
+        ],
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentsListResponse' } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
       },
-    },
-    post: {
-      summary: 'Create income or expense payment',
-      security: [{ bearerAuth: [] }],
-      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } } },
-      responses: {
-        '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
-        '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
-        '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-        '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
-        '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      post: {
+        summary: 'Create income or expense payment',
+        security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateRequest' } } } },
+        responses: {
+          '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentCreateResponse' } } } },
+          '400': { description: 'Validation or order constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, paymentsLocked: { value: { error: 'PAYMENTS_LOCKED' } }, orderClosed: { value: { error: 'ORDER_CLOSED' } } } } } },
+          '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Cash register not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CASH_NOT_FOUND' } } } },
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
       },
-    },
     },
     '/api/payments/refund': {
       post: {
@@ -523,7 +518,7 @@ const spec = {
       },
     },
     '/api/payments/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       patch: {
         summary: 'Edit payment',
         security: [{ bearerAuth: [] }],
@@ -533,8 +528,8 @@ const spec = {
           '400': { description: 'Validation or lock constraints', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, examples: { validation: { value: { error: 'VALIDATION_ERROR' } }, locked: { value: { error: 'PAYMENT_LOCKED' } } } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'NOT_FOUND' } } } },
-          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
-        }
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
       },
       delete: {
         summary: 'Delete payment',
@@ -544,12 +539,12 @@ const spec = {
           '400': { description: 'Locked payment', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'PAYMENT_LOCKED' } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'NOT_FOUND' } } } },
-          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
-        }
-      }
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
     },
     '/api/payments/{id}/lock': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       post: {
         summary: 'Lock payment',
         security: [{ bearerAuth: [] }],
@@ -558,9 +553,9 @@ const spec = {
           '400': { description: 'Already locked', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'PAYMENT_LOCKED' } } } },
           '403': { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'NOT_FOUND' } } } },
-          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
-        }
-      }
+          '500': { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
     },
     '/api/notify/templates': {
       get: {
@@ -586,7 +581,7 @@ const spec = {
       },
     },
     '/api/notify/templates/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get notify template',
         security: [{ bearerAuth: [] }],
@@ -641,7 +636,7 @@ const spec = {
       },
     },
     '/api/doc-templates/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get doc template',
         security: [{ bearerAuth: [] }],
@@ -695,15 +690,15 @@ const spec = {
                 startStatusId: 'st_new',
                 allowedStatuses: ['st_new', 'st_in_progress'],
                 docTemplateIds: ['doc_invoice', 'doc_contract'],
-                isSystem: true
-              }
-            }
-          }
+                isSystem: true,
+              },
+            },
+          },
         },
         responses: {
           '200': {
             description: 'OK',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } }
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } },
           },
           '400': {
             description: 'Bad Request',
@@ -712,19 +707,19 @@ const spec = {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
                 examples: {
                   invalidStart: { value: { error: 'ORDERTYPE_INVALID_START_STATUS' } },
-                  validation: { value: { error: 'VALIDATION_ERROR' } }
-                }
-              }
-            }
+                  validation: { value: { error: 'VALIDATION_ERROR' } },
+                },
+              },
+            },
           },
           '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '409': { description: 'Code exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'CODE_EXISTS' } } } },
-          '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+          '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },
     },
     '/api/order-types/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get order type',
         security: [{ bearerAuth: [] }],
@@ -745,7 +740,7 @@ const spec = {
           '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/OrderTypeItemResponse' } } } },
           '400': {
             description: 'Bad Request: invalid start status not in allowedStatuses',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'ORDERTYPE_INVALID_START_STATUS' } } }
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { error: 'ORDERTYPE_INVALID_START_STATUS' } } },
           },
           '403': { description: 'Forbidden (RBAC)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
@@ -766,10 +761,10 @@ const spec = {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
                 examples: {
                   systemType: { value: { error: 'SYSTEM_TYPE' } },
-                  inUse: { value: { error: 'ORDERTYPE_IN_USE' } }
-                }
-              }
-            }
+                  inUse: { value: { error: 'ORDERTYPE_IN_USE' } },
+                },
+              },
+            },
           },
           '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
@@ -802,7 +797,7 @@ const spec = {
       },
     },
     '/api/cash/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       patch: {
         summary: 'Update cash register',
         security: [{ bearerAuth: [] }],
@@ -867,7 +862,7 @@ const spec = {
       },
     },
     '/api/clients/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get client',
         security: [{ bearerAuth: [] }],
@@ -888,7 +883,7 @@ const spec = {
       },
     },
     '/api/boxes/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get box',
         security: [{ bearerAuth: [] }],
@@ -922,7 +917,7 @@ const spec = {
       },
     },
     '/api/detailing-orders/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get detailing order',
         security: [{ bearerAuth: [] }],
@@ -933,7 +928,7 @@ const spec = {
       },
     },
     '/api/detailing-orders/client/{clientId}': {
-      parameters: [ { name: 'clientId', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'List detailing orders for client',
         security: [{ bearerAuth: [] }],
@@ -978,7 +973,7 @@ const spec = {
       },
     },
     '/api/fields/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get field schema by id',
         security: [{ bearerAuth: [] }],
@@ -1010,7 +1005,7 @@ const spec = {
     '/api/fields/{scope}/{name}/versions': {
       parameters: [
         { name: 'scope', in: 'path', required: true, schema: { type: 'string' } },
-        { name: 'name', in: 'path', required: true, schema: { type: 'string' } }
+        { name: 'name', in: 'path', required: true, schema: { type: 'string' } },
       ],
       get: {
         summary: 'List schema versions for scope/name',
@@ -1022,7 +1017,7 @@ const spec = {
       },
     },
     '/api/fields/{id}/activate': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       post: {
         summary: 'Activate field schema version',
         security: [{ bearerAuth: [] }],
@@ -1033,7 +1028,7 @@ const spec = {
       },
     },
     '/api/fields/{id}/deactivate': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       post: {
         summary: 'Deactivate field schema version',
         security: [{ bearerAuth: [] }],
@@ -1066,7 +1061,7 @@ const spec = {
       },
     },
     '/api/dicts/{id}': {
-      parameters: [ { name: 'id', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get dictionary',
         security: [{ bearerAuth: [] }],
@@ -1095,7 +1090,7 @@ const spec = {
       },
     },
     '/api/dicts/by-code/{code}': {
-      parameters: [ { name: 'code', in: 'path', required: true, schema: { type: 'string' } } ],
+      parameters: [{ name: 'code', in: 'path', required: true, schema: { type: 'string' } }],
       get: {
         summary: 'Get dictionary by code',
         security: [{ bearerAuth: [] }],
@@ -1166,6 +1161,7 @@ const spec = {
 
 // Merge Orders spec fragments before writing
 const orderSpec = require('./orderSwaggerSpec');
+
 Object.assign(spec.components.schemas, orderSpec.schemas);
 Object.assign(spec.paths, orderSpec.paths);
 
