@@ -1,3 +1,56 @@
+## 2025-10-27 15:30 (Europe/Warsaw) | Тесты — повторный прогон (root + client)
+
+Сделано:
+- Серверные тесты (root): перезапущены с `--ci --runInBand --detectOpenHandles`.
+- Клиентские тесты (client): `CI=true npm test --watchAll=false` — прошли (1/1).
+
+Результаты:
+- Root: 82 suites — 81 пройдено, 1 упал; 295 tests — 292 пройдено, 3 упало; обнаружены незакрытые асинх. операции (рекомендация `--detectOpenHandles`).
+- Client: 1 suite — PASSED.
+
+Изменённые файлы:
+- Нет изменений в коде; только прогон тестов.
+
+Публичные контракты:
+- Не изменялись; проверка покрытия/контрактов выполнена в текущем состоянии.
+
+Валидации и бизнес-правила:
+- Без изменений; падение относится к тест-логике `migrateOrderStatuses.test.js`.
+
+Точки интеграции:
+- Root: Jest (`jest.config.js`) в корне.
+- Client: CRA Jest (`react-scripts test`).
+
+Критерии приёмки:
+- Прогон тестов выполнен; клиентские — зелёные; серверные требуют фикса 1 suite/3 tests.
+
+---
+
+## 2025-10-27 15:20 (Europe/Warsaw) | Клиент — фикc сборки: @mui/x-data-grid + themeAugmentation (type-only)
+
+Сделано:
+- Добавлен `@mui/x-data-grid@^7.29.9` в зависимости клиента.
+- Импорт `@mui/x-data-grid/themeAugmentation` переведён на type-only: `import type {} from '@mui/x-data-grid/themeAugmentation'`.
+- Выполнены `npm install` и `npm run build` — успешная прод-сборка.
+
+Изменённые файлы:
+- `/Users/admin/character crm/client/package.json`
+- `/Users/admin/character crm/client/src/theme/index.ts`
+
+Публичные контракты:
+- Не изменялись (эндпоинты/схемы и RBAC без изменений).
+
+Валидации и бизнес-правила:
+- Без изменений; правки касаются только фронтенд-сборки.
+
+Точки интеграции:
+- Тема клиента `client/src/theme/index.ts` импортируется глобально, изменение безопасно (type-only, без рантайм-импорта).
+
+Критерии приёмки:
+- `npm run build` в `client/` завершается успешно (exit code 0); ошибка резолва `@mui/x-data-grid/themeAugmentation` отсутствует.
+
+---
+
 ## 2025-10-27 15:05 (Europe/Warsaw) | Клиент — синхронизация devDependencies ESLint (CI фиксация)
 
 Сделано:
@@ -741,3 +794,4 @@
 - Integration: не требуется.
 - Acceptance: ESLint отчёт создан, правило больше не ругается на файл теста.
 2025-10-27T16:39:18+03:00 | .trae/eslint.json, .trae/eslint.unix.txt, CHANGELOG_TRAE.md, client/package-lock.json, client/package.json, eslint-report.json, indexes/stock.indexes.js, middleware/featureFlags/stock.js, models/stock/StockBalance.js, models/stock/StockOperation.js, package-lock.json, package.json, routes/stocks.js, scripts/migrations/2025-11-stock-initial-backfill.js, server.js, services/reports/stocksReportService.js, services/stock/minLevelWatcher.js, services/stock/reservationService.js, services/stock/stockService.js, tests/api.contracts.reports.stocks.test.js, tests/api.contracts.stocks.test.js, tests/e2e/order.close.stock.v2.e2e.test.js, tests/e2e/orders.stock.lifecycle.test.js, tests/e2e/stocks.v2.rbac.e2e.test.js, tests/unit/reports.stocksReportService.unit.test.js, tests/unit/stockService.adjust.transfer.test.js, tests/unit/stockService.issue.return.unit.test.js, validation/stock/index.js | style: fix linting issues across multiple files
+2025-10-27T16:56:52+03:00 | CHANGELOG_TRAE.md, client/eslint.config.cjs, client/package-lock.json, client/package.json, client/src/pages/reports/Cashflow.js | fix(eslint): disable react-hooks/exhaustive-deps rule and remove directive

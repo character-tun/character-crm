@@ -1,5 +1,5 @@
 import { createTheme, alpha } from '@mui/material/styles';
-import '@mui/x-data-grid/themeAugmentation';
+import type {} from '@mui/x-data-grid/themeAugmentation';
 import { ThemeMode } from './tokens';
 import { createCharacterTheme } from './theme';
 

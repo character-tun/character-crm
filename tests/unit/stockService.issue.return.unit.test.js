@@ -70,13 +70,15 @@ jest.mock('../../models/stock/StockOperation', () => ({
     return created;
   }),
   findOne: jest.fn((query) => ({
-    session: () => global.mockMem.operations.find((op) => (
-      String(op.type) === String(query.type)
+    session: () => {
+      return global.mockMem.operations.find((op) => (
+        String(op.type) === String(query.type)
         && String(op.sourceType || '') === String(query.sourceType || '')
         && String(op.sourceId || '') === String(query.sourceId || '')
         && String(op.itemId || '') === String(query.itemId || '')
         && Number(op.qty || 0) === Number(query.qty || 0)
-    )) || null,
+      )) || null;
+    },
   })),
 }));
 
