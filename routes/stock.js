@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const { validate, schemas } = require('../middleware/validate');
 const { requirePermission } = require('../middleware/auth');
+const { requireStocksEnabled } = require('../middleware/featureFlags/stock');
+
+// Feature-flag: guard stock routes unless ENABLE_STOCKS is enabled
+router.use(requireStocksEnabled);
 
 let StockItem; try { StockItem = require('../server/models/StockItem'); } catch (e) {}
 let StockMovement; try { StockMovement = require('../server/models/StockMovement'); } catch (e) {}

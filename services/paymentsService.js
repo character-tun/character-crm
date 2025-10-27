@@ -4,6 +4,7 @@ let Order; try { Order = require('../models/Order'); } catch (_) {}
 let Payment; try { Payment = require('../server/models/Payment'); } catch (_) {}
 let CashRegister; try { CashRegister = require('../server/models/CashRegister'); } catch (_) {}
 let OrderStatusLog; try { OrderStatusLog = require('../models/OrderStatusLog'); } catch (_) {}
+const stockService = require('./stock/stockService');
 
 function httpError(statusCode, message) {
   const err = new Error(message);
@@ -160,6 +161,16 @@ async function refundPayment(sourceId, dto, user) {
   };
   const created = await Payment.create(payload);
   await recordAudit(orderId, user && user.id, `PAYMENT_REFUND id=${created._id} amount=${amt}${sourceId ? ` sourceId=${sourceId}` : ''}`);
+  // Auto stock return on refund (Stocks V2)
+  try {
+    const useStocksV2 = String(process.env.ENABLE_STOCKS_V2 || '0') === '1' && !!stockService && typeof stockService.returnFromRefund === 'function';
+    if (useStocksV2) {
+      const loc = payload.locationId || (order.locationId ? order.locationId : undefined);
+      await stockService.returnFromRefund({ orderId, paymentId: created._id, locationId: loc, performedBy: user && user.id });
+    }
+  } catch (e) {
+    console.warn('[refundPayment] stock return failed', e && e.message);
+  }
   return { ok: true, id: created._id };
 }
 

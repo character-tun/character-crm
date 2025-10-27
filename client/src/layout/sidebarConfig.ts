@@ -107,8 +107,8 @@ export const nav: NavItem[] = [
     icon: React.createElement(Warehouse),
     path: '/inventory',
     children: [
-      { id: 'wh-stock', label: 'Остатки',      icon: React.createElement(Warehouse), path: '/inventory/products' },
-      { id: 'wh-move',  label: 'Перемещения',  icon: React.createElement(SwapHoriz), path: '/inventory/orders' }
+      { id: 'wh-balance', label: 'Остатки',      icon: React.createElement(Warehouse), path: '/inventory/balance' },
+      { id: 'wh-log',     label: 'Лог склада',   icon: React.createElement(History),   path: '/inventory/log' }
     ]
   },
   {

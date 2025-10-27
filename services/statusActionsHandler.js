@@ -548,6 +548,10 @@ async function handleStatusActions({
   const items = Array.isArray(actions) ? actions : [];
   let processed = 0;
 
+  // Optional V2: use new stock service for stockIssue
+  let stockService; try { stockService = require('./stock/stockService'); } catch (e) {}
+  const useStocksV2 = String(process.env.ENABLE_STOCKS_V2 || '0') === '1' && !!stockService;
+
   for (const raw of items) {
     const action = normalizeAction(raw);
     if (!action) {
@@ -590,7 +594,11 @@ async function handleStatusActions({
           }
           break;
         case 'stockIssue':
-          await issueStockFromOrder({ orderId, userId });
+          if (useStocksV2) {
+            await stockService.issueFromOrder({ orderId, performedBy: userId });
+          } else {
+            await issueStockFromOrder({ orderId, userId });
+          }
           break;
         default:
           console.warn('[statusActions] unknown action type', action.type);

@@ -89,6 +89,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/queue', require('./routes/queue'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/reports/stocks', require('./routes/reports/stocks'));
 
 // 3.3 Step 2: FieldSchemas & Dictionaries
 app.use('/api/fields', require('./routes/fields'));
@@ -101,6 +102,7 @@ app.use('/api/payroll', require('./routes/payrollAccruals'));
 
 // Warehouse stock routes
 app.use('/api/stock', require('./routes/stock'));
+app.use('/api/stocks', require('./routes/stocks'));
 app.use('/api/doc-templates', require('./routes/docTemplates'));
 // Shop
 app.use('/api/shop', require('./routes/shop'));
@@ -120,3 +122,5 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5002;
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+const minLevelWatcher = require('./services/stock/minLevelWatcher');
+minLevelWatcher.start();

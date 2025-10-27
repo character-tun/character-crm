@@ -61,6 +61,10 @@ const RBAC_MAP = {
   // Warehouse (stock)
   'warehouse.read': ['Admin', 'Production'],
   'warehouse.write': ['Admin', 'Production'],
+  // New Stocks v2 (balances/operations)
+  'stocks.read': ['Admin', 'Production'],
+  'stocks.adjust': ['Admin', 'Production'],
+  'stocks.transfer': ['Admin', 'Production'],
 };
 
 const requireRoles = (...roles) => (req, res, next) => {

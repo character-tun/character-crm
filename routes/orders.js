@@ -192,6 +192,18 @@ router.post('/', requireRoles('Admin', 'Manager'), validateOrderRequiredFields, 
     }
 
     const created = await Order.create(doc);
+
+    // Stocks v2: auto-reserve on order creation (ENV gated)
+    if (process.env.ENABLE_STOCKS_V2 === '1') {
+      try {
+        const { reserveForOrder } = require('../services/stock/reservationService');
+        const userId = (req.user && (req.user._id || req.user.id)) || null;
+        await reserveForOrder({ orderId: created._id, userId });
+      } catch (e) {
+        return next(e);
+      }
+    }
+
     const item = await Order.findById(created._id).lean();
     return res.status(201).json({ ok: true, item });
   } catch (err) {
@@ -401,6 +413,17 @@ router.patch('/:id', requireRoles('Admin', 'Manager'), async (req, res, next) =>
         orderItems.push({ itemId, qty, total, snapshot, snapshotAt: new Date() });
       }
       update.items = orderItems;
+
+      // Stocks v2: apply reservation diff on items edit (ENV gated)
+      if (process.env.ENABLE_STOCKS_V2 === '1') {
+        try {
+          const { applyDiffForOrderEdit } = require('../services/stock/reservationService');
+          const userId = (req.user && (req.user._id || req.user.id)) || null;
+          await applyDiffForOrderEdit({ orderId: id, prevItems: order.items || [], nextItems: orderItems, userId });
+        } catch (e) {
+          return next(e);
+        }
+      }
     }
 
     // Totals update: recompute if items updated, else apply discount

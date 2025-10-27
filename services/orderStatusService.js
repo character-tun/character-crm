@@ -83,6 +83,16 @@ async function changeOrderStatus({ orderId, newStatusCode, userId, note, roles =
 
   await order.save();
 
+  // Stocks v2: освобождение резерва при отмене заказа
+  if (process.env.ENABLE_STOCKS_V2 === '1' && status.group === 'closed_fail') {
+    try {
+      const { releaseForOrder } = require('./stock/reservationService');
+      await releaseForOrder({ orderId, userId });
+    } catch (err) {
+      console.error('[stocks.releaseForOrder] error', err);
+    }
+  }
+
   // Compute actions with fallback: add stockIssue for closed_success if missing
   const baseActions = Array.isArray(status.actions) ? status.actions : [];
   const shouldAddStockIssue = status.group === 'closed_success' && !baseActions.some((a) => (typeof a === 'string' ? a === 'stockIssue' : a && a.type === 'stockIssue'));

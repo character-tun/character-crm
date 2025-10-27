@@ -25,6 +25,8 @@ import Landing from './pages/Landing';
 import InventoryProducts from './pages/inventory/Products';
 import InventoryOrders from './pages/inventory/Orders';
 import InventorySuppliers from './pages/inventory/Suppliers';
+import InventoryStockBalance from './pages/inventory/StockBalance';
+import InventoryStockLog from './pages/inventory/StockLedger';
 import Payments from './pages/Payments';
 import Settings from './pages/Settings';
 import ListSettingsPage from './pages/settings/ListSettingsPage';
@@ -85,6 +87,8 @@ function App() {
           <Route path="inventory/products" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryProducts /></ProtectedRoute>} />
           <Route path="inventory/orders" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryOrders /></ProtectedRoute>} />
           <Route path="inventory/suppliers" element={<ProtectedRoute roles={["Admin","Production"]}><InventorySuppliers /></ProtectedRoute>} />
+          <Route path="inventory/balance" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryStockBalance /></ProtectedRoute>} />
+          <Route path="inventory/log" element={<ProtectedRoute roles={["Admin","Production"]}><InventoryStockLog /></ProtectedRoute>} />
           <Route path="shop" element={<ProtectedRoute roles={["Admin","Manager"]}><SaleFormPage /></ProtectedRoute>} />
           <Route path="shop/history" element={<ProtectedRoute roles={["Admin","Manager"]}><ShopHistoryPage /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute roles={["Admin","Manager"]}><div><h2>Отчеты</h2><p>Страница в разработке</p></div></ProtectedRoute>} />
