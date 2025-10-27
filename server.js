@@ -23,6 +23,7 @@ if (!DEV_MODE) {
 require('./queues/statusActionQueue');
 
 try { require('./server/models/Payment'); require('./server/models/CashRegister'); } catch (e) {}
+
 const app = express();
 
 // Middleware
@@ -123,4 +124,5 @@ const PORT = process.env.PORT || 5002;
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 const minLevelWatcher = require('./services/stock/minLevelWatcher');
+
 minLevelWatcher.start();

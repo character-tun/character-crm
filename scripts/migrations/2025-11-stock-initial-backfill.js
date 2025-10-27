@@ -44,7 +44,7 @@ async function main() {
         await StockBalance.updateOne(
           { itemId, locationId },
           { $set: { quantity, reservedQuantity, lastUpdatedAt: new Date() } },
-          { upsert: true }
+          { upsert: true },
         );
         processed += 1; totalQty += quantity;
       }
@@ -66,12 +66,11 @@ async function main() {
           await StockBalance.updateOne(
             { itemId, locationId },
             { $set: { quantity, reservedQuantity, lastUpdatedAt: new Date() } },
-            { upsert: true }
+            { upsert: true },
           );
           processed += 1; totalQty += quantity;
         }
       }
-
     }
 
     const duration = Date.now() - start;

@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
+
 let StockItem; let StockBalance;
 try { StockItem = require('../../server/models/StockItem'); } catch (e) {}
 try { StockBalance = require('../../models/stock/StockBalance'); } catch (e) {}
 
 const TemplatesStore = require('../templatesStore');
+
 let telegramNotify; try { telegramNotify = require('../telegramNotify'); } catch (e) {}
 
 const mongoReady = () => mongoose.connection && mongoose.connection.readyState === 1;
@@ -16,12 +18,13 @@ async function scanAndNotify() {
   const items = await StockItem.find({ minQty: { $gt: 0 } }).lean();
   const alerts = [];
   for (const it of (items || [])) {
-    const itemId = it.itemId; const locId = it.locationId; const min = Number(it.minQty || 0);
+    const { itemId, locationId: locId, minQty } = it;
+    const min = Number(minQty || 0);
     if (!itemId || !locId || !(min > 0)) continue;
     let qty = Number(it.qtyOnHand || 0);
     try {
       if (StockBalance) {
-        const bal = await StockBalance.findOne({ itemId: itemId, locationId: locId }).lean();
+        const bal = await StockBalance.findOne({ itemId, locationId: locId }).lean();
         if (bal) { qty = Number(bal.quantity || 0) - Number(bal.reservedQuantity || 0); }
       }
     } catch (e) {}

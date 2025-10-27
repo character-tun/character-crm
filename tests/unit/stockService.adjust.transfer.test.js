@@ -92,20 +92,15 @@ jest.mock('../../models/stock/StockOperation', () => ({
     return created;
   }),
   findOne: jest.fn((query) => ({
-    session: () => {
-      return global.mockMem.operations.find((op) => (
-        String(op.type) === String(query.type)
+    session: () => global.mockMem.operations.find((op) => (
+      String(op.type) === String(query.type)
         && String(op.sourceType || '') === String(query.sourceType || '')
         && String(op.sourceId || '') === String(query.sourceId || '')
         && String(op.itemId || '') === String(query.itemId || '')
         && Number(op.qty || 0) === Number(query.qty || 0)
-      )) || null;
-    },
+    )) || null,
   })),
-  aggregate: jest.fn(async (pipeline) => {
-    // used in turnover; for unit tests we don't call
-    return [];
-  }),
+  aggregate: jest.fn(async (pipeline) => []),
 }));
 
 // Service under test

@@ -16,10 +16,10 @@ function mockMongooseSession() {
   if (!mongoose.connection) mongoose.connection = {};
   mongoose.connection.readyState = 1;
   mongoose.startSession = async () => ({
-    startTransaction() {},
-    async commitTransaction() {},
-    async abortTransaction() {},
-    endSession() {},
+    startTransaction() { return null; },
+    async commitTransaction() { return undefined; },
+    async abortTransaction() { return undefined; },
+    endSession() { return null; },
   });
 }
 
@@ -115,8 +115,7 @@ function installStockModelMocks() {
       return makeQuery(() => {
         const found = ops.find((op) => (!match.type || match.type === op.type)
           && (!match.sourceType || match.sourceType === op.sourceType)
-          && (!match.sourceId || String(match.sourceId) === String(op.sourceId))
-        );
+          && (!match.sourceId || String(match.sourceId) === String(op.sourceId)));
         return found || null;
       });
     },

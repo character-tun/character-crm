@@ -5,6 +5,7 @@ process.env.AUTH_DEV_MODE = '1';
 process.env.ENABLE_STOCKS = '1';
 
 const mongoose = require('mongoose');
+
 mongoose.connection = mongoose.connection || {};
 mongoose.connection.readyState = 1;
 

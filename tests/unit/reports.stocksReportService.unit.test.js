@@ -13,7 +13,7 @@ jest.mock('../../models/stock/StockBalance', () => ({
       cur.reserved += Number(v.reservedQuantity || 0);
       map.set(locationId, cur);
     }
-    let arr = Array.from(map.entries()).map(([locationId, totals]) => ({ _id: locationId, sumQty: totals.qty, sumReserved: totals.reserved }));
+    const arr = Array.from(map.entries()).map(([locationId, totals]) => ({ _id: locationId, sumQty: totals.qty, sumReserved: totals.reserved }));
     arr.sort((a, b) => b.sumQty - a.sumQty);
     const limitStage = pipeline.find((s) => Object.prototype.hasOwnProperty.call(s, '$limit'));
     const limit = limitStage ? Number(limitStage.$limit) : arr.length;

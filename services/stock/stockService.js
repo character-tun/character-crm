@@ -18,7 +18,12 @@ async function listBalances({ itemId, locationId, limit = 50, offset = 0 }) {
   const match = {};
   if (itemId) match.itemId = asObjId(itemId);
   if (locationId) match.locationId = asObjId(locationId);
-  const items = await StockBalance.find(match).sort({ quantity: -1 }).skip(offset).limit(limit).lean();
+  const items = await StockBalance
+    .find(match)
+    .sort({ quantity: -1 })
+    .skip(offset)
+    .limit(limit)
+    .lean();
   return { ok: true, items };
 }
 
@@ -39,7 +44,7 @@ async function adjust({ itemId, locationId, qty, note, userId }) {
     await StockBalance.updateOne(
       { itemId: itemObj, locationId: locObj },
       { $set: { lastUpdatedAt: new Date() }, $inc: { quantity: Number(qty || 0) } },
-      { upsert: true, session }
+      { upsert: true, session },
     );
 
     // Operation: map adjust to in/out
@@ -87,12 +92,12 @@ async function transfer({ itemId, from, to, qty, note, userId }) {
     await StockBalance.updateOne(
       { itemId: itemObj, locationId: fromObj },
       { $set: { lastUpdatedAt: new Date() }, $inc: { quantity: -Math.abs(Number(qty || 0)) } },
-      { upsert: true, session }
+      { upsert: true, session },
     );
     await StockBalance.updateOne(
       { itemId: itemObj, locationId: toObj },
       { $set: { lastUpdatedAt: new Date() }, $inc: { quantity: Math.abs(Number(qty || 0)) } },
-      { upsert: true, session }
+      { upsert: true, session },
     );
 
     const op = await StockOperation.create([
@@ -155,7 +160,7 @@ async function issueFromOrder({ orderId, performedBy, locationId }) {
       await StockBalance.updateOne(
         { itemId: itemObj, locationId: loc },
         { $set: { lastUpdatedAt: new Date() }, $inc: { quantity: -Math.abs(qty), reservedQuantity: -decReserved } },
-        { upsert: true, session }
+        { upsert: true, session },
       );
       const op = await StockOperation.create([
         {
@@ -203,7 +208,7 @@ async function returnFromRefund({ orderId, paymentId, locationId, performedBy })
       await StockBalance.updateOne(
         { itemId: itemObj, locationId: loc },
         { $set: { lastUpdatedAt: new Date() }, $inc: { quantity: Math.abs(qty) } },
-        { upsert: true, session }
+        { upsert: true, session },
       );
       const op = await StockOperation.create([
         {

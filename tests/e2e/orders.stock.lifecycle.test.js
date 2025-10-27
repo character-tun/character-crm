@@ -72,15 +72,13 @@ jest.mock('../../models/stock/StockOperation', () => ({
     return created;
   }),
   findOne: jest.fn((query) => ({
-    session: () => {
-      return global.mockMem.operations.find((op) => (
-        String(op.type) === String(query.type)
+    session: () => global.mockMem.operations.find((op) => (
+      String(op.type) === String(query.type)
         && String(op.sourceType || '') === String(query.sourceType || '')
         && String(op.sourceId || '') === String(query.sourceId || '')
         && String(op.itemId || '') === String(query.itemId || '')
         && Number(op.qty || 0) === Number(query.qty || 0)
-      )) || null;
-    },
+    )) || null,
   })),
   aggregate: jest.fn(async () => []),
 }));
@@ -142,7 +140,7 @@ describe('E2E: заказ — резерв → списание (issue), отм�
 
     const ret = await stockService.returnFromRefund({ orderId: 'o3', paymentId: 'p1', locationId: LOC_A, performedBy: 'u1' });
     expect(ret.ok).toBe(true);
-    let bal = mem.balances.get(key(ITEM_ID, LOC_A));
+    const bal = mem.balances.get(key(ITEM_ID, LOC_A));
     expect(bal.quantity).toBe(4); // +2
     expect(mem.operations.filter((op) => op.type === 'return')).toHaveLength(1);
 

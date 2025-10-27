@@ -47,7 +47,7 @@ async function reserveForOrder({ orderId, locationId, userId }) {
       await StockBalance.updateOne(
         { itemId: itemObj, locationId: loc },
         { $set: { lastUpdatedAt: new Date() }, $inc: { reservedQuantity: Math.abs(qty) } },
-        { upsert: true, session }
+        { upsert: true, session },
       );
       count += 1;
     }
@@ -84,7 +84,7 @@ async function releaseForOrder({ orderId, locationId, userId }) {
       await StockBalance.updateOne(
         { itemId: itemObj, locationId: loc },
         { $set: { lastUpdatedAt: new Date(), reservedQuantity: nextReserved } },
-        { upsert: true, session }
+        { upsert: true, session },
       );
       count += 1;
     }
@@ -128,14 +128,14 @@ async function applyDiffForOrderEdit({ orderId, prevItems, nextItems, locationId
         await StockBalance.updateOne(
           { itemId: itemObj, locationId: loc },
           { $set: { lastUpdatedAt: new Date() }, $inc: { reservedQuantity: Math.abs(delta) } },
-          { upsert: true, session }
+          { upsert: true, session },
         );
       } else {
         const nextReserved = Math.max(0, reserved - Math.abs(delta));
         await StockBalance.updateOne(
           { itemId: itemObj, locationId: loc },
           { $set: { lastUpdatedAt: new Date(), reservedQuantity: nextReserved } },
-          { upsert: true, session }
+          { upsert: true, session },
         );
       }
       adjusted += 1;

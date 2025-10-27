@@ -112,24 +112,24 @@ describe('E2E: Order Close -> V2 Stock Issue', () => {
   });
 
   test('calls V2 stock issue and decrements balance', async () => {
-     // no spy; we assert V2-specific model calls
+    // no spy; we assert V2-specific model calls
 
-     const res = await request(app)
-       .patch(`/api/orders/${orderId}/status`)
-       .set('x-user-id', userId)
-       .set('x-user-role', 'orders.changeStatus')
-       .send({ newStatusCode: 'closed_paid' });
+    const res = await request(app)
+      .patch(`/api/orders/${orderId}/status`)
+      .set('x-user-id', userId)
+      .set('x-user-role', 'orders.changeStatus')
+      .send({ newStatusCode: 'closed_paid' });
 
-     expect(res.status).toBe(200);
-     expect(res.body && res.body.ok).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.body && res.body.ok).toBe(true);
 
-     // Verify that StockOperation.create was attempted and StockBalance.update was invoked with decrement
-     expect(StockOperationMock.create).toHaveBeenCalledTimes(1);
-     expect(StockBalanceMock.updateOne).toHaveBeenCalledTimes(1);
+    // Verify that StockOperation.create was attempted and StockBalance.update was invoked with decrement
+    expect(StockOperationMock.create).toHaveBeenCalledTimes(1);
+    expect(StockBalanceMock.updateOne).toHaveBeenCalledTimes(1);
 
-     // Ensure quantity decreased by 2 at the default location
-     const key = `${String(itemId)}:${String(locationId)}`;
-     const finalQty = StockStore.get(key);
-     expect(finalQty).toBe(8); // started 10, -2 issued
-   });
+    // Ensure quantity decreased by 2 at the default location
+    const key = `${String(itemId)}:${String(locationId)}`;
+    const finalQty = StockStore.get(key);
+    expect(finalQty).toBe(8); // started 10, -2 issued
+  });
 });

@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 const { requireAuth, requirePermission } = require('../middleware/auth');
 const { requireStocksEnabled } = require('../middleware/featureFlags/stock');

@@ -70,15 +70,13 @@ jest.mock('../../models/stock/StockOperation', () => ({
     return created;
   }),
   findOne: jest.fn((query) => ({
-    session: () => {
-      return global.mockMem.operations.find((op) => (
-        String(op.type) === String(query.type)
+    session: () => global.mockMem.operations.find((op) => (
+      String(op.type) === String(query.type)
         && String(op.sourceType || '') === String(query.sourceType || '')
         && String(op.sourceId || '') === String(query.sourceId || '')
         && String(op.itemId || '') === String(query.itemId || '')
         && Number(op.qty || 0) === Number(query.qty || 0)
-      )) || null;
-    },
+    )) || null,
   })),
 }));
 
@@ -97,7 +95,7 @@ function seedBalance(itemId, locationId, quantity = 0, reservedQuantity = 0) {
   const k = `${String(itemId)}:${String(locationId)}`;
   global.mockMem.balances.set(k, { quantity, reservedQuantity });
 }
-function seedOrder(orderId, items = [], locationId) {
+function seedOrder(orderId, locationId, items = []) {
   global.mockMem.orders.set(String(orderId), { items, locationId });
 }
 
@@ -111,7 +109,7 @@ beforeEach(() => {
 describe('stockService.issueFromOrder', () => {
   test('списывает остаток и уменьшает резерв; создаёт out операции', async () => {
     const orderId = OIDS.order1; const locId = OIDS.locA; const itemId = OIDS.item1;
-    seedOrder(orderId, [{ itemId, qty: 3 }]);
+    seedOrder(orderId, undefined, [{ itemId, qty: 3 }]);
     seedBalance(itemId, locId, 10, 2);
     process.env.DEFAULT_STOCK_LOCATION_ID = locId; // используем дефолтную локацию
 
@@ -129,7 +127,7 @@ describe('stockService.issueFromOrder', () => {
 
   test('идемпотентность: повторный вызов не создаёт дубль операции и не меняет баланс', async () => {
     const orderId = OIDS.order2; const locId = OIDS.locA; const itemId = OIDS.item1;
-    seedOrder(orderId, [{ itemId, qty: 2 }]);
+    seedOrder(orderId, undefined, [{ itemId, qty: 2 }]);
     seedBalance(itemId, locId, 5, 0);
     process.env.DEFAULT_STOCK_LOCATION_ID = locId;
 
@@ -151,7 +149,7 @@ describe('stockService.issueFromOrder', () => {
 
   test('недостаток остатка: { ok:false, statusCode:409 } и баланс не меняется', async () => {
     const orderId = OIDS.order3; const locId = OIDS.locA; const itemId = OIDS.item2;
-    seedOrder(orderId, [{ itemId, qty: 6 }]);
+    seedOrder(orderId, undefined, [{ itemId, qty: 6 }]);
     seedBalance(itemId, locId, 5, 0);
     process.env.DEFAULT_STOCK_LOCATION_ID = locId;
 
@@ -168,7 +166,7 @@ describe('stockService.issueFromOrder', () => {
 describe('stockService.returnFromRefund', () => {
   test('возвращает на склад и создаёт return операции', async () => {
     const orderId = OIDS.order1; const locId = OIDS.locB; const itemId = OIDS.item2;
-    seedOrder(orderId, [{ itemId, qty: 4 }], locId);
+    seedOrder(orderId, locId, [{ itemId, qty: 4 }]);
     seedBalance(itemId, locId, 1, 0);
 
     const res = await stockService.returnFromRefund({ orderId, paymentId: OIDS.payment1, locationId: locId, performedBy: 'u1' });
@@ -184,7 +182,7 @@ describe('stockService.returnFromRefund', () => {
 
   test('идемпотентность по paymentId: повторный вызов не создаёт дубль', async () => {
     const orderId = OIDS.order2; const locId = OIDS.locB; const itemId = OIDS.item2;
-    seedOrder(orderId, [{ itemId, qty: 1 }], locId);
+    seedOrder(orderId, locId, [{ itemId, qty: 1 }]);
     seedBalance(itemId, locId, 0, 0);
 
     const first = await stockService.returnFromRefund({ orderId, paymentId: OIDS.payment1, locationId: locId, performedBy: 'u1' });
