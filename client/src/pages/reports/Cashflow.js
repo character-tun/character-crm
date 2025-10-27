@@ -36,7 +36,6 @@ export default function CashflowReport() {
       locationId: p.locationId || f.locationId,
       q: p.q || f.q,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist filters to URL

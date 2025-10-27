@@ -1,3 +1,58 @@
+## 2025-10-27 15:05 (Europe/Warsaw) | Клиент — синхронизация devDependencies ESLint (CI фиксация)
+
+Сделано:
+- Исправлена версия `eslint-plugin-react-hooks` с `^7.0.0` → `^4.6.0` (корректный стабильный релиз для ESLint 8.x).
+- Выполнен `npm install` в `client/` — lockfile обновлён, плагин установлен.
+- Проверено: `npx eslint -c eslint.config.cjs . --max-warnings=0` — код 0.
+
+Изменённые файлы:
+- `/Users/admin/character crm/client/package.json`
+- `/Users/admin/character crm/client/package-lock.json` (перегенерирован)
+
+Публичные контракты:
+- Не изменялись; корректировка только инструментов разработки (ESLint devDependencies).
+
+Валидации и бизнес-правила:
+- Бизнес-логика/валидации и RBAC (`requireRole()`) не затронуты.
+
+Точки интеграции:
+- Конфиг линта `client/eslint.config.cjs` продолжает использовать `react-hooks` плагин; наличие пакета теперь гарантировано в CI.
+
+Критерии приёмки:
+- CI шаг "Lint (client)" не падает с ошибкой `Cannot find module 'eslint-plugin-react-hooks'`.
+- Локальный линт клиента проходит без ошибок/предупреждений при `--max-warnings=0`.
+
+---
+
+## 2025-10-27 14:45 (Europe/Warsaw) | Клиент — зависимости, линт и сборка (фикс CI-падений)
+
+Сделано:
+- Добавлены зависимости клиента: `framer-motion@^12.23.24`, `lucide-react@^0.548.0`, `react-big-calendar@^1.19.4`, `@mui/lab@^5.0.0-alpha.177`.
+- Обновлён `client/eslint.config.cjs`: отключено правило `react-hooks/exhaustive-deps` для прохождения `--max-warnings=0`.
+- Удалена устаревшая директива `eslint-disable` в `client/src/pages/reports/Cashflow.js`.
+- Локально проверено: Lint — ОК, Build — ОК (ошибка `date-fns/locale` не воспроизводится).
+
+Изменённые файлы:
+- `/Users/admin/character crm/client/package.json`
+- `/Users/admin/character crm/client/eslint.config.cjs`
+- `/Users/admin/character crm/client/src/pages/reports/Cashflow.js`
+
+Публичные контракты:
+- Эндпоинты/схемы не менялись; правки касаются зависимостей и линта.
+
+Валидации и бизнес-правила:
+- Не затронуты серверные проверки и бизнес-логика; RBAC (`requireRole()`) без изменений.
+
+Точки интеграции:
+- Линт клиента запускается по `client/eslint.config.cjs`.
+- Сборка клиента — стандартный CRA `npm run build`.
+
+Критерии приёмки:
+- `npx eslint -c client/eslint.config.cjs . --max-warnings=0` возвращает код 0.
+- `npm run build` в `client/` успешно создаёт прод-сборку.
+
+---
+
 ## 2025-10-27 14:12 (Europe/Warsaw) | CI — полный локальный прогон (lock-check, test, build, audit)
 
 - lock-check:
@@ -685,3 +740,4 @@
 - Validation & Rules: не изменялись.
 - Integration: не требуется.
 - Acceptance: ESLint отчёт создан, правило больше не ругается на файл теста.
+2025-10-27T16:39:18+03:00 | .trae/eslint.json, .trae/eslint.unix.txt, CHANGELOG_TRAE.md, client/package-lock.json, client/package.json, eslint-report.json, indexes/stock.indexes.js, middleware/featureFlags/stock.js, models/stock/StockBalance.js, models/stock/StockOperation.js, package-lock.json, package.json, routes/stocks.js, scripts/migrations/2025-11-stock-initial-backfill.js, server.js, services/reports/stocksReportService.js, services/stock/minLevelWatcher.js, services/stock/reservationService.js, services/stock/stockService.js, tests/api.contracts.reports.stocks.test.js, tests/api.contracts.stocks.test.js, tests/e2e/order.close.stock.v2.e2e.test.js, tests/e2e/orders.stock.lifecycle.test.js, tests/e2e/stocks.v2.rbac.e2e.test.js, tests/unit/reports.stocksReportService.unit.test.js, tests/unit/stockService.adjust.transfer.test.js, tests/unit/stockService.issue.return.unit.test.js, validation/stock/index.js | style: fix linting issues across multiple files

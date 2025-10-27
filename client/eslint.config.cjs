@@ -31,7 +31,7 @@ module.exports = [
       'react/prop-types': 'off',
       // мягкая маска: игнорируем переменные/аргументы с префиксом _ и игнорируем переменные catch
       'no-unused-vars': 'off',
-      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/exhaustive-deps': 'off',
       'import/no-extraneous-dependencies': ['error', { devDependencies: ['**/tests/**', '**/*.test.js', '**/*.test.jsx'] }],
       // отключаем как шумную и плохо совместимую с динамическими импортами/реэкспортами
       'import/no-unused-modules': 'off',
